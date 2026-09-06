@@ -1,0 +1,28 @@
+{
+  "pipeline_name": "LandRecordAIPipeline",
+  "version": "1.0.0",
+  "confidence_thresholds": {
+    "high_confidence_auto_approve": 0.85,
+    "medium_confidence_flag": 0.65,
+    "low_confidence_reject": 0.40
+  },
+  "confidence_weights": {
+    "ocr_confidence": 0.25,
+    "pattern_strength": 0.20,
+    "rule_validation": 0.25,
+    "cross_record": 0.15,
+    "gis_consistency": 0.15
+  },
+  "gis_settings": {
+    "area_mismatch_threshold_percent": 10.0,
+    "strict_village_check": true
+  },
+  "duplicate_settings": {
+    "vector_similarity_threshold": 0.85,
+    "check_sha256": true
+  },
+  "active_learning": {
+    "auto_log_corrections": true,
+    "storage_path": "data/corrections/"
+  }
+}

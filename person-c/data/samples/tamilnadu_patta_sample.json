@@ -1,0 +1,56 @@
+{
+  "document_id": "SAMPLE_TN_PATTA_001",
+  "sha256_hash": "b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef12",
+  "selected_state": "TN",
+  "classification": {
+    "document_type": "patta_chitta",
+    "state": "TN",
+    "confidence": 0.99,
+    "signals_matched": ["தமிழ்நாடு", "பட்டா", "சிட்டா", "புல எண்"],
+    "language": "ta"
+  },
+  "text_lines": [
+    {
+      "text": "தமிழ்நாடு அரசு - வருவாய்த்துறை",
+      "confidence": 0.99,
+      "bbox": {"x_min": 50.0, "y_min": 20.0, "x_max": 500.0, "y_max": 50.0, "normalized": false},
+      "page_number": 1,
+      "language": "ta",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "இணையவழி பட்டா / சிட்டா சான்றிதழ்",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 60.0, "x_max": 600.0, "y_max": 90.0, "normalized": false},
+      "page_number": 1,
+      "language": "ta",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "மாவட்டம்: KANCHIPURAM  வட்டம்: SRIPERUMBUDUR  கிராமம்: NEMILI",
+      "confidence": 0.97,
+      "bbox": {"x_min": 50.0, "y_min": 100.0, "x_max": 750.0, "y_max": 130.0, "normalized": false},
+      "page_number": 1,
+      "language": "ta",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "பட்டா எண்: 304  பட்டாதாரர் பெயர்: முத்துக்குமார்",
+      "confidence": 0.96,
+      "bbox": {"x_min": 50.0, "y_min": 140.0, "x_max": 600.0, "y_max": 170.0, "normalized": false},
+      "page_number": 1,
+      "language": "ta",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "புல எண்: 108/1  பரப்பளவு: 0.5000 ஹெக்டேர்",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 180.0, "x_max": 500.0, "y_max": 210.0, "normalized": false},
+      "page_number": 1,
+      "language": "ta",
+      "engine": "paddleocr"
+    }
+  ],
+  "raw_full_text": "தமிழ்நாடு அரசு - வருவாய்த்துறை\nஇணையவழி பட்டா / சிட்டா சான்றிதழ்\nமாவட்டம்: KANCHIPURAM  வட்டம்: SRIPERUMBUDUR  கிராமம்: NEMILI\nபட்டா எண்: 304  பட்டாதாரர் பெயர்: முத்துக்குமார்\nபுல எண்: 108/1  பரப்பளவு: 0.5000 ஹெக்டேர்",
+  "tables": []
+}

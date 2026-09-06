@@ -1,0 +1,56 @@
+{
+  "document_id": "SAMPLE_MH_SATBARA_001",
+  "sha256_hash": "c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef1234",
+  "selected_state": "MH",
+  "classification": {
+    "document_type": "7_12_satbara",
+    "state": "MH",
+    "confidence": 0.99,
+    "signals_matched": ["महाराष्ट्र", "सातबारा", "गट क्रमांक"],
+    "language": "mr"
+  },
+  "text_lines": [
+    {
+      "text": "महाराष्ट्र शासन - महसूल विभाग",
+      "confidence": 0.99,
+      "bbox": {"x_min": 50.0, "y_min": 20.0, "x_max": 500.0, "y_max": 50.0, "normalized": false},
+      "page_number": 1,
+      "language": "mr",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "गाव नमुना सात (अधिकार अभिलेख पत्रक - ७/१२)",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 60.0, "x_max": 600.0, "y_max": 90.0, "normalized": false},
+      "page_number": 1,
+      "language": "mr",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "गाव: WAGHOLI  तालुका: HAVELI  जिल्हा: PUNE",
+      "confidence": 0.97,
+      "bbox": {"x_min": 50.0, "y_min": 100.0, "x_max": 700.0, "y_max": 130.0, "normalized": false},
+      "page_number": 1,
+      "language": "mr",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "खातेदाराचे नाव: सुरेश तानाजी पाटील",
+      "confidence": 0.96,
+      "bbox": {"x_min": 50.0, "y_min": 140.0, "x_max": 550.0, "y_max": 170.0, "normalized": false},
+      "page_number": 1,
+      "language": "mr",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "गट क्रमांक: 45  क्षेत्र: 1.1500 हेक्टर",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 180.0, "x_max": 500.0, "y_max": 210.0, "normalized": false},
+      "page_number": 1,
+      "language": "mr",
+      "engine": "paddleocr"
+    }
+  ],
+  "raw_full_text": "महाराष्ट्र शासन - महसूल विभाग\nगाव नमुना सात (अधिकार अभिलेख पत्रक - ७/१२)\nगाव: WAGHOLI  तालुका: HAVELI  जिल्हा: PUNE\nखातेदाराचे नाव: सुरेश तानाजी पाटील\nगट क्रमांक: 45  क्षेत्र: 1.1500 हेक्टर",
+  "tables": []
+}

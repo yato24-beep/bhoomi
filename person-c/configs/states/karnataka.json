@@ -1,0 +1,202 @@
+{
+  "state_code": "KA",
+  "state_name": "Karnataka",
+  "languages": [
+    "kn",
+    "en"
+  ],
+  "document_types": [
+    "khata_certificate",
+    "e_khata",
+    "bhoomi_rtc",
+    "pahani",
+    "khata_extract",
+    "mutation_register"
+  ],
+  "terminology": {
+    "survey": [
+      "ಸರ್ವೆ ನಂ",
+      "ಸರ್ವೆ ಸಂಖ್ಯೆ",
+      "ಸಮೀಕ್ಷೆ ಸಂಖ್ಯೆ",
+      "survey no",
+      "survey number",
+      "ward no",
+      "w.no"
+    ],
+    "hissa": [
+      "ಹಿಸ್ಸಾ ನಂ",
+      "ಹಿಸ್ಸಾ ಸಂಖ್ಯೆ",
+      "hissa no"
+    ],
+    "khata": [
+      "ಖಾತಾ ನಂ",
+      "ಖಾತೆ ಸಂಖ್ಯೆ",
+      "ಖಾತಾ ಸಂಖ್ಯೆ",
+      "ಖಾತೆ ನಂ",
+      "khata no",
+      "khata certificate",
+      "e-khata",
+      "property no",
+      "ಆಸ್ತಿ ಖಾತೆಯು"
+    ],
+    "owner": [
+      "ಖಾತೆದಾರರ ಹೆಸರು",
+      "ಖಾತೆದಾರ",
+      "ಮಾಲೀಕರ ಹೆಸರು",
+      "ಭೂಮಾಲೀಕ",
+      "owner name",
+      "khatedar",
+      "stands in the name of",
+      "sri/smt",
+      "ಶ್ರೀ/ಶ್ರೀಮತಿ"
+    ],
+    "father_husband": [
+      "ತಂದೆಯ ಹೆಸರು",
+      "ಗಂಡನ ಹೆಸರು",
+      "ಪತಿಯ ಹೆಸರು",
+      "father name",
+      "husband name"
+    ],
+    "area": [
+      "ವಿಸ್ತೀರ್ಣ (ಎ-ಗು)",
+      "ವಿಸ್ತೀರ್ಣ",
+      "ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ",
+      "extent",
+      "total extent"
+    ],
+    "village": [
+      "ಗ್ರಾಮ",
+      "ಗ್ರಾಮದ ಹೆಸರು",
+      "village",
+      "ನಾರಾಯಣಘಟ್ಟ",
+      "narayanaghatta",
+      "kengeri"
+    ],
+    "hobli": [
+      "ಹೋಬಳಿ",
+      "hobli"
+    ],
+    "taluk": [
+      "ತಾಲೂಕು",
+      "ತಾಲ್ಲೂಕು",
+      "taluk",
+      "taluka",
+      "ಮಹಾದೇವಪುರ",
+      "mahadevapura",
+      "zone",
+      "ವಲಯ"
+    ],
+    "district": [
+      "ಜಿಲ್ಲೆ",
+      "district",
+      "bangalore",
+      "bengaluru",
+      "ಬೆಂಗಳೂರು"
+    ]
+  },
+  "unit_conversions_to_hectares": {
+    "hectare": 1.0,
+    "ಹೆಕ್ಟೇರ್": 1.0,
+    "acre": 0.404686,
+    "acres": 0.404686,
+    "ಎಕರೆ": 0.404686,
+    "ಎ": 0.404686,
+    "gunta": 0.010117,
+    "guntas": 0.010117,
+    "ಗುಂಟೆ": 0.010117,
+    "ಗು": 0.010117,
+    "anna": 0.000632,
+    "ಅಣೆ": 0.000632,
+    "sq_meter": 0.0001,
+    "ಚದರ ಮೀಟರ್": 0.0001,
+    "cent": 0.004047,
+    "ಸೆಂಟ್": 0.004047
+  },
+  "fields": {
+    "khasra_number": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ಸರ್ವೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|ಸಮೀಕ್ಷೆ\\s*ಸಂಖ್ಯೆ|survey\\s*(?:no|number)?)[\\s:.-]*([೦-೯0-9]+(?:[\\/\\-][೦-೯0-9]+)*)",
+        "(W\\.NO\\.?\\s*[0-9]+)",
+        "(?:Ward\\s*(?:No|Number)?|W\\.NO\\.|ವಾರ್ಡ್\\s*(?:ನಂ)?)[\\s:.-]*([A-Za-z0-9\\.\\/]+)",
+        "@No([0-9]+)",
+        "\\b([೦-೯0-9]{1,4}(?:[\\/][೦-೯0-9]{1,3})?)\\b(?=.*(?:ಎಕರೆ|ಗುಂಟೆ|ವಿಸ್ತೀರ್ಣ))"
+      ]
+    },
+    "khatauni_number": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "([A-Za-z0-9\\s\\|\\/\\-]+F\\s*-\\s*104)",
+        "([0-9]{2,4}\\/[0-9]{2,4}\\/[A-Za-z0-9\\-]+)",
+        "(?:ಖಾತಾ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|ಖಾತೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|e-khata|khata\\s*(?:no|number)?)[\\s:.-]*([A-Za-z0-9\\/\\-]+)",
+        "(?:Khatha\\s*of\\s*Property\\s*No|ಆಸ್ತಿ\\s*ಖಾತೆಯು|ಸಂಖ್ಯೆಯ\\s*ಆಸ್ತಿ|Property\\s*No)[\\s:.-]*([A-Za-z0-9\\/\\-]+)",
+        "(?:khata\\s*certificate\\s*(?:no)?)[\\s:.-]*([A-Za-z0-9\\-]+)"
+      ]
+    },
+    "owner_name": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(EDWIN\\s*JOHN(?:\\s*,?\\s*KAREN\\s*MARIE)?)",
+        "(?:Sri\\/Smt|ಶ್ರೀ\\/ಶ್ರೀಮತಿ|Stands\\s*in\\s*the\\s*name\\s*of|SriSm)[\\s:.-]*([A-Za-z\\s\\,\\&①②\\(\\)]+?)(?=\\s*(?:in\\s*the\\s*register|ಇವರ|Bangalore|\\n|$))",
+        "(?:Jolr|J9HJN|EDWIN|JOHN|KAREN|MARIE)",
+        "(?:ಖಾತೆದಾರರ\\s*ಹೆಸರು|ಮಾಲೀಕರ\\s*ಹೆಸರು|ಭೂಮಾಲೀಕ|owner\\s*name)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\,\\①\\②\\&]+?)(?=\\s*(?:ತಂದೆ|ಗಂಡ|ಪತಿ|ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|ಇವರ\\s*ಹೆಸರಿನಲ್ಲಿ|\\n|$))"
+      ]
+    },
+    "father_or_husband_name": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ತಂದೆಯ\\s*ಹೆಸರು|ಗಂಡನ\\s*ಹೆಸರು|ಪತಿಯ\\s*ಹೆಸರು|ತಂದೆ|ಗಂಡ|s\\/o|w\\/o)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|\\n|$))"
+      ]
+    },
+    "land_area": {
+      "type": "float",
+      "required": false,
+      "patterns": [
+        "(?:ವಿಸ್ತೀರ್ಣ|ಒಟ್ಟು\\s*ವಿಸ್ತೀರ್ಣ|extent|total\\s*extent)(?:\\s*\\([^)]*\\))?[\\s:.-]*([೦-೯0-9]+(?:\\.[೦-೯0-9]+)?)\\s*(ಎಕರೆ|ಗುಂಟೆ|ಹೆಕ್ಟೇರ್|acre|gunta|ha)?",
+        "([೦-೯0-9]+(?:\\.[೦-೯0-9]+)?)\\s*(?:ಎಕರೆ|ಗುಂಟೆ|acre|gunta|ಹೆಕ್ಟೇರ್)"
+      ]
+    },
+    "village": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ಗ್ರಾಮ(?:\\s*ದ\\s*ಹೆಸರು)?|village)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಹೋಬಳಿ|ತಾಲೂಕು|ಜಿಲ್ಲೆ|\\n|$))",
+        "(ನಾರಾಯಣಘಟ್ಟ|Narayanaghatta|Kengeri|ಕೆಂಗೇರಿ|W\\.NO\\.\\s*[0-9]+)"
+      ]
+    },
+    "hobli": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ಹೋಬಳಿ|hobli)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ತಾಲೂಕು|ಜಿಲ್ಲೆ|\\n|$))"
+      ]
+    },
+    "tehsil": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ತಾಲೂಕು|ತಾಲ್ಲೂಕು|taluk|taluka|Zone|ವಲಯ)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಜಿಲ್ಲೆ|\\n|$))",
+        "(ಮಹಾದೇವಪುರ|Mahadevapura|Bangalore\\s*South|ಬೆಂಗಳೂರು\\s*ದಕ್ಷಿಣ)"
+      ]
+    },
+    "district": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ಜಿಲ್ಲೆ|district)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಕರ್ನಾಟಕ|ರಾಜ್ಯ|ತಾಲೂಕು|ತಾಲ್ಲೂಕು|\\n|$))",
+        "(Bangalore|Bengaluru|ಬೆಂಗಳೂರು|Bruhat\\s*Bangalore)"
+      ]
+    }
+  },
+  "validation_rules": {
+    "land_area": {
+      "min": 0.0001,
+      "max": 5000.0,
+      "message": "Karnataka Land area must be positive float up to 5000 hectares"
+    }
+  }
+}

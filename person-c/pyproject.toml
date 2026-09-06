@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "land-document-ai-pipeline"
+version = "0.1.0"
+description = "Integrated AI/ML Document Processing Pipeline for Land Records"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "AI/ML Engineering Team" }
+]
+dependencies = [
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "numpy>=1.24.0",
+    "shapely>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "scikit-learn>=1.4.0",
+    "python-dotenv>=1.0.0",
+    "loguru>=0.7.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --import-mode=importlib"
+testpaths = ["tests"]
+pythonpath = ["."]

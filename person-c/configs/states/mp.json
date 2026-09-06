@@ -1,0 +1,132 @@
+{
+  "state_code": "MP",
+  "state_name": "Madhya Pradesh",
+  "languages": [
+    "hi",
+    "en"
+  ],
+  "document_types": [
+    "khasra",
+    "bhoo_abhilekh",
+    "kistbandi"
+  ],
+  "terminology": {
+    "khasra": [
+      "खसरा क्रमांक",
+      "खसरा नं",
+      "भूखण्ड क्रमांक"
+    ],
+    "khatauni": [
+      "खाता क्रमांक",
+      "खाता नं"
+    ],
+    "owner": [
+      "भूमिस्वामी का नाम",
+      "खातेदार का नाम",
+      "काश्तकार"
+    ],
+    "father_husband": [
+      "पिता/पति का नाम",
+      "संरक्षक का नाम"
+    ],
+    "area": [
+      "रकबा (हेक्टेयर)",
+      "क्षेत्रफल",
+      "रकबा"
+    ],
+    "village": [
+      "ग्राम",
+      "गांव"
+    ],
+    "tehsil": [
+      "तहसील"
+    ],
+    "district": [
+      "जिला"
+    ],
+    "fasli_year": [
+      "वर्ष",
+      "सत्र"
+    ]
+  },
+  "unit_conversions_to_hectares": {
+    "hectare": 1.0,
+    "हेक्टेयर": 1.0,
+    "हे": 1.0,
+    "bigha": 0.209,
+    "बीघा": 0.209,
+    "acre": 0.404686,
+    "एकड़": 0.404686,
+    "sq_meter": 0.0001
+  },
+  "fields": {
+    "khasra_number": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खसरा\\s*(?:क्रमांक|नं|नंबर)?|भूखण्ड\\s*क्रमांक)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)"
+      ]
+    },
+    "khatauni_number": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:खाता\\s*(?:क्रमांक|नं|संख्या)?)[\\s:.-]*([०-९0-9]+)"
+      ]
+    },
+    "owner_name": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:भूमिस्वामी(?:\\s*का\\s*नाम)?|खातेदार(?:\\s*का\\s*नाम)?)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:पिता|पति|आत्मज|s\\/o|w\\/o|निवासी|\\n|$))"
+      ]
+    },
+    "father_or_husband_name": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:पिता|पति|आत्मज|संरक्षक)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:निवासी|जाति|रकबा|\\n|$))"
+      ]
+    },
+    "land_area": {
+      "type": "float",
+      "required": true,
+      "patterns": [
+        "(?:रकबा|क्षेत्रफल)[\\s:.-]*([०-९0-9]+(?:\\.[०-९0-9]+)?)\\s*(हेक्टेयर|हे|बीघा|एकड़)?",
+        "([०-९0-9]+\\.[०-९0-9]+)\\s*(?:हेक्टेयर|हे)"
+      ]
+    },
+    "village": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:ग्राम|गांव)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:पटवारी\\s*हल्का|तहसील|थाना|जिला|\\n|$))"
+      ]
+    },
+    "tehsil": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:तहसील)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:जिला|\\n|$))"
+      ]
+    },
+    "district": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:जिला)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:मध्य\\s*प्रदेश|तहसील|प्रदेश|\\n|$))"
+      ]
+    }
+  },
+  "validation_rules": {
+    "land_area": {
+      "min": 0.0001,
+      "max": 1000.0,
+      "message": "MP Land area must be positive and reasonable"
+    },
+    "khasra_number": {
+      "pattern": "^[0-9]+(/[0-9]+)*$",
+      "message": "MP Khasra must be standard number or slash sub-khasra"
+    }
+  }
+}

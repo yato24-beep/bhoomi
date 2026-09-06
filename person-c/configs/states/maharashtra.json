@@ -1,0 +1,115 @@
+{
+  "state_code": "MH",
+  "state_name": "Maharashtra",
+  "languages": [
+    "mr",
+    "en"
+  ],
+  "document_types": [
+    "7_12_satbara",
+    "8a_khata"
+  ],
+  "terminology": {
+    "khasra": [
+      "गट क्रमांक",
+      "सर्व्हे नंबर",
+      "गट नं",
+      "survey no"
+    ],
+    "khatauni": [
+      "खाते क्रमांक",
+      "खाता नं"
+    ],
+    "owner": [
+      "खातेदाराचे नाव",
+      "भोगवटादाराचे नाव"
+    ],
+    "area": [
+      "क्षेत्र (हे.आर.)",
+      "क्षेत्र",
+      "आकार"
+    ],
+    "village": [
+      "गाव",
+      "मौजे"
+    ],
+    "tehsil": [
+      "तालुका"
+    ],
+    "district": [
+      "जिल्हा"
+    ]
+  },
+  "unit_conversions_to_hectares": {
+    "hectare": 1.0,
+    "हेक्टर": 1.0,
+    "हे.आर.": 1.0,
+    "guntha": 0.010117,
+    "गुंठे": 0.010117,
+    "आर": 0.01,
+    "acre": 0.404686
+  },
+  "fields": {
+    "khasra_number": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:गट\\s*क्रमांक|सर्व्हे\\s*(?:क्रमांक|नंबर)?|गट\\s*नं|survey\\s*no)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)"
+      ]
+    },
+    "khatauni_number": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:खाते\\s*(?:क्रमांक|नं)?)[\\s:.-]*([०-९0-9]+)"
+      ]
+    },
+    "owner_name": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खातेदाराचे\\s*नाव|भोगवटादाराचे\\s*नाव)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:खाते\\s*क्रमांक|क्षेत्र|\\n|$))"
+      ]
+    },
+    "land_area": {
+      "type": "float",
+      "required": true,
+      "patterns": [
+        "(?:क्षेत्र|एकूण\\s*क्षेत्र)[\\s:.-]*([०-९0-9]+(?:\\.[०-९0-9]+)?)\\s*(हेक्टर|हे\\.आर\\.|गुंठे|आर)?",
+        "([०-९0-9]+\\.[०-९0-9]+)\\s*(?:हे\\.आर\\.|हेक्टर)"
+      ]
+    },
+    "village": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:गाव|मौजे)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:तालुका|जिल्हा|\\n|$))"
+      ]
+    },
+    "tehsil": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:तालुका)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:जिल्हा|\\n|$))"
+      ]
+    },
+    "district": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:जिल्हा)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:महाराष्ट्र|तालुका|\\n|$))"
+      ]
+    }
+  },
+  "validation_rules": {
+    "land_area": {
+      "min": 0.0001,
+      "max": 1000.0,
+      "message": "MH Land area must be positive"
+    },
+    "khasra_number": {
+      "pattern": "^[0-9]+(/[0-9]+)*$",
+      "message": "Gat number must be numeric format"
+    }
+  }
+}

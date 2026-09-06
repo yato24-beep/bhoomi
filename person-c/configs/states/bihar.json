@@ -1,0 +1,130 @@
+{
+  "state_code": "BR",
+  "state_name": "Bihar",
+  "languages": [
+    "hi",
+    "en",
+    "ur"
+  ],
+  "document_types": [
+    "jamabandi",
+    "khatiyan"
+  ],
+  "terminology": {
+    "khasra": [
+      "खेसरा संख्या",
+      "प्लॉट संख्या",
+      "खेसरा नं"
+    ],
+    "khatauni": [
+      "खाता संख्या",
+      "जमाबंदी संख्या"
+    ],
+    "owner": [
+      "रैयत का नाम",
+      "जमाबंदी रैयत का नाम"
+    ],
+    "father_husband": [
+      "पिता/पति का नाम"
+    ],
+    "area": [
+      "रकबा (एकड़-डिसमिल)",
+      "रकबा",
+      "क्षेत्रफल"
+    ],
+    "village": [
+      "मौजा",
+      "ग्राम"
+    ],
+    "tehsil": [
+      "अंचल"
+    ],
+    "district": [
+      "जिला"
+    ]
+  },
+  "unit_conversions_to_hectares": {
+    "hectare": 1.0,
+    "acre": 0.404686,
+    "एकड़": 0.404686,
+    "dismil": 0.004047,
+    "डिसमिल": 0.004047,
+    "decimal": 0.004047,
+    "kattha": 0.01265,
+    "कट्ठा": 0.01265,
+    "dhur": 0.000632,
+    "धूर": 0.000632,
+    "bigha": 0.2529,
+    "बीघा": 0.2529
+  },
+  "fields": {
+    "khasra_number": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खेसरा\\s*(?:संख्या|नं|नंबर)?|प्लॉट\\s*(?:संख्या|नं)?)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)"
+      ]
+    },
+    "khatauni_number": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खाता\\s*(?:संख्या|नं)?|जमाबंदी\\s*संख्या)[\\s:.-]*([०-९0-9]+)"
+      ]
+    },
+    "owner_name": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:रैयत(?:\\s*का\\s*नाम)?|जमाबंदी\\s*रैयत)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:पिता|पति|जाति|रकबा|\\n|$))"
+      ]
+    },
+    "father_or_husband_name": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:पिता|पति|आत्मज)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:जाति|थाना|रकबा|\\n|$))"
+      ]
+    },
+    "land_area": {
+      "type": "float",
+      "required": true,
+      "patterns": [
+        "(?:रकबा|क्षेत्रफल)[\\s:.-]*([०-९0-9]+(?:\\.[०-९0-9]+)?)\\s*(एकड़|डिसमिल|कट्ठा|बीघा|हेक्टेयर)?",
+        "([०-९0-9]+\\.[०-९0-9]+)\\s*(?:एकड़|हेक्टेयर)"
+      ]
+    },
+    "village": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:मौजा|ग्राम)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:थाना\\s*नं|थाना|अंचल|जिला|\\n|$))"
+      ]
+    },
+    "tehsil": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:अंचल|प्रखंड|तहसील)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:जिला|\\n|$))"
+      ]
+    },
+    "district": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:जिला)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:बिहार|अंचल|प्रखंड|तहसील|\\n|$))"
+      ]
+    }
+  },
+  "validation_rules": {
+    "land_area": {
+      "min": 0.0001,
+      "max": 1000.0,
+      "message": "Bihar Land area must be positive"
+    },
+    "khasra_number": {
+      "pattern": "^[0-9]+(/[0-9]+)*$",
+      "message": "Khesra number must be numeric"
+    }
+  }
+}

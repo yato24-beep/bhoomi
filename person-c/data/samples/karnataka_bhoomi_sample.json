@@ -1,0 +1,56 @@
+{
+  "document_id": "SAMPLE_KA_BHOOMI_001",
+  "sha256_hash": "a1b2c3d4e5f678901234567890abcdef1234567890abcdef1234567890abcdef",
+  "selected_state": "KA",
+  "classification": {
+    "document_type": "bhoomi_rtc",
+    "state": "KA",
+    "confidence": 0.99,
+    "signals_matched": ["ಭೂಮಿ", "RTC", "ಪಹಣಿ", "ಸರ್ವೆ ನಂ"],
+    "language": "kn"
+  },
+  "text_lines": [
+    {
+      "text": "ಕರ್ನಾಟಕ ಸರ್ಕಾರ - ಕಂದಾಯ ಇಲಾಖೆ",
+      "confidence": 0.99,
+      "bbox": {"x_min": 50.0, "y_min": 20.0, "x_max": 500.0, "y_max": 50.0, "normalized": false},
+      "page_number": 1,
+      "language": "kn",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "ಭೂಮಿ - ಅಧಿಕಾರ ಮತ್ತು ಸ್ವಾಧೀನತೆ ದಾಖಲೆ (RTC / ಪಹಣಿ)",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 60.0, "x_max": 650.0, "y_max": 90.0, "normalized": false},
+      "page_number": 1,
+      "language": "kn",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "ಜಿಲ್ಲೆ: BENGALURU URBAN  ತಾಲೂಕು: BANGALORE SOUTH  ಹೋಬಳಿ: KENGERI  ಗ್ರಾಮ: KENGERI",
+      "confidence": 0.97,
+      "bbox": {"x_min": 50.0, "y_min": 100.0, "x_max": 750.0, "y_max": 130.0, "normalized": false},
+      "page_number": 1,
+      "language": "kn",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "ಖಾತೆದಾರರ ಹೆಸರು: ಸಿದ್ದರಾಮಯ್ಯ  ತಂದೆಯ ಹೆಸರು: ಬಸವರಾಜ",
+      "confidence": 0.96,
+      "bbox": {"x_min": 50.0, "y_min": 140.0, "x_max": 600.0, "y_max": 170.0, "normalized": false},
+      "page_number": 1,
+      "language": "kn",
+      "engine": "paddleocr"
+    },
+    {
+      "text": "ಸರ್ವೆ ನಂ: 42/1  ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ: 2 ಎಕರೆ",
+      "confidence": 0.98,
+      "bbox": {"x_min": 50.0, "y_min": 180.0, "x_max": 500.0, "y_max": 210.0, "normalized": false},
+      "page_number": 1,
+      "language": "kn",
+      "engine": "paddleocr"
+    }
+  ],
+  "raw_full_text": "ಕರ್ನಾಟಕ ಸರ್ಕಾರ - ಕಂದಾಯ ಇಲಾಖೆ\nಭೂಮಿ - ಅಧಿಕಾರ ಮತ್ತು ಸ್ವಾಧೀನತೆ ದಾಖಲೆ (RTC / ಪಹಣಿ)\nಜಿಲ್ಲೆ: BENGALURU URBAN  ತಾಲೂಕು: BANGALORE SOUTH  ಹೋಬಳಿ: KENGERI  ಗ್ರಾಮ: KENGERI\nಖಾತೆದಾರರ ಹೆಸರು: ಸಿದ್ದರಾಮಯ್ಯ  ತಂದೆಯ ಹೆಸರು: ಬಸವರಾಜ\nಸರ್ವೆ ನಂ: 42/1  ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ: 2 ಎಕರೆ",
+  "tables": []
+}

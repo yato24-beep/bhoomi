@@ -1,0 +1,43 @@
+# Medium-Scale Kannada Handwriting Recognition Configuration for GPU Validation
+experiment_name: kannada_handwriting_medium_gpu
+languages:
+  - kannada
+
+output_dir: models/trocr/kannada_medium_checkpoints
+batch_size: 8
+eval_batch_size: 8
+num_epochs: 6
+learning_rate: 0.00005
+weight_decay: 0.01
+warmup_steps: 50
+logging_steps: 25
+eval_steps: 100
+save_steps: 200
+save_total_limit: 2
+mixed_precision: "no"
+device: "cuda"
+seed: 42
+
+model:
+  model_name_or_path: "microsoft/trocr-small-handwritten"
+  tokenizer_name_or_path: "xlm-roberta-base"
+  model_version: "kannada_medium_v1"
+  max_sequence_length: 32
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 2.5
+  contrast_range: [0.85, 1.15]
+  brightness_range: [0.90, 1.10]
+  noise_std: 0.015
+  blur_kernel_prob: 0.08
+
+dataset:
+  train_manifest: "training/datasets/iiit_kannada_train.jsonl"
+  val_manifest: "training/datasets/iiit_kannada_val.jsonl"
+  max_train_samples: 8000
+  max_val_samples: 800
+  validate_images: true
+  ignore_missing: true

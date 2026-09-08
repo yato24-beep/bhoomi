@@ -1,0 +1,45 @@
+# Multilingual Indic Handwriting Recognition Fine-Tuning Configuration
+experiment_name: indic_multilingual_handwriting_trocr
+languages:
+  - kannada
+  - telugu
+  - tamil
+  - hindi
+  - malayalam
+
+output_dir: models/trocr/multilingual_checkpoints
+batch_size: 4
+eval_batch_size: 4
+num_epochs: 5
+learning_rate: 0.00005
+weight_decay: 0.01
+warmup_steps: 100
+logging_steps: 10
+eval_steps: 100
+save_steps: 200
+save_total_limit: 3
+mixed_precision: "no"
+device: "auto"
+seed: 42
+
+model:
+  model_name_or_path: "microsoft/trocr-small-handwritten"
+  model_version: "multilingual_indic_v1"
+  max_sequence_length: 64
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 2.5
+  contrast_range: [0.88, 1.12]
+  brightness_range: [0.92, 1.08]
+  noise_std: 0.015
+  blur_kernel_prob: 0.08
+
+dataset:
+  train_manifest: "training/datasets/train_multilingual.jsonl"
+  val_manifest: "training/datasets/val_multilingual.jsonl"
+  test_manifest: "training/datasets/test_multilingual.jsonl"
+  validate_images: true
+  ignore_missing: true

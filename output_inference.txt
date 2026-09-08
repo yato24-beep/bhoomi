@@ -1,0 +1,35 @@
+===============================================================================================
+  LAND RECORD DIGITIZATION — REAL KANNADA CHECKPOINT INFERENCE TEST
+===============================================================================================
+  Checkpoint Path : C:\Land Record\models\trocr\kannada_full_checkpoints\best_checkpoint
+  Validation Set  : C:\Land Record\training\datasets\iiit_kannada_val.jsonl
+  Loaded 12 authentic validation crop samples.
+
+  Initializing TrocrHandwritingRecognizer on production checkpoint...
+Loading weights:   0%|          | 0/362 [00:00<?, ?it/s]Loading weights:  16%|#5        | 57/362 [00:00<00:00, 568.80it/s]Loading weights:  32%|###1      | 115/362 [00:00<00:00, 550.71it/s]Loading weights:  48%|####8     | 175/362 [00:00<00:00, 563.29it/s]Loading weights:  64%|######4   | 232/362 [00:00<00:00, 374.41it/s]Loading weights: 100%|##########| 362/362 [00:00<00:00, 561.62it/s]
+  Model Loaded in : 18.28s | Device: cuda | Version: kannada_full_v1
+===============================================================================================
+ #   | Ground Truth (Kannada) | Predicted Text         | Conf   | CER    | Time (ms) | Match
+-----------------------------------------------------------------------------------------------
+ 1   | ಚುರಮರಿ                 | ತಿರುಪತಿ                | 0.596  | 0.833  | 6006.9    | MISMATCH
+ 2   | ಟಿವಿ                   | ೬೫೩                    | 0.648  | 1.000  | 2508.9    | MISMATCH
+ 3   | ಕಡೆಯೂ                  | ಕರೆದಲೂ                 | 0.642  | 0.600  | 2230.2    | MISMATCH
+ 4   | ಸಂಚಾರಿ                 | ಸಂಕಾಶ                  | 0.510  | 0.500  | 3239.1    | MISMATCH
+ 5   | ಶಿಕ್ಷಣದವರೆಗೂ           | ದ್ವಾರ್ಯದವರೆಗೂ          | 0.598  | 0.583  | 2832.0    | MISMATCH
+ 6   | ಅಫಸರ್                  | ಅರ್ಷದ                  | 0.552  | 0.800  | 3188.0    | MISMATCH
+ 7   | ಇಡಿವಿವಿಧ               | ಇಡಿದೀಢದ                | 0.695  | 0.625  | 3283.1    | MISMATCH
+ 8   | ಮನತೆ                   | ತ್ಸಗಡೆ                 | 0.685  | 1.250  | 3301.9    | MISMATCH
+ 9   | ಇನ್ನಿತರೆ               | ಇಸ್ಕರೆ                 | 0.640  | 0.500  | 2816.4    | MISMATCH
+ 10  | ಕದ್ರಿ                  | ಕದ್                    | 0.728  | 0.400  | 1910.4    | PARTIAL
+ 11  | ಎತ್ತುವ                 | ಎನ್ನುವ                 | 0.683  | 0.333  | 2334.3    | PARTIAL
+ 12  | ಸಚಿವರಾಗಿದ್ದರೂ          | ಸಚಿವರಿದ್ದರೂ            | 0.727  | 0.154  | 1932.8    | PARTIAL
+===============================================================================================
+  SUMMARY AUDIT REPORT
+===============================================================================================
+  Samples Evaluated   : 12
+  Total Characters    : 82
+  Total Edit Distance : 46
+  Aggregate CER       : 0.5610 (56.10%)
+  Mean Inference Time : 2965.32 ms / crop
+  Active Device       : cuda
+===============================================================================================

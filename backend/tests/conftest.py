@@ -1,5 +1,23 @@
 import io
+import sys
 import time
+from pathlib import Path
+
+backend_dir = Path(__file__).resolve().parent.parent
+repo_root = backend_dir.parent
+for p in (str(backend_dir), str(repo_root)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+import httpx
+
+# Compatibility patch for Starlette TestClient with newer httpx versions
+_orig_httpx_init = httpx.Client.__init__
+def _patched_httpx_init(self, *args, **kwargs):
+    kwargs.pop("app", None)
+    _orig_httpx_init(self, *args, **kwargs)
+httpx.Client.__init__ = _patched_httpx_init
+
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.pool import StaticPool

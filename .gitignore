@@ -1,37 +1,101 @@
-# Environment Variables
+# ================================================================
+# Environment Variables & Secrets
+# ================================================================
 .env
 .env.local
 .env.*.local
+*.env
+person-b-env.txt
+"how *.env.example"
 
-# Python
+# ================================================================
+# Python Cache & Bytecode
+# ================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Virtual environments
 env/
 venv/
 .venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ================================================================
+# Python Build / Distribution
+# ================================================================
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!frontend/src/lib/
 parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# ================================================================
+# Testing & Coverage
+# ================================================================
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Node / Next.js
+# ================================================================
+# Jupyter & Notebooks
+# ================================================================
+.ipynb_checkpoints
+
+# ================================================================
+# OCR Model Weights & Checkpoints (Heavy Artifacts)
+# ================================================================
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+models/trocr/*
+!models/trocr/.gitkeep
+models/checkpoints/
+
+# ================================================================
+# Datasets & Large Raw Data
+# ================================================================
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/synthetic/*
+!data/synthetic/.gitkeep
+data/annotations/*
+!data/annotations/.gitkeep
+data/samples/*
+!data/samples/.gitkeep
+external_datasets/
+
+# ================================================================
+# Training & Experiment Logs
+# ================================================================
+logs/
+runs/
+wandb/
+
+# ================================================================
+# Frontend (Next.js / Node)
+# ================================================================
 frontend/node_modules/
 frontend/.next/
 frontend/out/
@@ -40,15 +104,34 @@ frontend/.vercel/
 *.tsbuildinfo
 next-env.d.ts
 
-# MinIO / Local storage / Database volumes
+# ================================================================
+# Local Storage / Database Volumes
+# ================================================================
 minio_data/
 postgres_data/
 redis_data/
+storage/uploads/*
+!storage/uploads/.gitkeep
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
 
-# OS and IDE Files
-.DS_Store
-Thumbs.db
-.idea/
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+
+# ================================================================
+# IDE & Editor Files
+# ================================================================
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
+
+# ================================================================
+# Operating System Files
+# ================================================================
+.DS_Store
+Thumbs.db

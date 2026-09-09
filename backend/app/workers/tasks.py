@@ -15,16 +15,32 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(name="process_document_task", bind=True, max_retries=2)
-def process_document_task(self, document_id: int):
-    """Celery background worker task to retrieve document from MinIO, execute extraction,
+def process_document_task(*args, **kwargs):
+    """Celery background worker task to retrieve document from storage, execute extraction,
 
-    and persist both summary results and granular extracted fields in PostgreSQL.
+    and persist both summary results and granular extracted fields in database.
+    Supports both Celery bound execution and direct standalone calls.
     """
-    logger.info(f"📥 [Task {self.request.id}] Starting processing job for Document ID {document_id}")
+    if len(args) >= 2:
+        self = args[0]
+        document_id = args[1]
+    elif len(args) == 1:
+        if isinstance(args[0], int):
+            self = None
+            document_id = args[0]
+        else:
+            self = args[0]
+            document_id = kwargs.get("document_id")
+    else:
+        self = None
+        document_id = kwargs.get("document_id")
+
+    task_id = getattr(getattr(self, "request", None), "id", "local-sync-task")
+    logger.info(f"📥 [Task {task_id}] Starting processing job for Document ID {document_id}")
     
     db = SessionLocal()
     try:
-        # 1. Fetch document metadata from PostgreSQL
+        # 1. Fetch document metadata
         stmt = select(Document).where(Document.id == document_id)
         document = db.execute(stmt).scalar_one_or_none()
 
@@ -38,8 +54,8 @@ def process_document_task(self, document_id: int):
         db.commit()
         db.refresh(document)
 
-        # 3. Retrieve raw file stream from MinIO object storage
-        logger.info(f"📦 Retrieving '{document.storage_path}' from MinIO...")
+        # 3. Retrieve raw file stream from storage
+        logger.info(f"📦 Retrieving '{document.storage_path}' from storage...")
         minio_obj = minio_storage.get_file_object(document.storage_path)
 
         # 4. Invoke document processing pipeline
@@ -51,7 +67,7 @@ def process_document_task(self, document_id: int):
             filename=document.filename,
         )
 
-        # 5. Persist aggregate ExtractionResult in PostgreSQL
+        # 5. Persist aggregate ExtractionResult
         res_stmt = select(ExtractionResult).where(ExtractionResult.document_id == document_id)
         extraction_record = db.execute(res_stmt).scalar_one_or_none()
 
@@ -72,7 +88,7 @@ def process_document_task(self, document_id: int):
             extraction_record.validation_info = pipeline_result.validation_info
             extraction_record.processing_time_ms = pipeline_result.processing_time_ms
 
-        # 6. Persist granular ExtractedField rows in PostgreSQL (upsert/replace)
+        # 6. Persist granular ExtractedField rows
         db.execute(delete(ExtractedField).where(ExtractedField.document_id == document_id))
         
         for f in pipeline_result.fields:
@@ -119,6 +135,8 @@ def process_document_task(self, document_id: int):
         except Exception as db_exc:
             logger.error(f"Failed to record FAILED status in DB: {db_exc}")
         
-        raise self.retry(exc=exc, countdown=5)
+        if self and hasattr(self, "retry"):
+            raise self.retry(exc=exc, countdown=5)
+        raise exc
     finally:
         db.close()

@@ -79,10 +79,9 @@ class MockDocumentProcessor(BaseDocumentProcessor):
     ) -> ProcessingResult:
         start_time = time.perf_counter()
 
-        # Read sample stream
         file_stream.seek(0)
         byte_sample = file_stream.read(1024)
-        file_size = len(byte_sample)
+        file_stream.seek(0)
 
         lower_name = filename.lower()
         if "receipt" in lower_name:
@@ -257,7 +256,6 @@ class MockDocumentProcessor(BaseDocumentProcessor):
                 ),
             ]
 
-        # Structured dictionary representation
         structured_data = {
             "document_type": doc_type,
             "invoice_number": invoice_num,
@@ -275,7 +273,6 @@ class MockDocumentProcessor(BaseDocumentProcessor):
             "fields_count": len(fields),
         }
 
-        # Validation Checks
         checks_passed = []
         validation_errors = []
 
@@ -305,8 +302,8 @@ class MockDocumentProcessor(BaseDocumentProcessor):
         )
 
 
-class PersonADocumentProcessor(BaseDocumentProcessor):
-    """Production processor integrating Person A Vision/OCR pipeline with backend ProcessingResult."""
+class MultimodalOCRDocumentProcessor(BaseDocumentProcessor):
+    """Production processor integrating Person B Multimodal OCR pipeline with Person A & Mock fallbacks."""
 
     def process(
         self,
@@ -314,23 +311,101 @@ class PersonADocumentProcessor(BaseDocumentProcessor):
         filename: str,
         content_type: Optional[str] = None,
     ) -> ProcessingResult:
+        start_time = time.perf_counter()
+        import io
+        import sys
+        from pathlib import Path
+        from PIL import Image
+
+        file_stream.seek(0)
+        raw_bytes = file_stream.read()
+        file_stream.seek(0)
+
+        # Ensure repository root is in sys.path
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
+        # 1. First Attempt: Run Person B's multimodal OCR pipeline if file is an image
         try:
-            import sys
-            from pathlib import Path
-            repo_root = Path(__file__).resolve().parent.parent.parent.parent
+            image = Image.open(io.BytesIO(raw_bytes))
+            image.load()
+
+            from src.integration.document_pipeline import DocumentProcessingPipeline
+            pipeline = DocumentProcessingPipeline()
+            doc_id = filename.rsplit(".", 1)[0] if "." in filename else filename
+
+            resp = pipeline.process_document(
+                image=image,
+                document_id=doc_id,
+                image_path=filename,
+                apply_preprocessing=True,
+                apply_normalization=True,
+            )
+
+            fields: List[ExtractedFieldItem] = []
+            img_w, img_h = image.size
+            for idx, reg in enumerate(resp.ordered_regions):
+                norm_box = None
+                if reg.bbox:
+                    norm_box = BoundingBox(
+                        x_min=round(max(0.0, min(1.0, reg.bbox.x_min / max(img_w, 1))), 4),
+                        y_min=round(max(0.0, min(1.0, reg.bbox.y_min / max(img_h, 1))), 4),
+                        x_max=round(max(0.0, min(1.0, reg.bbox.x_max / max(img_w, 1))), 4),
+                        y_max=round(max(0.0, min(1.0, reg.bbox.y_max / max(img_h, 1))), 4),
+                    )
+                fields.append(
+                    ExtractedFieldItem(
+                        field_name=f"region_{idx+1:03d}_{reg.language}",
+                        original_value=reg.raw_text,
+                        normalized_value=reg.normalized_text,
+                        confidence_score=reg.confidence if reg.confidence is not None else 0.85,
+                        source_page=reg.page_number,
+                        bounding_box=norm_box,
+                    )
+                )
+
+            structured_data = {
+                "document_type": "Land Record",
+                "document_id": resp.document_id,
+                "merged_text": resp.merged_text,
+                "regions_count": len(resp.ordered_regions),
+                "engine_breakdown": resp.engine_breakdown,
+                "warnings": resp.warnings,
+                "status": resp.status,
+            }
+
+            duration_ms = int((time.perf_counter() - start_time) * 1000)
+            avg_conf = resp.document_confidence if resp.document_confidence is not None else 0.85
+
+            return ProcessingResult(
+                extracted_data=structured_data,
+                fields=fields,
+                confidence_score=round(avg_conf, 2),
+                is_valid=not resp.requires_human_review,
+                validation_info={
+                    "checks_passed": [f"ocr_completed: {len(resp.ordered_regions)} regions extracted"],
+                    "warnings": resp.warnings,
+                    "requires_human_review": resp.requires_human_review,
+                },
+                processing_time_ms=max(duration_ms, int(resp.processing_time_ms)),
+            )
+        except Exception as ocr_exc:
+            pass
+
+        # 2. Second Attempt: Person A vision pipeline
+        try:
             person_a_path = str(repo_root / "person-a")
             if person_a_path not in sys.path:
                 sys.path.insert(0, person_a_path)
 
             from src.integration.backend_adapter import process_backend_stream_to_result
-
             res_dict = process_backend_stream_to_result(
-                file_stream=file_stream,
+                file_stream=io.BytesIO(raw_bytes),
                 filename=filename,
                 content_type=content_type,
             )
 
-            # Map raw fields dict to ExtractedFieldItem objects
             parsed_fields = [
                 ExtractedFieldItem(
                     field_name=f["field_name"],
@@ -352,11 +427,10 @@ class PersonADocumentProcessor(BaseDocumentProcessor):
                 processing_time_ms=res_dict["processing_time_ms"],
             )
         except Exception:
-            # Graceful fallback to MockDocumentProcessor on error / missing environment dependencies
-            return MockDocumentProcessor().process(file_stream, filename, content_type)
+            # 3. Third Attempt: Graceful Mock fallback
+            return MockDocumentProcessor().process(io.BytesIO(raw_bytes), filename, content_type)
 
 
 def get_document_processor() -> BaseDocumentProcessor:
-    """Factory function returning the active pipeline processor."""
-    return PersonADocumentProcessor()
-
+    """Factory function returning the active multimodal extraction processor."""
+    return MultimodalOCRDocumentProcessor()

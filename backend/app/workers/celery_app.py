@@ -1,4 +1,18 @@
-from celery import Celery
+try:
+    from celery import Celery
+except ImportError:
+    class DummyCelery:
+        def __init__(self, *args, **kwargs):
+            self.conf = {}
+        def task(self, *args, **kwargs):
+            def decorator(fn):
+                def delay(*fn_args, **fn_kwargs):
+                    return fn(*fn_args, **fn_kwargs)
+                fn.delay = delay
+                return fn
+            return decorator
+    Celery = DummyCelery
+
 from app.config import settings
 
 # Initialize Celery app instance
@@ -10,13 +24,14 @@ celery_app = Celery(
 )
 
 # Celery application configuration
-celery_app.conf.update(
-    task_serializer="json",
-    accept_content=["json"],
-    result_serializer="json",
-    timezone="UTC",
-    enable_utc=True,
-    task_track_started=True,
-    task_time_limit=300,  # 5 minutes hard limit per task
-    worker_prefetch_multiplier=1,  # Prevent worker greediness
-)
+if hasattr(celery_app, "conf") and hasattr(celery_app.conf, "update"):
+    celery_app.conf.update(
+        task_serializer="json",
+        accept_content=["json"],
+        result_serializer="json",
+        timezone="UTC",
+        enable_utc=True,
+        task_track_started=True,
+        task_time_limit=300,  # 5 minutes hard limit per task
+        worker_prefetch_multiplier=1,  # Prevent worker greediness
+    )

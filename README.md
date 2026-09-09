@@ -1,94 +1,162 @@
-# Document Processing Platform
+# Land Record Digitization & Document Processing Platform
 
-An end-to-end, production-ready document processing platform with asynchronous background execution, S3-compatible object storage, relational metadata persistence, and a modern frontend dashboard.
-
----
-
-## 🏗️ Architecture Stack
-
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **API Server** | **FastAPI + Pydantic v2** | High-performance async REST API, validation, routing, OpenAPI docs |
-| **Database** | **PostgreSQL 16** | Relational metadata persistence (Users, Documents, Extraction Results) |
-| **Object Storage**| **MinIO** | High-performance, S3-compatible raw file storage |
-| **Message Broker**| **Redis 7** | Fast in-memory queue & task broker for Celery |
-| **Worker Queue** | **Celery** | Asynchronous background processing worker (OCR, Parsing, Extraction) |
-| **Frontend** | **Next.js 14 / TypeScript / Tailwind** | Responsive web dashboard, drag-and-drop upload, result viewer |
-| **Orchestration**| **Docker Compose** | Single-command containerized local and production deployment |
+An end-to-end, production-grade multimodal document intelligence platform for archival land records, RTC/Pahani forms, cadastral records, and government invoices. Built with **FastAPI**, **Next.js 14**, **SQLAlchemy**, **PaddleOCR**, and **Fine-tuned TrOCR**.
 
 ---
 
-## 🔄 End-to-End Ingestion & Processing Flow
+## 🏛️ System Architecture
 
 ```text
-User uploads file (PDF/Image)
-  │
-  ▼
-[FastAPI Backend]
-  ├── 1. Compute SHA-256 Hash (Check for duplicates)
-  ├── 2. Upload raw file stream to MinIO Object Storage
-  ├── 3. Save initial record in PostgreSQL (Status: PENDING)
-  └── 4. Dispatch Celery Task via Redis Broker
-        │
-        ▼
-[Celery Background Worker]
-  ├── 1. Fetch task from Redis & update status to PROCESSING
-  ├── 2. Retrieve raw document from MinIO
-  ├── 3. Execute extraction/parsing pipeline
-  └── 4. Store structured JSON results in PostgreSQL (Status: COMPLETED)
-        │
-        ▼
-[Next.js Frontend]
-  └── Polls/Fetches document details & renders structured key-value extraction data
+                                  ┌─────────────────────────────┐
+                                  │      Next.js Frontend       │
+                                  │ (Dashboard / Upload / View) │
+                                  └──────────────┬──────────────┘
+                                                 │ HTTP / REST
+                                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                FastAPI Main Application Backend                              │
+│                                                                                             │
+│  ┌───────────────────────┐   ┌────────────────────────┐   ┌──────────────────────────────┐  │
+│  │   Auth & RBAC API     │   │   Documents API        │   │    Multimodal OCR API        │  │
+│  │ (/api/v1/auth)        │   │ (/api/v1/documents)    │   │  (/api/ocr/process, health)  │  │
+│  └───────────────────────┘   └───────────┬────────────┘   └──────────────┬───────────────┘  │
+└──────────────────────────────────────────┼───────────────────────────────┼──────────────────┘
+                                           │                               │
+                                           ▼                               ▼
+                      ┌───────────────────────────────────────────────────────────┐
+                      │              Document Processing Pipeline                 │
+                      │                                                           │
+                      │  1. Non-destructive Image Preprocessing & Enhancement     │
+                      │  2. Layout Region Detection & Spatial Reading-Order Sort  │
+                      │  3. Multimodal Language & Script Routing                  │
+                      │                                                           │
+                      │     ├── Printed Kannada / English   ──► PaddleOCR         │
+                      │     └── Handwritten Kannada / EN    ──► TrOCR Transformer │
+                      │                                                           │
+                      │  4. Conservative Kannada Normalization (Unicode NFC)      │
+                      │  5. Confidence Calibration & Review Flagging              │
+                      └────────────────────────────┬──────────────────────────────┘
+                                                   │
+                         ┌─────────────────────────┴─────────────────────────┐
+                         ▼                                                   ▼
+         ┌───────────────────────────────┐                   ┌───────────────────────────────┐
+         │ Relational Database (Postgres │                   │ Storage Service (MinIO / S3   │
+         │ with auto SQLite fallback)    │                   │ with local disk fallback)     │
+         └───────────────────────────────┘                   └───────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quick Start (Docker Compose)
+## 🚀 Quick Start
 
-### 1. Configure Environment
-Copy the example environment file:
+### 1. Prerequisites
+- Python 3.10+
+- Node.js 18+ (Node 20+ / 24+ recommended)
+- Optional: CUDA-compatible GPU (automatic CPU fallback supported)
+
+### 2. Backend Setup & Startup
+
 ```bash
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Configure environment (default fallback works out of the box)
 cp .env.example .env
+
+# 3. Start the unified FastAPI backend
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Start All Services
+Backend API Swagger Docs will be live at: **http://localhost:8000/docs**  
+Health Check: **http://localhost:8000/health**  
+OCR Health Check: **http://localhost:8000/api/ocr/health**
+
+### 3. Frontend Setup & Startup
+
 ```bash
-docker compose up -d --build
+# Navigate to frontend directory
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start Next.js dev server
+npm run dev
 ```
 
-### 3. Service Endpoints
-- **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **Backend API & Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **MinIO Web Console**: [http://localhost:9001](http://localhost:9001) (User: `minioadmin`, Password: `minioadmin_password`)
-- **PostgreSQL**: `localhost:5432` (User: `postgres`, Password: `postgres_password`, DB: `doc_platform`)
-- **Redis**: `localhost:6379`
+Frontend Dashboard will be live at: **http://localhost:3000**
 
 ---
 
-## 📁 Directory Structure
+## 🧩 Core Components & Ownership
 
-```text
-doc-processing-platform/
-├── docker-compose.yml
-├── .env.example
-├── .env
-├── backend/                  # FastAPI + Celery backend
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   ├── alembic/              # Database schema migrations
-│   └── app/
-│       ├── main.py           # FastAPI entrypoint
-│       ├── config.py         # App configuration & settings
-│       ├── core/             # Security (JWT, bcrypt) & SHA-256 hashing
-│       ├── db/               # Database engine & session
-│       ├── models/           # SQLAlchemy DB models (User, Document, ExtractionResult)
-│       ├── schemas/          # Pydantic request/response schemas
-│       ├── api/              # API router endpoints (/auth, /documents)
-│       ├── services/         # Storage service (MinIO)
-│       └── workers/          # Celery worker & processing tasks
-└── frontend/                 # Next.js 14 + Tailwind frontend
-    ├── Dockerfile
-    ├── package.json
-    └── src/                  # App router, UI components, API client
+### 1. Platform Infrastructure & API (`backend/`, `frontend/`)
+- **FastAPI Core**: Asynchronous API with Pydantic v2 validation, RBAC authentication (JWT), SHA-256 duplicate detection, and granular field queries.
+- **Resilient Database Layer**: Automatic PostgreSQL connection check with zero-config local **SQLite fallback** (`doc_platform.db`).
+- **Resilient Storage Layer**: MinIO object storage with automatic **local filesystem fallback** (`storage/uploads/`).
+- **Next.js 14 Dashboard**: Drag-and-drop document upload, live processing status tracking, and structured field search.
+
+### 2. Multimodal OCR & Handwriting Engine (`src/`)
+- **Printed Text Engine**: High-accuracy regional OCR powered by **PaddleOCR** (Kannada `ppocr_v4_kannada` & English `ppocr_v4_en`).
+- **Handwriting Engine**: Vision-Encoder-Decoder (**TrOCR**) fine-tuned on native Kannada land-record cursive script.
+- **Multimodal Script Router (`LanguageScriptRouter`)**: Intelligently routes image regions to the optimal model based on language (`kannada`, `english`, `telugu`, `tamil`, `hindi`) and text modality (`printed` vs `handwritten`).
+- **Document Pipeline (`process_document`)**: Orchestrates deskewing, enhancement, reading-order spatial sorting, text normalization, and length-weighted confidence scoring.
+- **Active Learning & Correction (`CorrectionService`)**: Collects human reviewer corrections and exports audit manifests for active learning.
+
+### 3. Handwriting Training & Evaluation Suite (`training/`, `src/training/`)
+- Line/word dataset bootstrap and JSONL manifest preparation tools.
+- Stratified dataset partitioning (train/val/test).
+- Training loop with mixed-precision, checkpointing, and Character/Word Error Rate (CER/WER) evaluation.
+
+---
+
+## 📡 API Endpoints Reference
+
+### Health & Status
+- `GET /health` — General service health and storage/database connectivity.
+- `GET /api/ocr/health` — Multimodal OCR pipeline status and supported models.
+
+### Multimodal OCR Processing
+- `POST /api/ocr/process` — Direct image OCR processing with language routing and structured JSON output.
+  - **Parameters**: `file` (Multipart image), `language` (default: `kannada`), `is_handwritten` (optional bool), `apply_preprocessing` (bool), `apply_normalization` (bool).
+
+### Document Management & Extraction
+- `POST /api/v1/documents/upload` — Upload document (PDF/Image), hash verification, storage, and asynchronous/synchronous extraction pipeline execution.
+- `GET /api/v1/documents/` — List all uploaded documents with pagination.
+- `GET /api/v1/documents/{id}` — Retrieve document metadata and processing status.
+- `GET /api/v1/documents/{id}/results` — Retrieve structured key-value extracted data.
+- `GET /api/v1/documents/{id}/fields` — Retrieve granular extracted fields with normalized bounding boxes.
+- `GET /api/v1/documents/search?q={query}` — Search across filenames and extracted text fields.
+- `GET /api/v1/documents/{id}/download` — Stream raw file from storage.
+- `DELETE /api/v1/documents/{id}` — Delete document record and associated storage.
+
+### Authentication & Users
+- `POST /api/v1/auth/login` — OAuth2 password flow returning JWT bearer token.
+- `GET /api/v1/auth/me` — Current authenticated user profile and RBAC role.
+
+---
+
+## 🧪 Testing & Validation
+
+Run unit and integration test suites:
+
+```bash
+# Run Person B OCR & pipeline unit tests
+python -m pytest tests/unit/ -v
+
+# Run Person A backend test suite
+python -m pytest backend/tests/test_health.py backend/tests/test_hashing.py -v
+
+# Run OCR modality verification script
+python evaluation/scripts/verify_four_modalities.py
+```
+
+---
+
+## 🛠️ Docker & Container Deployment
+
+To run the complete platform stack (PostgreSQL, MinIO, Redis, Celery Worker, FastAPI Backend, Next.js Frontend) using Docker Compose:
+
+```bash
+docker-compose up --build
 ```

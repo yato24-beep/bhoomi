@@ -1,0 +1,41 @@
+# Kannada Handwriting Recognition Smoke Test Configuration
+experiment_name: kannada_handwriting_smoke_test
+languages:
+  - kannada
+
+output_dir: models/trocr/smoke_checkpoints
+batch_size: 4
+eval_batch_size: 4
+num_epochs: 2
+learning_rate: 0.0001
+weight_decay: 0.01
+warmup_steps: 10
+logging_steps: 5
+eval_steps: 25
+save_steps: 50
+save_total_limit: 2
+mixed_precision: "no"
+device: "auto"
+seed: 42
+
+model:
+  model_name_or_path: "microsoft/trocr-small-handwritten"
+  tokenizer_name_or_path: "xlm-roberta-base"
+  model_version: "kannada_smoke_v1"
+  max_sequence_length: 32
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 2.0
+  contrast_range: [0.90, 1.10]
+  brightness_range: [0.95, 1.05]
+  noise_std: 0.01
+  blur_kernel_prob: 0.05
+
+dataset:
+  train_manifest: "training/datasets/smoke_kannada_train.jsonl"
+  val_manifest: "training/datasets/smoke_kannada_val.jsonl"
+  validate_images: true
+  ignore_missing: false

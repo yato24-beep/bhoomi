@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, Form, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -42,34 +41,36 @@ def register_user(
             detail=f"Invalid role '{user_in.role}'. Allowed roles: {', '.join(valid_roles)}",
         )
 
-    new_user = User(
+    # Create user record
+    hashed_password = get_password_hash(user_in.password)
+    user = User(
         email=user_in.email.lower().strip(),
-        hashed_password=get_password_hash(user_in.password),
+        hashed_password=hashed_password,
         full_name=user_in.full_name,
         role=role_val,
         is_active=True,
     )
-    db.add(new_user)
+    db.add(user)
     db.commit()
-    db.refresh(new_user)
-    return new_user
+    db.refresh(user)
+    return user
 
 
 @router.post(
     "/login",
     response_model=Token,
     summary="User Login (JSON)",
-    description="Authenticate with email and password to receive a JWT access token.",
+    description="Authenticate user with email and password, returning JWT access token.",
 )
 def login_json(
-    credentials: LoginRequest,
+    login_data: LoginRequest,
     db: Session = Depends(get_db),
 ) -> Token:
-    """Authenticate user and return JWT Bearer token."""
-    stmt = select(User).where(User.email == credentials.email.lower().strip())
+    """Authenticate with JSON payload and return JWT token."""
+    stmt = select(User).where(User.email == login_data.email.lower().strip())
     user = db.execute(stmt).scalar_one_or_none()
 
-    if not user or not verify_password(credentials.password, user.hashed_password):
+    if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -78,8 +79,8 @@ def login_json(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User account is deactivated",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
         )
 
     access_token = create_access_token(
@@ -101,14 +102,16 @@ def login_json(
     description="OAuth2 password form endpoint used by Swagger UI Authorize modal.",
 )
 def login_oauth2_form(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    username: str = Form(..., description="User email / username"),
+    password: str = Form(..., description="User password"),
+    grant_type: str = Form(default="password"),
     db: Session = Depends(get_db),
 ):
     """OAuth2 compatible token login for Swagger UI."""
-    stmt = select(User).where(User.email == form_data.username.lower().strip())
+    stmt = select(User).where(User.email == username.lower().strip())
     user = db.execute(stmt).scalar_one_or_none()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

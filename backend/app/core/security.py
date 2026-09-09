@@ -1,7 +1,17 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union, Optional, Dict
-import jwt
 import bcrypt
+
+try:
+    import jwt
+    PyJWTError = getattr(jwt, "PyJWTError", Exception)
+except ImportError:
+    try:
+        from jose import jwt
+        from jose.exceptions import JWTError as PyJWTError
+    except ImportError:
+        jwt = None
+        PyJWTError = Exception
 
 from app.config import settings
 
@@ -45,12 +55,19 @@ def create_access_token(
         "exp": expire,
     }
 
+    if jwt is None:
+        raise RuntimeError("Neither 'pyjwt' nor 'python-jose' is installed for JWT operations.")
+
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    if isinstance(encoded_jwt, bytes):
+        encoded_jwt = encoded_jwt.decode("utf-8")
     return encoded_jwt
 
 
 def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """Decode and validate a JWT access token."""
+    if jwt is None:
+        return None
     try:
         payload = jwt.decode(
             token,
@@ -58,5 +75,7 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
             algorithms=[settings.ALGORITHM],
         )
         return payload
-    except jwt.PyJWTError:
+    except PyJWTError:
+        return None
+    except Exception:
         return None

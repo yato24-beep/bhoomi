@@ -351,13 +351,13 @@ export default function DocumentDetailsPage() {
                   {results.validation_info.checks_passed?.length || 0} passed)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {results.validation_info.checks_passed?.map((check, idx) => (
+                  {results.validation_info.checks_passed?.map((check: string, idx: number) => (
                     <div key={idx} className="flex items-center gap-2 text-slate-700">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>{check}</span>
                     </div>
                   ))}
-                  {results.validation_info.errors?.map((err, idx) => (
+                  {results.validation_info.errors?.map((err: string, idx: number) => (
                     <div key={idx} className="flex items-center gap-2 text-rose-700 font-semibold">
                       <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                       <span>{err}</span>

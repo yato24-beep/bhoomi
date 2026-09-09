@@ -1,11 +1,16 @@
 import os
 import io
 import re
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Optional, Any
 from datetime import timedelta
-from minio import Minio
-from minio.error import S3Error
 import urllib3
+
+try:
+    from minio import Minio
+    from minio.error import S3Error
+except ImportError:
+    Minio = None
+    S3Error = Exception
 
 from app.config import settings
 
@@ -57,27 +62,35 @@ class MinIOStorageService:
         self.secret_key = secret_key or settings.MINIO_ROOT_PASSWORD
         self.bucket_name = bucket_name or settings.MINIO_BUCKET_NAME
         self.secure = secure if secure is not None else settings.MINIO_SECURE
-        self._client: Optional[Minio] = None
+        self._client: Optional[Any] = None
         self._is_available: Optional[bool] = None
 
     @property
-    def client(self) -> Minio:
+    def client(self) -> Optional[Any]:
         """Lazily initialize the Minio client."""
+        if Minio is None:
+            return None
         if self._client is None:
-            self._client = Minio(
-                endpoint=self.endpoint,
-                access_key=self.access_key,
-                secret_key=self.secret_key,
-                secure=self.secure,
-                http_client=urllib3.PoolManager(
-                    timeout=urllib3.Timeout(connect=1.0, read=2.0),
-                    retries=urllib3.Retry(total=0),
+            try:
+                self._client = Minio(
+                    endpoint=self.endpoint,
+                    access_key=self.access_key,
+                    secret_key=self.secret_key,
+                    secure=self.secure,
+                    http_client=urllib3.PoolManager(
+                        timeout=urllib3.Timeout(connect=1.0, read=2.0),
+                        retries=urllib3.Retry(total=0),
+                    )
                 )
-            )
+            except Exception:
+                self._client = None
         return self._client
 
     def ensure_bucket_exists(self) -> bool:
         """Check if the default storage bucket exists; if not, create it."""
+        if Minio is None or self.client is None:
+            self._is_available = False
+            return False
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
@@ -102,8 +115,8 @@ class MinIOStorageService:
 
         file_stream.seek(0)
 
-        # If MinIO was determined offline, write directly to local disk without HTTP timeout
-        if self._is_available is False:
+        # If MinIO was determined offline or library missing, write directly to local disk
+        if self._is_available is False or self.client is None:
             local_dir = os.path.join(os.getcwd(), "storage", "uploads")
             os.makedirs(local_dir, exist_ok=True)
             local_path = os.path.join(local_dir, f"{file_hash[:16]}_{clean_name}")
@@ -137,21 +150,28 @@ class MinIOStorageService:
 
     def get_file_object(self, object_name: str):
         """Retrieve the raw object data stream from MinIO or local fallback."""
-        if self._is_available:
+        if self._is_available and self.client:
             try:
                 return self.client.get_object(self.bucket_name, object_name)
             except Exception:
                 pass
 
         filename = os.path.basename(object_name)
-        local_path = os.path.join(os.getcwd(), "storage", "uploads", filename)
-        if os.path.exists(local_path):
-            return LocalFileStreamWrapper(local_path)
-        raise FileNotFoundError(f"Object '{object_name}' not found")
+        # Search multiple possible local paths
+        candidates = [
+            os.path.join(os.getcwd(), "storage", "uploads", filename),
+            os.path.join(os.getcwd(), "backend", "storage", "uploads", filename),
+            os.path.join(os.getcwd(), "storage", "uploads", object_name.replace("uploads/", "")),
+            os.path.join(os.getcwd(), "backend", "storage", "uploads", object_name.replace("uploads/", "")),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return LocalFileStreamWrapper(path)
+        raise FileNotFoundError(f"Object '{object_name}' not found locally or in MinIO")
 
     def get_presigned_download_url(self, object_name: str, expires_seconds: int = 3600) -> str:
         """Generate a temporary, secure presigned download URL."""
-        if self._is_available:
+        if self._is_available and self.client:
             try:
                 return self.client.presigned_get_object(
                     bucket_name=self.bucket_name,
@@ -164,22 +184,26 @@ class MinIOStorageService:
 
     def delete_file(self, object_name: str) -> None:
         """Delete an object from MinIO or local fallback."""
-        if self._is_available:
+        if self._is_available and self.client:
             try:
                 self.client.remove_object(self.bucket_name, object_name)
             except Exception:
                 pass
         filename = os.path.basename(object_name)
-        local_path = os.path.join(os.getcwd(), "storage", "uploads", filename)
-        if os.path.exists(local_path):
-            try:
-                os.remove(local_path)
-            except Exception:
-                pass
+        candidates = [
+            os.path.join(os.getcwd(), "storage", "uploads", filename),
+            os.path.join(os.getcwd(), "backend", "storage", "uploads", filename),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
 
     def check_health(self) -> bool:
         """Verify that MinIO is reachable and responding."""
-        if self._is_available is False:
+        if self._is_available is False or self.client is None:
             return False
         try:
             res = self.client.bucket_exists(self.bucket_name)

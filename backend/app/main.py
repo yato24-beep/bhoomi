@@ -1,3 +1,13 @@
+import sys
+from pathlib import Path
+
+# Ensure backend directory and repository root are on sys.path
+backend_dir = Path(__file__).resolve().parent.parent
+repo_root = backend_dir.parent
+for p in (str(backend_dir), str(repo_root)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +24,12 @@ from app.services.minio_storage import minio_storage
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
 import app.models  # Registers all models with Base.metadata
+
+# Import OCR router from Person B
+try:
+    from src.api.router import router as ocr_router
+except ImportError:
+    ocr_router = None
 
 
 def seed_initial_users():
@@ -67,22 +83,22 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     print(f"[STARTUP] Starting {settings.PROJECT_NAME} (v{settings.VERSION}) [{settings.ENVIRONMENT}]")
     
-    # 1. Initialize PostgreSQL database tables & seed initial users
+    # 1. Initialize database tables & seed initial users (PostgreSQL or SQLite fallback)
     try:
         Base.metadata.create_all(bind=engine)
-        print("[OK] Database tables verified/created successfully in PostgreSQL.")
+        print("[OK] Database tables verified/created successfully.")
         seed_initial_users()
     except Exception as e:
-        print(f"[WARN] Database initialization notice ({e}). Ensure PostgreSQL is running.")
+        print(f"[WARN] Database initialization notice ({e}). Ensure database is accessible.")
 
-    # 2. Verify / initialize MinIO storage bucket
+    # 2. Verify / initialize MinIO storage bucket (or local filesystem fallback)
     try:
         if minio_storage.ensure_bucket_exists():
-            print(f"[OK] MinIO bucket '{settings.MINIO_BUCKET_NAME}' verified/ready.")
+            print(f"[OK] Storage bucket '{settings.MINIO_BUCKET_NAME}' verified/ready.")
         else:
-            print(f"[WARN] MinIO bucket check notice. Ensure MinIO is running on {settings.MINIO_ENDPOINT}.")
+            print(f"[INFO] Storage operating in local filesystem fallback mode.")
     except Exception as e:
-        print(f"[WARN] MinIO connection notice ({e}). Ensure MinIO is running.")
+        print(f"[WARN] Storage initialization notice ({e}).")
 
     yield
     print(f"[SHUTDOWN] Shutting down {settings.PROJECT_NAME}")
@@ -90,7 +106,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description=settings.PROJECT_DESCRIPTION,
+    description=(
+        "Unified Land Record Digitization & Document Processing Platform. "
+        "Integrates document ingestion, asynchronous extraction, RBAC authentication, "
+        "and multimodal printed & handwritten OCR (PaddleOCR & TrOCR)."
+    ),
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
@@ -99,17 +119,24 @@ app = FastAPI(
 )
 
 # Set up CORS middleware
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.BACKEND_CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+origins = list(settings.BACKEND_CORS_ORIGINS) if settings.BACKEND_CORS_ORIGINS else ["*"]
+if "*" not in origins:
+    origins.extend(["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Direct root health check (/health)
 app.include_router(health_router, prefix="", tags=["Health"])
+
+# Mount Person B Multimodal OCR API routes (/api/ocr/...)
+if ocr_router:
+    app.include_router(ocr_router, prefix="", tags=["OCR"])
 
 # Mount versioned API routes (/api/v1/...)
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -124,5 +151,9 @@ async def root():
             "version": settings.VERSION,
             "documentation": "/docs",
             "health_check": "/health",
+            "ocr_health": "/api/ocr/health",
+            "ocr_process": "/api/ocr/process",
+            "documents_api": f"{settings.API_V1_STR}/documents",
+            "auth_api": f"{settings.API_V1_STR}/auth",
         }
     )

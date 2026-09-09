@@ -1,0 +1,26 @@
+{
+  "pipeline_name": "person-a-vision-ocr",
+  "version": "1.0.0",
+  "default_state": "DEFAULT",
+  "target_dpi": 300,
+  "preprocessing": {
+    "enable_deskew": true,
+    "enable_denoise": true,
+    "enable_clahe": true,
+    "enable_sharpen": true,
+    "enable_super_resolution": true,
+    "sr_dpi_threshold": 120.0,
+    "blur_threshold": 100.0
+  },
+  "ocr": {
+    "engine": "PaddleOCR-PP-OCRv5",
+    "use_angle_cls": true,
+    "det_db_thresh": 0.3,
+    "det_db_box_thresh": 0.5,
+    "drop_score": 0.35
+  },
+  "consensus": {
+    "disagreement_threshold": 0.20,
+    "penalty_factor": 0.15
+  }
+}

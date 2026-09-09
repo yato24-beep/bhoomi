@@ -1,0 +1,534 @@
+{
+  "document_id": "sample_land_record_7_12",
+  "sha256_hash": "bab2f6ceb879ecf044d99dd827a48c6426e491cf67d1b20a06332c517d7a35be",
+  "preprocessing": {
+    "deskew_angle": 0.0,
+    "super_resolution_applied": false,
+    "denoised": true,
+    "contrast_enhanced": false,
+    "original_resolution": [
+      900,
+      1100
+    ],
+    "processed_resolution": [
+      900,
+      1100
+    ],
+    "rotation_degrees": 0,
+    "page_count": 1
+  },
+  "classification": {
+    "document_type": "land_record_7_12",
+    "state": "MH",
+    "confidence": 0.76,
+    "signals_matched": [
+      "keyword:7/12",
+      "layout:table_matched",
+      "layout:aspect_ratio_0.82_in_range"
+    ],
+    "language": "en"
+  },
+  "text_lines": [
+    {
+      "text": "MAHARASHTRA LAND RECORD (7/12 EXTRACT)",
+      "confidence": 0.9998,
+      "bbox": {
+        "x_min": 119.0,
+        "y_min": 34.0,
+        "x_max": 700.0,
+        "y_max": 68.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "header"
+    },
+    {
+      "text": "Village: Shirur Taluk: Haveli District: Pune",
+      "confidence": 0.9981,
+      "bbox": {
+        "x_min": 149.0,
+        "y_min": 83.0,
+        "x_max": 564.0,
+        "y_max": 105.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "header"
+    },
+    {
+      "text": "Area (Hec)",
+      "confidence": 0.9947,
+      "bbox": {
+        "x_min": 516.0,
+        "y_min": 156.0,
+        "x_max": 616.0,
+        "y_max": 185.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "Assessment (Rs)",
+      "confidence": 0.9965,
+      "bbox": {
+        "x_min": 672.0,
+        "y_min": 157.0,
+        "x_max": 819.0,
+        "y_max": 183.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "Survey / Gat",
+      "confidence": 0.9842,
+      "bbox": {
+        "x_min": 92.0,
+        "y_min": 158.0,
+        "x_max": 212.0,
+        "y_max": 182.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "Occupant / Khatedar",
+      "confidence": 0.9678,
+      "bbox": {
+        "x_min": 239.0,
+        "y_min": 160.0,
+        "x_max": 427.0,
+        "y_max": 180.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "124/2A",
+      "confidence": 1.0,
+      "bbox": {
+        "x_min": 96.0,
+        "y_min": 234.0,
+        "x_max": 177.0,
+        "y_max": 266.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "1.45",
+      "confidence": 1.0,
+      "bbox": {
+        "x_min": 546.0,
+        "y_min": 234.0,
+        "x_max": 598.0,
+        "y_max": 265.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "12.50",
+      "confidence": 1.0,
+      "bbox": {
+        "x_min": 707.0,
+        "y_min": 234.0,
+        "x_max": 768.0,
+        "y_max": 264.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "Ramesh Kisan Patil (1/2)",
+      "confidence": 0.9997,
+      "bbox": {
+        "x_min": 233.0,
+        "y_min": 238.0,
+        "x_max": 483.0,
+        "y_max": 261.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "124/2B",
+      "confidence": 0.9999,
+      "bbox": {
+        "x_min": 97.0,
+        "y_min": 334.0,
+        "x_max": 177.0,
+        "y_max": 363.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "0.85",
+      "confidence": 1.0,
+      "bbox": {
+        "x_min": 544.0,
+        "y_min": 334.0,
+        "x_max": 597.0,
+        "y_max": 364.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "8.20",
+      "confidence": 1.0,
+      "bbox": {
+        "x_min": 704.0,
+        "y_min": 334.0,
+        "x_max": 756.0,
+        "y_max": 364.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    },
+    {
+      "text": "Suresh Kisan Patil (1/2)",
+      "confidence": 0.999,
+      "bbox": {
+        "x_min": 234.0,
+        "y_min": 338.0,
+        "x_max": 471.0,
+        "y_max": 359.0,
+        "normalized": false
+      },
+      "page_number": 1,
+      "language": "mr",
+      "engine": "PaddleOCR-PP-OCRv5",
+      "source_region": "table"
+    }
+  ],
+  "tables": [
+    {
+      "table_id": "page_1_table_1",
+      "page_number": 1,
+      "bbox": {
+        "x_min": 79.0,
+        "y_min": 139.0,
+        "x_max": 823.0,
+        "y_max": 503.0,
+        "normalized": false
+      },
+      "headers": [
+        "Survey / Gat",
+        "Occupant / Khatedar",
+        "Area (Hec)",
+        "Assessment (Rs)"
+      ],
+      "rows": [
+        [
+          "Survey / Gat",
+          "Occupant / Khatedar",
+          "Area (Hec)",
+          "Assessment (Rs)"
+        ],
+        [
+          "124/2A",
+          "Ramesh Kisan Patil (1/2)",
+          "1.45",
+          "12.50"
+        ],
+        [
+          "124/2B",
+          "Suresh Kisan Patil (1/2)",
+          "0.85",
+          "8.20"
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ]
+      ],
+      "cells": [
+        {
+          "row_index": 0,
+          "col_index": 0,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Survey / Gat",
+          "bbox": {
+            "x_min": 81.0,
+            "y_min": 141.0,
+            "x_max": 220.0,
+            "y_max": 200.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 0,
+          "col_index": 1,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Occupant / Khatedar",
+          "bbox": {
+            "x_min": 221.0,
+            "y_min": 141.0,
+            "x_max": 500.0,
+            "y_max": 200.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 0,
+          "col_index": 2,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Area (Hec)",
+          "bbox": {
+            "x_min": 501.0,
+            "y_min": 141.0,
+            "x_max": 660.0,
+            "y_max": 200.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 0,
+          "col_index": 3,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Assessment (Rs)",
+          "bbox": {
+            "x_min": 661.0,
+            "y_min": 141.0,
+            "x_max": 820.0,
+            "y_max": 200.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 1,
+          "col_index": 0,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "124/2A",
+          "bbox": {
+            "x_min": 81.0,
+            "y_min": 201.0,
+            "x_max": 220.0,
+            "y_max": 300.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 1,
+          "col_index": 1,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Ramesh Kisan Patil (1/2)",
+          "bbox": {
+            "x_min": 221.0,
+            "y_min": 201.0,
+            "x_max": 500.0,
+            "y_max": 300.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 1,
+          "col_index": 2,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "1.45",
+          "bbox": {
+            "x_min": 501.0,
+            "y_min": 201.0,
+            "x_max": 660.0,
+            "y_max": 300.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 1,
+          "col_index": 3,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "12.50",
+          "bbox": {
+            "x_min": 661.0,
+            "y_min": 201.0,
+            "x_max": 820.0,
+            "y_max": 300.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 2,
+          "col_index": 0,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "124/2B",
+          "bbox": {
+            "x_min": 81.0,
+            "y_min": 301.0,
+            "x_max": 220.0,
+            "y_max": 400.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 2,
+          "col_index": 1,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "Suresh Kisan Patil (1/2)",
+          "bbox": {
+            "x_min": 221.0,
+            "y_min": 301.0,
+            "x_max": 500.0,
+            "y_max": 400.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 2,
+          "col_index": 2,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "0.85",
+          "bbox": {
+            "x_min": 501.0,
+            "y_min": 301.0,
+            "x_max": 660.0,
+            "y_max": 400.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 2,
+          "col_index": 3,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "8.20",
+          "bbox": {
+            "x_min": 661.0,
+            "y_min": 301.0,
+            "x_max": 820.0,
+            "y_max": 400.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 3,
+          "col_index": 0,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "",
+          "bbox": {
+            "x_min": 81.0,
+            "y_min": 401.0,
+            "x_max": 220.0,
+            "y_max": 500.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 3,
+          "col_index": 1,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "",
+          "bbox": {
+            "x_min": 221.0,
+            "y_min": 401.0,
+            "x_max": 500.0,
+            "y_max": 500.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 3,
+          "col_index": 2,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "",
+          "bbox": {
+            "x_min": 501.0,
+            "y_min": 401.0,
+            "x_max": 660.0,
+            "y_max": 500.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        },
+        {
+          "row_index": 3,
+          "col_index": 3,
+          "row_span": 1,
+          "col_span": 1,
+          "text": "",
+          "bbox": {
+            "x_min": 661.0,
+            "y_min": 401.0,
+            "x_max": 820.0,
+            "y_max": 500.0,
+            "normalized": false
+          },
+          "confidence": 1.0
+        }
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "raw_full_text": "MAHARASHTRA LAND RECORD (7/12 EXTRACT)\nVillage: Shirur Taluk: Haveli District: Pune\nArea (Hec)\nAssessment (Rs)\nSurvey / Gat\nOccupant / Khatedar\n124/2A\n1.45\n12.50\nRamesh Kisan Patil (1/2)\n124/2B\n0.85\n8.20\nSuresh Kisan Patil (1/2)",
+  "pages_processed": 1,
+  "processing_time_ms": 142303.07
+}

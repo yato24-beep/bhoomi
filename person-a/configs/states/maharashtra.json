@@ -1,0 +1,57 @@
+{
+  "state_code": "MH",
+  "state_name": "Maharashtra",
+  "primary_language": "mr",
+  "fallback_languages": ["en", "hi"],
+  "document_types": [
+    {
+      "document_type": "land_record_7_12",
+      "display_name": "Maharashtra 7/12 Extract (Satbara)",
+      "mandatory_keywords": [],
+      "optional_keywords": ["7/12", "satbara", "गाव नमुना सात", "अधिकार अभिलेख पत्रक", "गट क्रमांक", "क्षेत्र", "भोगवटादार", "पोटखराबा", "खाते क्रमांक"],
+      "negative_keywords": ["aadhaar", "passport", "driving licence", "pan card"],
+      "min_keyword_matches": 1,
+      "layout_signals": ["table_required"],
+      "aspect_ratio_range": [0.6, 1.6],
+      "confidence_weight": 0.95
+    },
+    {
+      "document_type": "land_record_8a",
+      "display_name": "Maharashtra 8A Holding Sheet (Khatedar)",
+      "mandatory_keywords": [],
+      "optional_keywords": ["8-अ", "८-अ", "गाव नमुना आठ", "खातेवही", "एकूण क्षेत्र"],
+      "negative_keywords": ["aadhaar", "pan card"],
+      "min_keyword_matches": 1,
+      "layout_signals": [],
+      "confidence_weight": 0.90
+    },
+    {
+      "document_type": "mutation_ferfar",
+      "display_name": "Maharashtra Mutation Entry (Ferfar / 6D)",
+      "mandatory_keywords": [],
+      "optional_keywords": ["फेरफार", "गाव नमुना सहा", "नोंद क्रमांक", "वारस", "खरेदीखत"],
+      "negative_keywords": [],
+      "min_keyword_matches": 1,
+      "layout_signals": [],
+      "confidence_weight": 0.88
+    }
+  ],
+  "preprocessing_overrides": {
+    "target_dpi": 300,
+    "clahe_clip_limit": 2.5,
+    "clahe_grid_size": 8,
+    "bilateral_d": 9,
+    "bilateral_sigma_color": 80.0,
+    "bilateral_sigma_space": 80.0,
+    "apply_super_resolution": true,
+    "deskew_max_angle": 45.0
+  },
+  "ocr_overrides": {
+    "default_language": "mr",
+    "supported_languages": ["mr", "en", "hi"],
+    "det_db_thresh": 0.3,
+    "det_db_box_thresh": 0.5,
+    "drop_score": 0.35,
+    "use_angle_cls": true
+  }
+}

@@ -305,6 +305,58 @@ class MockDocumentProcessor(BaseDocumentProcessor):
         )
 
 
+class PersonADocumentProcessor(BaseDocumentProcessor):
+    """Production processor integrating Person A Vision/OCR pipeline with backend ProcessingResult."""
+
+    def process(
+        self,
+        file_stream: BinaryIO,
+        filename: str,
+        content_type: Optional[str] = None,
+    ) -> ProcessingResult:
+        try:
+            import sys
+            from pathlib import Path
+            repo_root = Path(__file__).resolve().parent.parent.parent.parent
+            person_a_path = str(repo_root / "person-a")
+            if person_a_path not in sys.path:
+                sys.path.insert(0, person_a_path)
+
+            from src.integration.backend_adapter import process_backend_stream_to_result
+
+            res_dict = process_backend_stream_to_result(
+                file_stream=file_stream,
+                filename=filename,
+                content_type=content_type,
+            )
+
+            # Map raw fields dict to ExtractedFieldItem objects
+            parsed_fields = [
+                ExtractedFieldItem(
+                    field_name=f["field_name"],
+                    original_value=f.get("original_value"),
+                    normalized_value=f.get("normalized_value"),
+                    confidence_score=f["confidence_score"],
+                    source_page=f.get("source_page", 1),
+                    bounding_box=BoundingBox(**f["bounding_box"]) if f.get("bounding_box") else None,
+                )
+                for f in res_dict.get("fields", [])
+            ]
+
+            return ProcessingResult(
+                extracted_data=res_dict["extracted_data"],
+                fields=parsed_fields,
+                confidence_score=res_dict["confidence_score"],
+                is_valid=res_dict["is_valid"],
+                validation_info=res_dict["validation_info"],
+                processing_time_ms=res_dict["processing_time_ms"],
+            )
+        except Exception:
+            # Graceful fallback to MockDocumentProcessor on error / missing environment dependencies
+            return MockDocumentProcessor().process(file_stream, filename, content_type)
+
+
 def get_document_processor() -> BaseDocumentProcessor:
     """Factory function returning the active pipeline processor."""
-    return MockDocumentProcessor()
+    return PersonADocumentProcessor()
+

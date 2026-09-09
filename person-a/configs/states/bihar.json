@@ -1,0 +1,36 @@
+{
+  "state_code": "BR",
+  "state_name": "Bihar",
+  "primary_language": "hi",
+  "fallback_languages": ["en"],
+  "document_types": [
+    {
+      "document_type": "khatiyan",
+      "display_name": "Bihar Bhumi Khatiyan Record",
+      "mandatory_keywords": [],
+      "optional_keywords": ["खतियान", "जमाबंदी", "रैयत का नाम", "थाना संख्या", "खेसरा संख्या", "रकबा", "चौहद्दी"],
+      "negative_keywords": ["aadhaar", "pan card"],
+      "min_keyword_matches": 1,
+      "layout_signals": ["table_required"],
+      "confidence_weight": 0.95
+    }
+  ],
+  "preprocessing_overrides": {
+    "target_dpi": 300,
+    "clahe_clip_limit": 2.2,
+    "clahe_grid_size": 8,
+    "bilateral_d": 9,
+    "bilateral_sigma_color": 75.0,
+    "bilateral_sigma_space": 75.0,
+    "apply_super_resolution": false,
+    "deskew_max_angle": 45.0
+  },
+  "ocr_overrides": {
+    "default_language": "hi",
+    "supported_languages": ["hi", "en"],
+    "det_db_thresh": 0.3,
+    "det_db_box_thresh": 0.5,
+    "drop_score": 0.35,
+    "use_angle_cls": true
+  }
+}

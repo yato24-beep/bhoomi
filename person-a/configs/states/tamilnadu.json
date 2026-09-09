@@ -1,0 +1,36 @@
+{
+  "state_code": "TN",
+  "state_name": "Tamil Nadu",
+  "primary_language": "ta",
+  "fallback_languages": ["en"],
+  "document_types": [
+    {
+      "document_type": "patta_chitta",
+      "display_name": "Tamil Nadu Anyror Patta Chitta Extract",
+      "mandatory_keywords": [],
+      "optional_keywords": ["பட்டா", "சிட்டா", "patta", "chitta", "புல எண்", "உரிமையாளர் பெயர்", "விஸ்தீரணம்", "ஹெக்டேர்"],
+      "negative_keywords": ["aadhaar", "pan card"],
+      "min_keyword_matches": 1,
+      "layout_signals": ["table_required"],
+      "confidence_weight": 0.95
+    }
+  ],
+  "preprocessing_overrides": {
+    "target_dpi": 300,
+    "clahe_clip_limit": 2.0,
+    "clahe_grid_size": 8,
+    "bilateral_d": 9,
+    "bilateral_sigma_color": 75.0,
+    "bilateral_sigma_space": 75.0,
+    "apply_super_resolution": false,
+    "deskew_max_angle": 45.0
+  },
+  "ocr_overrides": {
+    "default_language": "ta",
+    "supported_languages": ["ta", "en"],
+    "det_db_thresh": 0.3,
+    "det_db_box_thresh": 0.5,
+    "drop_score": 0.35,
+    "use_angle_cls": true
+  }
+}

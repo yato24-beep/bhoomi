@@ -97,6 +97,8 @@ class DocumentProcessingResponse(BaseModel):
     image_path: str = Field(..., description="Source image path or reference identifier")
     ordered_regions: List[RecognizedRegionResult] = Field(default_factory=list, description="Regions sorted in reading order")
     merged_text: str = Field(..., description="Full document text concatenated in natural reading order")
+    translated_text: Optional[str] = Field(None, description="English translation of recognized Indic/Kannada text")
+    original_kannada_text: Optional[str] = Field(None, description="Preserved original Kannada script text")
     document_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Character-length weighted mean confidence")
     status: str = Field("completed", description="High-level processing status ('completed', 'flagged_for_review', 'failed')")
     requires_human_review: bool = Field(False, description="True if any region requires human verification")
@@ -104,6 +106,18 @@ class DocumentProcessingResponse(BaseModel):
     engine_breakdown: Dict[str, int] = Field(default_factory=dict, description="Count of regions processed per engine")
     processing_time_ms: float = Field(0.0, description="Total pipeline latency in milliseconds")
     page: Optional[DocumentPage] = Field(None, description="DocumentPage schema for backwards compatibility with Person C")
+
+    # Person C Integrated Intelligence Fields
+    extracted_fields: Dict[str, Any] = Field(default_factory=dict, description="Structured fields extracted by Person C")
+    validation: Optional[Dict[str, Any]] = Field(default=None, description="Rule & cross-record validation results")
+    gis_validation: Optional[Dict[str, Any]] = Field(default=None, description="Cadastral GIS validation report")
+    duplicate_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Duplicate detection analysis report")
+    overall_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Multi-factor document confidence score")
+    state: Optional[str] = Field(default=None, description="Identified or confirmed state jurisdiction")
+    document_type: Optional[str] = Field(default=None, description="Classified land record document type")
+    tables: List[Dict[str, Any]] = Field(default_factory=list, description="Extracted table structures")
+    pipeline_stages_completed: List[str] = Field(default_factory=list, description="Audit trail of completed pipeline stages")
+    ocr: Optional[Dict[str, Any]] = Field(default=None, description="Preserved underlying OCR evidence breakdown")
 
     @property
     def full_text(self) -> str:

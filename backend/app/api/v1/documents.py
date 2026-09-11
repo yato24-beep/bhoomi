@@ -1,5 +1,6 @@
+import io
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -45,6 +46,29 @@ class DocumentStatusResponse(BaseModel):
     filename: str
     status: str
     storage_path: Optional[str]
+
+
+def _is_celery_available() -> bool:
+    """Check if the Celery broker (e.g. Redis) is reachable or if running in eager mode."""
+    from app.workers.celery_app import celery_app
+    is_eager = False
+    if isinstance(celery_app.conf, dict):
+        is_eager = bool(celery_app.conf.get("task_always_eager"))
+    else:
+        is_eager = bool(getattr(celery_app.conf, "task_always_eager", False))
+    if is_eager:
+        return True
+    try:
+        import socket
+        from urllib.parse import urlparse
+        broker_url = settings.CELERY_BROKER_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+        parsed = urlparse(broker_url)
+        host = parsed.hostname or settings.REDIS_HOST
+        port = parsed.port or settings.REDIS_PORT or 6379
+        with socket.create_connection((host, int(port)), timeout=0.2):
+            return True
+    except Exception:
+        return False
 
 
 @router.post(
@@ -111,16 +135,24 @@ async def upload_document(
     db.refresh(new_document)
 
     task_id = None
-    try:
-        task = process_document_task.delay(new_document.id)
-        task_id = task.id
-    except Exception:
-        # Fallback to local sync task execution when Redis/Celery broker is offline
+    if _is_celery_available():
         try:
-            process_document_task(new_document.id)
-            task_id = "local-sync-worker"
+            task = process_document_task.delay(new_document.id)
+            task_id = getattr(task, "id", None) or "celery-queued-task"
         except Exception:
-            pass
+            task_id = None
+
+    if not task_id:
+        # Fallback to local async task execution when Redis/Celery broker is offline
+        task_id = "local-sync-worker"
+        import threading
+        thread = threading.Thread(
+            target=process_document_task,
+            args=(new_document.id,),
+            daemon=True,
+            name=f"local-task-{new_document.id}",
+        )
+        thread.start()
 
     return DocumentUploadResponse(
         message="Document uploaded and processing job queued successfully.",
@@ -463,6 +495,135 @@ def download_document(
     )
 
 
+def _get_document_export_payload(document_id: int, db: Session) -> Dict[str, Any]:
+    """Helper to collect extraction data and fields for document export."""
+    stmt = select(Document).where(Document.id == document_id)
+    doc = db.execute(stmt).scalar_one_or_none()
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document with ID {document_id} not found",
+        )
+
+    ext_stmt = select(ExtractionResult).where(ExtractionResult.document_id == document_id)
+    ext = db.execute(ext_stmt).scalar_one_or_none()
+
+    fields_stmt = select(ExtractedField).where(ExtractedField.document_id == document_id)
+    field_rows = db.execute(fields_stmt).scalars().all()
+
+    fields_dict: Dict[str, str] = {}
+    for f in field_rows:
+        val = f.normalized_value or f.original_value or ""
+        fields_dict[f.field_name] = val
+
+    extracted_data = ext.extracted_data if ext and ext.extracted_data else {}
+    original_kannada = extracted_data.get("original_kannada_text") or extracted_data.get("merged_text") or ""
+    translated_text = extracted_data.get("translated_text") or extracted_data.get("merged_text") or ""
+
+    confidence = ext.confidence_score if ext else 0.85
+    val_info = ext.validation_info if ext and ext.validation_info else {}
+    requires_review = val_info.get("requires_human_review", False) or not (ext.is_valid if ext else True)
+    review_reasons = val_info.get("warnings", [])
+
+    return {
+        "document_id": str(doc.id),
+        "filename": doc.filename,
+        "overall_confidence": confidence,
+        "status": doc.status,
+        "fields": fields_dict,
+        "kannada_text": original_kannada,
+        "english_translation": translated_text,
+        "requires_review": requires_review,
+        "review_reasons": review_reasons,
+    }
+
+
+@router.get(
+    "/{document_id}/export/pdf",
+    summary="Download Digitized Document as PDF",
+    description="Generates a downloadable professional PDF report. Allowed roles: ALL USERS.",
+)
+def export_document_pdf(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+):
+    """Download digitized land record report as PDF."""
+    from app.services.export import build_pdf_export
+    payload = _get_document_export_payload(document_id, db)
+    pdf_bytes = build_pdf_export(**payload)
+    safe_name = payload["filename"].rsplit(".", 1)[0] if "." in payload["filename"] else payload["filename"]
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}_digitized.pdf"'},
+    )
+
+
+@router.get(
+    "/{document_id}/export/docx",
+    summary="Download Digitized Document as Word Document",
+    description="Generates a downloadable Word DOCX document. Allowed roles: ALL USERS.",
+)
+def export_document_docx(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+):
+    """Download digitized land record report as Word DOCX."""
+    from app.services.export import build_docx_export
+    payload = _get_document_export_payload(document_id, db)
+    docx_bytes = build_docx_export(**payload)
+    safe_name = payload["filename"].rsplit(".", 1)[0] if "." in payload["filename"] else payload["filename"]
+    return StreamingResponse(
+        io.BytesIO(docx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}_digitized.docx"'},
+    )
+
+
+@router.get(
+    "/{document_id}/export/kannada",
+    summary="Download Recognized Kannada Text",
+    description="Exports the recognized Kannada text as a text file. Allowed roles: ALL USERS.",
+)
+def export_document_kannada(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+):
+    """Download recognized Kannada transcription text."""
+    payload = _get_document_export_payload(document_id, db)
+    kn_text = payload["kannada_text"] or "No Kannada script extracted."
+    safe_name = payload["filename"].rsplit(".", 1)[0] if "." in payload["filename"] else payload["filename"]
+    return StreamingResponse(
+        io.BytesIO(kn_text.encode("utf-8")),
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}_kannada.txt"'},
+    )
+
+
+@router.get(
+    "/{document_id}/export/english",
+    summary="Download English Translation",
+    description="Exports the translated English text as a text file. Allowed roles: ALL USERS.",
+)
+def export_document_english(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+):
+    """Download translated English text."""
+    payload = _get_document_export_payload(document_id, db)
+    en_text = payload["english_translation"] or "No English translation available."
+    safe_name = payload["filename"].rsplit(".", 1)[0] if "." in payload["filename"] else payload["filename"]
+    return StreamingResponse(
+        io.BytesIO(en_text.encode("utf-8")),
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}_english.txt"'},
+    )
+
+
 @router.get(
     "/{document_id}/presigned-url",
     response_model=PresignedUrlResponse,
@@ -527,3 +688,41 @@ def delete_document(
     db.delete(document)
     db.commit()
     return None
+
+
+class TranslationRequest(BaseModel):
+    text: str
+    source_lang: Optional[str] = "auto"
+    target_lang: Optional[str] = "en"
+
+
+class TranslationResponse(BaseModel):
+    original_text: str
+    translated_text: str
+    source_lang: str
+    target_lang: str
+
+
+@router.post(
+    "/translate",
+    response_model=TranslationResponse,
+    summary="Interactive Bidirectional Land Record Translation",
+    description="Translates land record text bidirectionally between Kannada and English preserving cadastral tokens.",
+)
+def translate_land_record_text(
+    payload: TranslationRequest,
+):
+    """Translate arbitrary land record text between English and Kannada."""
+    from src.translation.translator import translate_bidirectional
+    result = translate_bidirectional(
+        text=payload.text,
+        source_lang=payload.source_lang or "auto",
+        target_lang=payload.target_lang or "en",
+    )
+    return TranslationResponse(
+        original_text=payload.text,
+        translated_text=result,
+        source_lang=payload.source_lang or "auto",
+        target_lang=payload.target_lang or "en",
+    )
+

@@ -1,5 +1,13 @@
+import os
 import sys
 from pathlib import Path
+
+# Ensure OpenMP and PaddleX OneDNN flags are set before any ML libraries initialize
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+os.environ.setdefault("PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT", "0")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("FLAGS_enable_pir_api", "0")
+os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
 
 # Ensure backend directory and repository root are on sys.path
 backend_dir = Path(__file__).resolve().parent.parent
@@ -25,11 +33,16 @@ from app.core.security import get_password_hash
 from app.models.user import User, UserRole
 import app.models  # Registers all models with Base.metadata
 
-# Import OCR router from Person B
+# Import OCR routers
 try:
     from src.api.router import router as ocr_router
 except ImportError:
     ocr_router = None
+
+try:
+    from src.api.person_c_router import router as person_c_router
+except ImportError:
+    person_c_router = None
 
 
 def seed_initial_users():
@@ -137,6 +150,10 @@ app.include_router(health_router, prefix="", tags=["Health"])
 # Mount Person B Multimodal OCR API routes (/api/ocr/...)
 if ocr_router:
     app.include_router(ocr_router, prefix="", tags=["OCR"])
+
+# Mount Person C direct API routes (/api/v1/...)
+if person_c_router:
+    app.include_router(person_c_router)
 
 # Mount versioned API routes (/api/v1/...)
 app.include_router(api_router, prefix=settings.API_V1_STR)

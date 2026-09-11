@@ -1,0 +1,120 @@
+{
+  "state_code": "DEFAULT",
+  "state_name": "Standard Land Records Template",
+  "languages": ["hi", "en"],
+  "terminology": {
+    "khasra": ["khasra", "khasra no", "khasra number", "plot no", "खसरा", "खसरा संख्या", "खसरा नं"],
+    "khatauni": ["khatauni", "khata", "khata no", "खातौनी", "खाता संख्या", "खाता नं"],
+    "owner": ["owner", "pattadar", "holder", "tenure holder", "खातेदार", "काश्तकार", "मालिक का नाम", "भूमिधर"],
+    "father_husband": ["father", "husband", "s/o", "w/o", "पिता", "पति", "पिता/पति"],
+    "area": ["area", "rakba", "total area", "क्षेत्रफल", "रकबा"],
+    "village": ["village", "mauza", "ग्राम", "मौजा", "गाँव"],
+    "tehsil": ["tehsil", "taluka", "तहसील", "तालुका"],
+    "district": ["district", "dist", "ज़िला", "जिला"],
+    "fasli_year": ["fasli", "fasli year", "फसली", "फसली वर्ष", "वर्ष"]
+  },
+  "unit_conversions_to_hectares": {
+    "hectare": 1.0,
+    "hectares": 1.0,
+    "हेक्टेयर": 1.0,
+    "हे": 1.0,
+    "sq_meter": 0.0001,
+    "sq_meters": 0.0001,
+    "वर्ग मीटर": 0.0001,
+    "acre": 0.404686,
+    "acres": 0.404686,
+    "एकड़": 0.404686,
+    "bigha": 0.2529,
+    "बीघा": 0.2529,
+    "biswa": 0.012645,
+    "बिसवा": 0.012645,
+    "guntha": 0.010117,
+    "गुंठा": 0.010117
+  },
+  "fields": {
+    "khasra_number": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खसरा\\s*(?:संख्या|नं|नंबर)?|khasra\\s*(?:no|number)?)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)",
+        "\\b(?:गाटा\\s*संख्या|plot\\s*no)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)"
+      ]
+    },
+    "khatauni_number": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:खाता\\s*(?:संख्या|नं|नंबर)?|khata\\s*(?:no|number)?)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)",
+        "(?:खातौनी\\s*(?:संख्या|नं)?)[\\s:.-]*([०-९0-9]+(?:[\\/\\-][०-९0-9]+)*)"
+      ]
+    },
+    "owner_name": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:खातेदार(?:\\s*का\\s*नाम)?|भूमिधर(?:\\s*का\\s*नाम)?|मालिक(?:\\s*का\\s*नाम)?|owner(?:\\s*name)?)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:पिता|पति|सुत|s\\/o|w\\/o|निवासी|रकबा|खसरा|\\n|$))",
+        "(?:नाम\\s*काश्तकार)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:पिता|पति|सुत|निवासी|\\n|$))"
+      ]
+    },
+    "father_or_husband_name": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:पिता|पति|सुत|s\\/o|w\\/o|father|husband)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:निवासी|निवास|जाति|रकबा|खसरा|\\n|$))"
+      ]
+    },
+    "land_area": {
+      "type": "float",
+      "required": true,
+      "patterns": [
+        "(?:क्षेत्रफल|रकबा|area|total\\s*area)(?:\\s*\\([^)]*\\))?[\\s:.-]*([०-९0-9]+(?:\\.[०-९0-9]+)?)\\s*(हेक्टेयर|हे०|हे|बीघा|बिसवा|एकड़|वर्ग\\s*मीटर|hectare|bigha|acre|sq\\s*m)?",
+        "(?:क्षेत्रफल|रकबा|area)[\\s:.-]*([०-९0-9]+(?:\\.[०-९0-9]+)?)",
+        "([०-९0-9]+\\.[०-९0-9]+)\\s*(?:हेक्टेयर|हे०|हे|bigha|hectare)"
+      ]
+    },
+    "village": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:ग्राम|मौजा|गाँव|village|mauza)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:परगना|तहसील|थाना|पट्टी|जिला|\\n|$))"
+      ]
+    },
+    "tehsil": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:तहसील|तालुका|tehsil|taluk|taluka)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:जिला|परगना|\\n|$))"
+      ]
+    },
+    "district": {
+      "type": "string",
+      "required": true,
+      "patterns": [
+        "(?:ज़िला|जिला|district|dist)[\\s:.-]*([\\u0900-\\u097F\\w\\s]+?)(?=\\s*(?:राज्य|प्रदेश|\\n|$))"
+      ]
+    },
+    "fasli_year": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:फसली\\s*वर्ष|वर्ष|fasli\\s*year|year)[\\s:.-]*([०-९0-9]{4}(?:\\s*[-–]\\s*[०-९0-9]{4})?)"
+      ]
+    }
+  },
+  "validation_rules": {
+    "land_area": {
+      "min": 0.0001,
+      "max": 10000.0,
+      "message": "Land area in hectares must be between 0.0001 and 10,000"
+    },
+    "khasra_number": {
+      "pattern": "^[0-9]+(/[0-9]+)*$",
+      "message": "Khasra number must be numeric with optional slash sub-parcels"
+    },
+    "owner_name": {
+      "min_length": 2,
+      "max_length": 100,
+      "message": "Owner name must be between 2 and 100 characters"
+    }
+  }
+}

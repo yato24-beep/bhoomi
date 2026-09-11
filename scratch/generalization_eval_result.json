@@ -1,0 +1,39 @@
+[
+  {
+    "image": "new_kothi.jpeg",
+    "image_path": "C:\\Users\\achyu\\Downloads\\new_kothi.jpeg",
+    "ground_truth": "ಕೋತಿ",
+    "base_prediction": "ಕೊಲಿ",
+    "finetuned_prediction": "ಕೋಲಿ",
+    "base_confidence": 0.6757,
+    "finetuned_confidence": 0.8329,
+    "base_exact_match": false,
+    "finetuned_exact_match": false,
+    "base_cer": 0.5,
+    "finetuned_cer": 0.25,
+    "base_translation": "murder",
+    "finetuned_translation": "coli",
+    "metadata": {
+      "rotation_degrees": 90,
+      "original_size": [
+        588,
+        1126
+      ],
+      "oriented_size": [
+        1126,
+        588
+      ],
+      "crop_box": [
+        326,
+        159,
+        749,
+        414
+      ],
+      "crop_size": [
+        423,
+        255
+      ],
+      "aspect_ratio": 1.66
+    }
+  }
+]

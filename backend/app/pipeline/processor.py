@@ -1,7 +1,10 @@
 import abc
+import logging
 import time
 from typing import BinaryIO, Dict, Any, List, Optional
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class BoundingBox(BaseModel):
@@ -345,53 +348,105 @@ class MultimodalOCRDocumentProcessor(BaseDocumentProcessor):
 
             fields: List[ExtractedFieldItem] = []
             img_w, img_h = image.size
-            for idx, reg in enumerate(resp.ordered_regions):
-                norm_box = None
-                if reg.bbox:
-                    norm_box = BoundingBox(
-                        x_min=round(max(0.0, min(1.0, reg.bbox.x_min / max(img_w, 1))), 4),
-                        y_min=round(max(0.0, min(1.0, reg.bbox.y_min / max(img_h, 1))), 4),
-                        x_max=round(max(0.0, min(1.0, reg.bbox.x_max / max(img_w, 1))), 4),
-                        y_max=round(max(0.0, min(1.0, reg.bbox.y_max / max(img_h, 1))), 4),
-                    )
-                fields.append(
-                    ExtractedFieldItem(
-                        field_name=f"region_{idx+1:03d}_{reg.language}",
-                        original_value=reg.raw_text,
-                        normalized_value=reg.normalized_text,
-                        confidence_score=reg.confidence if reg.confidence is not None else 0.85,
-                        source_page=reg.page_number,
-                        bounding_box=norm_box,
-                    )
+
+            # Run Person C Extraction, Normalization & Validation
+            c_result = None
+            try:
+                from src.integration.person_c_adapter import PersonCAdapter
+                c_result = PersonCAdapter.execute_person_c(
+                    b_response=resp,
+                    file_bytes=raw_bytes,
                 )
+                for fname, fval in c_result.fields.items():
+                    norm_box = None
+                    if fval.bbox:
+                        norm_box = BoundingBox(
+                            x_min=round(max(0.0, min(1.0, fval.bbox.x_min / max(img_w, 1))), 4),
+                            y_min=round(max(0.0, min(1.0, fval.bbox.y_min / max(img_h, 1))), 4),
+                            x_max=round(max(0.0, min(1.0, fval.bbox.x_max / max(img_w, 1))), 4),
+                            y_max=round(max(0.0, min(1.0, fval.bbox.y_max / max(img_h, 1))), 4),
+                        )
+                    fields.append(
+                        ExtractedFieldItem(
+                            field_name=fname,
+                            original_value=fval.raw_value,
+                            normalized_value=str(fval.normalized_value) if fval.normalized_value is not None else fval.raw_value,
+                            confidence_score=round(float(fval.confidence), 4),
+                            source_page=fval.page,
+                            bounding_box=norm_box,
+                        )
+                    )
+            except Exception as c_exc:
+                pass
+
+            # Fallback or supplementary region fields if Person C returned no fields
+            if not fields:
+                for idx, reg in enumerate(resp.ordered_regions):
+                    norm_box = None
+                    if reg.bbox:
+                        norm_box = BoundingBox(
+                            x_min=round(max(0.0, min(1.0, reg.bbox.x_min / max(img_w, 1))), 4),
+                            y_min=round(max(0.0, min(1.0, reg.bbox.y_min / max(img_h, 1))), 4),
+                            x_max=round(max(0.0, min(1.0, reg.bbox.x_max / max(img_w, 1))), 4),
+                            y_max=round(max(0.0, min(1.0, reg.bbox.y_max / max(img_h, 1))), 4),
+                        )
+                    fields.append(
+                        ExtractedFieldItem(
+                            field_name=f"region_{idx+1:03d}_{reg.language}",
+                            original_value=reg.raw_text,
+                            normalized_value=reg.normalized_text,
+                            confidence_score=reg.confidence if reg.confidence is not None else 0.85,
+                            source_page=reg.page_number,
+                            bounding_box=norm_box,
+                        )
+                    )
 
             structured_data = {
-                "document_type": "Land Record",
+                "document_type": c_result.document_type.value if c_result else "Land Record",
                 "document_id": resp.document_id,
                 "merged_text": resp.merged_text,
+                "original_kannada_text": resp.original_kannada_text or resp.merged_text,
+                "translated_text": resp.translated_text or resp.merged_text,
                 "regions_count": len(resp.ordered_regions),
                 "engine_breakdown": resp.engine_breakdown,
                 "warnings": resp.warnings,
-                "status": resp.status,
+                "status": c_result.validation_status.value if c_result else resp.status,
+                "gis_validation": c_result.gis_validation.model_dump() if c_result else {},
+                "duplicate_analysis": c_result.duplicate_analysis.model_dump() if c_result else {},
             }
 
             duration_ms = int((time.perf_counter() - start_time) * 1000)
-            avg_conf = resp.document_confidence if resp.document_confidence is not None else 0.85
+            avg_conf = (
+                c_result.overall_confidence
+                if c_result and c_result.overall_confidence is not None
+                else (resp.document_confidence if resp.document_confidence is not None else 0.85)
+            )
+            is_valid = (
+                (c_result.validation_status.value == "valid")
+                if c_result
+                else (not resp.requires_human_review)
+            )
+
+            validation_info = {
+                "checks_passed": [f"ocr_completed: {len(resp.ordered_regions)} regions extracted"],
+                "warnings": resp.warnings + (c_result.review_reasons if c_result else []),
+                "requires_human_review": resp.requires_human_review or (c_result.requires_human_review if c_result else False),
+            }
+            if c_result:
+                validation_info["validation_status"] = c_result.validation_status.value
+                validation_info["gis_verified"] = c_result.gis_validation.is_verified
+                validation_info["is_duplicate"] = c_result.duplicate_analysis.is_duplicate
 
             return ProcessingResult(
                 extracted_data=structured_data,
                 fields=fields,
-                confidence_score=round(avg_conf, 2),
-                is_valid=not resp.requires_human_review,
-                validation_info={
-                    "checks_passed": [f"ocr_completed: {len(resp.ordered_regions)} regions extracted"],
-                    "warnings": resp.warnings,
-                    "requires_human_review": resp.requires_human_review,
-                },
+                confidence_score=round(float(avg_conf), 2),
+                is_valid=is_valid,
+                validation_info=validation_info,
                 processing_time_ms=max(duration_ms, int(resp.processing_time_ms)),
             )
         except Exception as ocr_exc:
-            pass
+            logger.warning(f"Person B OCR execution warning: {ocr_exc}", exc_info=True)
 
         # 2. Second Attempt: Person A vision pipeline
         try:

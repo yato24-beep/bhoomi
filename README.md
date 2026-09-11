@@ -103,28 +103,31 @@ Frontend Dashboard will be live at: **http://localhost:3000**
 - **Document Pipeline (`process_document`)**: Orchestrates deskewing, enhancement, reading-order spatial sorting, text normalization, and length-weighted confidence scoring.
 - **Active Learning & Correction (`CorrectionService`)**: Collects human reviewer corrections and exports audit manifests for active learning.
 
-### 3. Handwriting Training & Evaluation Suite (`training/`, `src/training/`)
-- Line/word dataset bootstrap and JSONL manifest preparation tools.
-- Stratified dataset partitioning (train/val/test).
-- Training loop with mixed-precision, checkpointing, and Character/Word Error Rate (CER/WER) evaluation.
+### 3. Structured Extraction & Land Intelligence (`src/extraction/`, `src/validation/`, `src/database/`)
+- **Structured Field Extraction**: State-specific extraction rules (`configs/states/` - KA, UP, MP, MH, BR, etc.) for Survey/Khasra numbers, Khatauni, Owner/Father names, Land Area, Village, Tehsil, and District.
+- **Normalization & Business Rules**: Standardizes regional area units (acres, guntas, bighas, cents) to hectares, converts Vikram Samvat / Fasli years, and validates ownership shares and survey formats.
+- **Cadastral GIS Verification**: Validates extracted land parcels against spatial GIS boundaries (PostGIS enabled; Shapely GeoJSON fallback when offline).
+- **Duplicate Detection**: Fast SHA-256 exact match combined with semantic vector cosine similarity.
+- **Multi-Factor Confidence Scoring**: Aggregates OCR token probabilities, dictionary validity, and business rule conformance to determine whether human review is required.
 
 ---
 
 ## 📡 API Endpoints Reference
 
 ### Health & Status
-- `GET /health` — General service health and storage/database connectivity.
+- `GET /health` — General platform service health and storage/database connectivity.
 - `GET /api/ocr/health` — Multimodal OCR pipeline status and supported models.
+- `GET /api/v1/person-c/health` — Person C active extraction, GIS, and state configs.
 
-### Multimodal OCR Processing
-- `POST /api/ocr/process` — Direct image OCR processing with language routing and structured JSON output.
-  - **Parameters**: `file` (Multipart image), `language` (default: `kannada`), `is_handwritten` (optional bool), `apply_preprocessing` (bool), `apply_normalization` (bool).
+### Multimodal OCR & Land Record Processing
+- `POST /api/ocr/process` — Unified image processing endpoint returning both full multimodal OCR and Person C structured land-record extractions, normalization, GIS validation, and confidence.
+  - **Parameters**: `file` (Multipart image), `language` (default: `kannada`), `is_handwritten` (optional bool), `selected_state` (e.g. `KA`, `UP`), `apply_preprocessing` (bool), `apply_normalization` (bool).
 
 ### Document Management & Extraction
 - `POST /api/v1/documents/upload` — Upload document (PDF/Image), hash verification, storage, and asynchronous/synchronous extraction pipeline execution.
 - `GET /api/v1/documents/` — List all uploaded documents with pagination.
 - `GET /api/v1/documents/{id}` — Retrieve document metadata and processing status.
-- `GET /api/v1/documents/{id}/results` — Retrieve structured key-value extracted data.
+- `GET /api/v1/documents/{id}/results` — Retrieve structured key-value extracted data and GIS validation.
 - `GET /api/v1/documents/{id}/fields` — Retrieve granular extracted fields with normalized bounding boxes.
 - `GET /api/v1/documents/search?q={query}` — Search across filenames and extracted text fields.
 - `GET /api/v1/documents/{id}/download` — Stream raw file from storage.
@@ -138,17 +141,20 @@ Frontend Dashboard will be live at: **http://localhost:3000**
 
 ## 🧪 Testing & Validation
 
-Run unit and integration test suites:
+Run unit, integration, and full pipeline test suites:
 
 ```bash
-# Run Person B OCR & pipeline unit tests
-python -m pytest tests/unit/ -v
+# Run Complete 10-scenario A+B+C Integration Test Suite
+pytest tests/integration/test_full_pipeline.py -v
 
-# Run Person A backend test suite
-python -m pytest backend/tests/test_health.py backend/tests/test_hashing.py -v
+# Run Person C Extraction, Normalization, Rules, GIS, and Duplicates Tests
+pytest tests/unit/test_extraction.py tests/unit/test_normalization.py tests/unit/test_rules.py tests/unit/test_gis.py tests/unit/test_duplicates.py tests/unit/test_confidence.py tests/unit/test_person_c_adapter.py -v
 
-# Run OCR modality verification script
-python evaluation/scripts/verify_four_modalities.py
+# Run Person A backend test suite (29 tests)
+pytest backend/tests/ -v
+
+# Run Frontend Production Build
+cd frontend && npm run build
 ```
 
 ---

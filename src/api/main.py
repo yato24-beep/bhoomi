@@ -49,6 +49,11 @@ def create_app() -> FastAPI:
             "process_endpoint": "POST /api/ocr/process",
         }
 
+    @app.get("/health", tags=["Health"])
+    async def health() -> Dict[str, Any]:
+        from src.api.router import ocr_health_check
+        return await ocr_health_check()
+
     app.include_router(ocr_router)
     return app
 

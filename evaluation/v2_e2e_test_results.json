@@ -1,0 +1,56 @@
+[
+  {
+    "doc_name": "0b12a8b29748388f_WhatsApp_Image_2026-09-10_at_1.08.27_PM",
+    "status": "flagged_for_review",
+    "regions": 41,
+    "confidence": 0.7053,
+    "requires_review": true,
+    "processing_ms": 21548,
+    "merged_text_len": 218,
+    "translated_text_len": 226,
+    "warnings": [
+      "Region 'line_006': Low confidence (0.49 < 0.60)",
+      "Region 'line_013': Low confidence (0.59 < 0.60)",
+      "Region 'line_014': Low confidence (0.50 < 0.60)",
+      "Region 'line_017': Low confidence (0.54 < 0.60)",
+      "Region 'line_018': Low confidence (0.58 < 0.60)",
+      "Region 'line_020': Low confidence (0.45 < 0.60)",
+      "Region 'line_024': Low confidence (0.52 < 0.60)",
+      "Region 'line_027': Low confidence (0.55 < 0.60)",
+      "Region 'line_028': Low confidence (0.51 < 0.60)",
+      "Region 'line_029': Low confidence (0.56 < 0.60)",
+      "Region 'line_034': Low confidence (0.45 < 0.60)"
+    ]
+  },
+  {
+    "doc_name": "48afaad54543e31e_doc1",
+    "status": "flagged_for_review",
+    "regions": 30,
+    "confidence": 0.6076,
+    "requires_review": true,
+    "processing_ms": 7604,
+    "merged_text_len": 166,
+    "translated_text_len": 168,
+    "warnings": [
+      "Region 'line_004': Low confidence (0.53 < 0.60)",
+      "Region 'line_008': Low confidence (0.59 < 0.60)",
+      "Region 'line_009': Low confidence (0.52 < 0.60)",
+      "Region 'line_010': Low confidence (0.55 < 0.60)",
+      "Region 'line_011': Low confidence (0.50 < 0.60)",
+      "Region 'line_012': Low confidence (0.54 < 0.60)",
+      "Region 'line_013': Low confidence (0.60 < 0.60)",
+      "Region 'line_014': Low confidence (0.57 < 0.60)",
+      "Region 'line_017': Low confidence (0.58 < 0.60)",
+      "Region 'line_019': Low confidence (0.53 < 0.60)",
+      "Region 'line_020': Low confidence (0.55 < 0.60)",
+      "Region 'line_021': Low confidence (0.53 < 0.60)",
+      "Region 'line_022': Low confidence (0.58 < 0.60)",
+      "Region 'line_023': Low confidence (0.55 < 0.60)",
+      "Region 'line_024': Low confidence (0.59 < 0.60)",
+      "Region 'line_025': Low confidence (0.55 < 0.60)",
+      "Region 'line_026': Low confidence (0.51 < 0.60)",
+      "Region 'line_028': Low confidence (0.57 < 0.60)",
+      "Region 'line_030': Low confidence (0.59 < 0.60)"
+    ]
+  }
+]

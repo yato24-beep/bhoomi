@@ -1,0 +1,8 @@
+PERSON C STATUS: valid
+OVERALL CONFIDENCE: 0.8897
+DOCUMENT TYPE: mutation_register
+STATE: KA
+REQUIRES REVIEW: False
+REVIEW REASONS: []
+FIELDS:
+  khasra_number: raw='125' norm='125' conf=0.890

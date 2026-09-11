@@ -1,0 +1,2 @@
+Recognized: ನಾಜೂಕಾಗಿರುವುದರಿಂದ
+Confidence: 0.8264

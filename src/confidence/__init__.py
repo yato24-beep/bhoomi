@@ -1,1 +1,1 @@
-"""Confidence scoring and thresholding modules."""
+"""Confidence scoring and evidence provenance tracking package."""

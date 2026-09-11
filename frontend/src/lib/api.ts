@@ -195,3 +195,51 @@ export async function deleteDocumentRecord(documentId: number): Promise<void> {
 export function getDirectDownloadUrl(documentId: number): string {
   return `${API_BASE_URL}/api/v1/documents/${documentId}/download`;
 }
+
+/**
+ * Export URLs for Judge-Ready Digital Documents
+ */
+export function getPdfExportUrl(documentId: number): string {
+  return `${API_BASE_URL}/api/v1/documents/${documentId}/export/pdf`;
+}
+
+export function getDocxExportUrl(documentId: number): string {
+  return `${API_BASE_URL}/api/v1/documents/${documentId}/export/docx`;
+}
+
+export function getKannadaExportUrl(documentId: number): string {
+  return `${API_BASE_URL}/api/v1/documents/${documentId}/export/kannada`;
+}
+
+export function getEnglishExportUrl(documentId: number): string {
+  return `${API_BASE_URL}/api/v1/documents/${documentId}/export/english`;
+}
+
+/**
+ * Interactive Translation API
+ */
+export async function translateText(
+  text: string,
+  sourceLang = "auto",
+  targetLang = "en"
+): Promise<{ original_text: string; translated_text: string; source_lang: string; target_lang: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/documents/translate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      text,
+      source_lang: sourceLang,
+      target_lang: targetLang,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Translation request failed");
+  }
+
+  return res.json();
+}
+

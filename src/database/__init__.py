@@ -1,1 +1,1 @@
-"""Database models, storage, and persistence layer."""
+"""Database integration, GIS spatial validation, and duplicate detection package."""

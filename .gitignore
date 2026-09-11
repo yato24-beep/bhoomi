@@ -84,6 +84,8 @@ data/annotations/*
 !data/annotations/.gitkeep
 data/samples/*
 !data/samples/.gitkeep
+data/corrections/*
+!data/corrections/.gitkeep
 external_datasets/
 
 # ================================================================

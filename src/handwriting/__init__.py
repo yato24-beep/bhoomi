@@ -15,17 +15,26 @@ from src.handwriting.confidence import (
     compute_token_geometric_mean_confidence,
     compute_token_mean_confidence,
 )
-from src.handwriting.paddle_recognizer import PaddleKannadaRecognizer
 from src.handwriting.recognizer import (
     BaseHandwritingRecognizer,
     ImageInput,
 )
-from src.handwriting.router import (
-    LANGUAGE_ALIASES,
-    LanguageScriptRouter,
-)
-from src.handwriting.service import HandwritingOCRService
-from src.handwriting.trocr_recognizer import TrocrHandwritingRecognizer
+
+
+def __getattr__(name: str):
+    if name == "PaddleKannadaRecognizer":
+        from src.handwriting.paddle_recognizer import PaddleKannadaRecognizer
+        return PaddleKannadaRecognizer
+    if name == "TrocrHandwritingRecognizer":
+        from src.handwriting.trocr_recognizer import TrocrHandwritingRecognizer
+        return TrocrHandwritingRecognizer
+    if name in ("LanguageScriptRouter", "LANGUAGE_ALIASES"):
+        import src.handwriting.router as _router
+        return getattr(_router, name)
+    if name == "HandwritingOCRService":
+        from src.handwriting.service import HandwritingOCRService
+        return HandwritingOCRService
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "BaseHandwritingRecognizer",

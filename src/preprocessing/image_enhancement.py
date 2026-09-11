@@ -20,6 +20,8 @@ except ImportError:
     cv2 = None
     HAS_CV2 = False
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 
 @dataclass
 class PreprocessingResult:
@@ -37,37 +39,221 @@ def load_image_as_pil(image_input: Union[str, Path, Image.Image, np.ndarray, byt
         image_input: File path (str/Path), PIL Image, NumPy array, or byte buffer.
 
     Returns:
-        PIL Image instance.
+        PIL Image instance with EXIF orientation metadata transposed.
 
     Raises:
         ValueError: If the input cannot be decoded into an image.
     """
     if isinstance(image_input, Image.Image):
-        return image_input.copy()
+        return ImageOps.exif_transpose(image_input).copy()
 
     if isinstance(image_input, (str, Path)):
         path = Path(image_input)
         if not path.exists():
             raise FileNotFoundError(f"Image file does not exist: {path}")
-        return Image.open(path).copy()
+        im = Image.open(path)
+        return ImageOps.exif_transpose(im).copy()
 
     if isinstance(image_input, np.ndarray):
         # Handle grayscale vs BGR/RGB
         if image_input.ndim == 2:
-            return Image.fromarray(image_input, mode="L")
+            im = Image.fromarray(image_input, mode="L")
         elif image_input.ndim == 3:
             if image_input.shape[2] == 3:
-                # Assume RGB
-                return Image.fromarray(image_input, mode="RGB")
+                im = Image.fromarray(image_input, mode="RGB")
             elif image_input.shape[2] == 4:
-                return Image.fromarray(image_input, mode="RGBA")
-        raise ValueError(f"Unsupported NumPy image shape: {image_input.shape}")
+                im = Image.fromarray(image_input, mode="RGBA")
+            else:
+                raise ValueError(f"Unsupported NumPy image shape: {image_input.shape}")
+        else:
+            raise ValueError(f"Unsupported NumPy image shape: {image_input.shape}")
+        return ImageOps.exif_transpose(im).copy()
 
     if isinstance(image_input, bytes):
         import io
-        return Image.open(io.BytesIO(image_input)).copy()
+        im = Image.open(io.BytesIO(image_input))
+        return ImageOps.exif_transpose(im).copy()
 
     raise TypeError(f"Unsupported image input type: {type(image_input).__name__}")
+
+
+_COARSE_DETECTOR_CACHE: Optional[Any] = None
+
+
+def get_coarse_orientation_detector() -> Optional[Any]:
+    """Retrieves or creates cached Paddle text detector for orientation estimation."""
+    global _COARSE_DETECTOR_CACHE
+    if _COARSE_DETECTOR_CACHE is None:
+        try:
+            from paddleocr import PaddleOCR
+            _COARSE_DETECTOR_CACHE = PaddleOCR(use_angle_cls=False, lang="en", enable_mkldnn=False)
+        except Exception:
+            _COARSE_DETECTOR_CACHE = False
+    return _COARSE_DETECTOR_CACHE if _COARSE_DETECTOR_CACHE is not False else None
+
+
+def detect_and_correct_coarse_orientation(
+    image: Image.Image,
+    detector: Optional[Any] = None,
+) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Detects if document text lines run vertically (sideways photo) and rotates 90 degrees.
+
+    In standard horizontal text, line bounding boxes are wider than tall (width >= height).
+    When a document is photographed in portrait orientation with text lines running sideways,
+    the detected line boxes are predominantly vertical (height > width).
+    If vertical boxes >= 1.5 * horizontal boxes and vertical count >= 8, the document is
+    rotated 90 degrees counter-clockwise (.rotate(90, expand=True)) so text lines align horizontally.
+    Paddle's use_angle_cls=True then handles 0 vs 180 degree line orientation.
+    """
+    transposed = ImageOps.exif_transpose(image)
+    det = detector if detector is not None else get_coarse_orientation_detector()
+    if det is None:
+        return transposed, {"coarse_rotation_applied": False, "angle_degrees": 0, "reason": "detector_unavailable"}
+
+    try:
+        arr = np.array(transposed.convert("RGB"))
+        res = det.ocr(arr, cls=False, rec=False)
+        boxes = res[0] if res and res[0] else []
+        h_count, v_count = 0, 0
+        for b in boxes:
+            xs = [pt[0] for pt in b]
+            ys = [pt[1] for pt in b]
+            w = max(xs) - min(xs)
+            h = max(ys) - min(ys)
+            if w >= h:
+                h_count += 1
+            else:
+                v_count += 1
+
+        if v_count >= 1.5 * h_count and v_count >= 8:
+            rotated = transposed.rotate(90, expand=True)
+            meta = {
+                "coarse_rotation_applied": True,
+                "angle_degrees": 90,
+                "horizontal_boxes": h_count,
+                "vertical_boxes": v_count,
+                "reason": "sideways_document_lines_detected",
+            }
+            return rotated, meta
+
+        # Fallback: if document was photographed in portrait (height significantly > width),
+        # but registers are landscape format with vertical stroke energy
+        w_img, h_img = transposed.size
+        if h_img > w_img * 1.35 and (v_count > h_count or v_count >= 5):
+            rotated = transposed.rotate(90, expand=True)
+            return rotated, {
+                "coarse_rotation_applied": True,
+                "angle_degrees": 90,
+                "horizontal_boxes": h_count,
+                "vertical_boxes": v_count,
+                "reason": "aspect_ratio_and_vertical_strokes",
+            }
+
+        return transposed, {
+            "coarse_rotation_applied": False,
+            "angle_degrees": 0,
+            "horizontal_boxes": h_count,
+            "vertical_boxes": v_count,
+            "reason": "upright_orientation_confirmed",
+        }
+    except Exception as exc:
+        w_img, h_img = transposed.size
+        if h_img > w_img * 1.35:
+            rotated = transposed.rotate(90, expand=True)
+            return rotated, {"coarse_rotation_applied": True, "angle_degrees": 90, "reason": f"aspect_ratio_fallback ({exc})"}
+        return transposed, {"coarse_rotation_applied": False, "angle_degrees": 0, "reason": f"error: {str(exc)}"}
+
+
+def crop_document_background(
+    image: Image.Image,
+    max_margin_ratio: float = 0.08,
+    brightness_ratio: float = 0.40,
+) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Detects and crops dark non-paper margins (e.g. laptop keyboard, desk surface) without cutting document text.
+
+    Compares row and column luminance against the central paper median. If outer edges are significantly darker,
+    they are cropped away up to max_margin_ratio (default 8% conservative limit).
+    """
+    gray = np.array(image.convert("L"))
+    h, w = gray.shape
+
+    # Sample central 50% region to estimate true paper luminance
+    y1, y2 = int(h * 0.25), int(h * 0.75)
+    x1, x2 = int(w * 0.25), int(w * 0.75)
+    paper_median = float(np.median(gray[y1:y2, x1:x2]))
+    thresh = paper_median * brightness_ratio
+
+    row_means = np.mean(gray, axis=1)
+    col_means = np.mean(gray, axis=0)
+
+    top = 0
+    while top < h * max_margin_ratio and row_means[top] < thresh:
+        top += 1
+
+    bottom = h - 1
+    while bottom > h * (1.0 - max_margin_ratio) and row_means[bottom] < thresh:
+        bottom -= 1
+
+    left = 0
+    while left < w * max_margin_ratio and col_means[left] < thresh:
+        left += 1
+
+    right = w - 1
+    while right > w * (1.0 - max_margin_ratio) and col_means[right] < thresh:
+        right -= 1
+
+    cropped_applied = bool(top > 0 or bottom < h - 1 or left > 0 or right < w - 1)
+    if cropped_applied and (right > left + 50) and (bottom > top + 50):
+        cropped = image.crop((left, top, right + 1, bottom + 1))
+    else:
+        cropped = image
+        left, top, right, bottom = 0, 0, w - 1, h - 1
+
+    metadata = {
+        "background_crop_applied": cropped_applied,
+        "crop_box": {"left": int(left), "top": int(top), "right": int(right), "bottom": int(bottom)},
+        "paper_median_brightness": round(paper_median, 1),
+    }
+    return cropped, metadata
+
+
+def upscale_document_image(
+    image: Image.Image,
+    target_min_dim: int = 1400,
+    max_scale: float = 2.0,
+) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Upscales low-resolution document images using Lanczos resampling to improve Indic ligature OCR clarity.
+
+    If the maximum dimension is below target_min_dim, upscales the document proportionally and applies subtle sharpening.
+    """
+    w, h = image.size
+    max_dim = max(w, h)
+    if max_dim < target_min_dim:
+        scale = min(max_scale, float(target_min_dim) / max_dim)
+        new_w = int(round(w * scale))
+        new_h = int(round(h * scale))
+        upscaled = image.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        # Apply subtle edge enhancement for Indic vowel strokes
+        enhancer = ImageEnhance.Sharpness(upscaled)
+        sharpened = enhancer.enhance(1.2)
+        return sharpened, {"upscaled": True, "scale_factor": round(scale, 2), "original_size": (w, h), "new_size": (new_w, new_h)}
+    return image, {"upscaled": False, "scale_factor": 1.0, "original_size": (w, h), "new_size": (w, h)}
+
+
+def enhance_contrast_clahe(
+    image: Image.Image,
+    clip_limit: float = 2.0,
+    tile_grid_size: Tuple[int, int] = (8, 8),
+) -> Tuple[Image.Image, Dict[str, Any]]:
+    """Applies Contrast Limited Adaptive Histogram Equalization (CLAHE) to handle uneven shadows across photographs."""
+    gray = to_grayscale(image)
+    if HAS_CV2 and cv2 is not None:
+        arr = np.array(gray)
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
+        enhanced_arr = clahe.apply(arr)
+        out_img = Image.fromarray(enhanced_arr, mode="L")
+        return out_img, {"clahe_applied": True, "clip_limit": clip_limit}
+    return enhance_contrast(gray)
 
 
 def to_grayscale(image: Image.Image) -> Image.Image:
@@ -289,11 +475,12 @@ def adaptive_soft_threshold(
 def preprocess_document_image(
     image_input: Union[str, Path, Image.Image, np.ndarray, bytes],
     apply_deskew: bool = True,
-    apply_denoise: bool = True,
+    apply_denoise: bool = False,
     apply_contrast: bool = True,
     apply_thresholding: bool = False,
-    contrast_factor: float = 1.25,
+    contrast_factor: float = 1.15,
     denoise_kernel_size: int = 3,
+    apply_coarse_orientation: bool = True,
 ) -> PreprocessingResult:
     """Full preprocessing pipeline for land record documents and handwriting crops.
 
@@ -309,6 +496,7 @@ def preprocess_document_image(
         apply_thresholding: Whether to apply adaptive binarization (False by default for handwriting).
         contrast_factor: Contrast boost level (1.0 - 1.5 recommended).
         denoise_kernel_size: Kernel size for noise reduction.
+        apply_coarse_orientation: Whether to detect and correct sideways 90-degree photographed orientation.
 
     Returns:
         PreprocessingResult containing the processed PIL Image and comprehensive audit metadata.
@@ -321,6 +509,25 @@ def preprocess_document_image(
         "pipeline_steps": [],
     }
 
+    # Step 0: Coarse Orientation Detection & Correction (Sideways 90-degree check)
+    if apply_coarse_orientation:
+        raw_pil, coarse_meta = detect_and_correct_coarse_orientation(raw_pil)
+        audit["coarse_orientation"] = coarse_meta
+        if coarse_meta.get("coarse_rotation_applied"):
+            audit["pipeline_steps"].append("coarse_orientation_correction")
+
+    # Step 0b: Dark Background / Keyboard Margins Crop
+    raw_pil, bg_crop_meta = crop_document_background(raw_pil)
+    audit["background_crop"] = bg_crop_meta
+    if bg_crop_meta.get("background_crop_applied"):
+        audit["pipeline_steps"].append("background_crop")
+
+    # Step 0c: High-resolution Upscale for Small Text / Archival Legibility
+    raw_pil, upscale_meta = upscale_document_image(raw_pil, target_min_dim=1400, max_scale=2.0)
+    audit["upscale"] = upscale_meta
+    if upscale_meta.get("upscaled"):
+        audit["pipeline_steps"].append("upscale_lanczos")
+
     # Step 1: Grayscale conversion
     current_img = to_grayscale(raw_pil)
     audit["pipeline_steps"].append("grayscale_conversion")
@@ -331,11 +538,11 @@ def preprocess_document_image(
         audit["deskew"] = deskew_meta
         audit["pipeline_steps"].append("deskew")
 
-    # Step 3: Contrast Enhancement
+    # Step 3: Contrast Enhancement (using CLAHE for non-destructive local contrast)
     if apply_contrast:
-        current_img, contrast_meta = enhance_contrast(current_img, contrast_factor=contrast_factor)
+        current_img, contrast_meta = enhance_contrast_clahe(current_img, clip_limit=2.0)
         audit["contrast"] = contrast_meta
-        audit["pipeline_steps"].append("contrast_enhancement")
+        audit["pipeline_steps"].append("contrast_enhancement_clahe")
 
     # Step 4: Light Denoise
     if apply_denoise:
@@ -352,6 +559,16 @@ def preprocess_document_image(
         audit["thresholding"] = {"applied": False, "reason": "faint_handwriting_preservation"}
 
     audit["final_size"] = {"width": current_img.size[0], "height": current_img.size[1]}
+
+    # Save intermediate debug images for inspection
+    try:
+        debug_dir = Path(PROJECT_ROOT if "PROJECT_ROOT" in globals() else "c:/Land Record") / "storage" / "debug"
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        raw_pil.save(debug_dir / "prep_step0_upright.png")
+        current_img.save(debug_dir / "prep_step4_enhanced.png")
+        audit["debug_saved"] = True
+    except Exception:
+        audit["debug_saved"] = False
 
     return PreprocessingResult(
         image=current_img,

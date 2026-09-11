@@ -1,1 +1,1 @@
-"""Field and entity extraction modules."""
+"""Structured field extraction and OCR consensus resolution package."""

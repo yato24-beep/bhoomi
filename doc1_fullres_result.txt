@@ -1,0 +1,96 @@
+STATUS: completed
+CONFIDENCE: 0.6917
+REGIONS COUNT: 43
+ENGINE BREAKDOWN: {'paddleocr-kannada': 33, 'paddleocr-english': 10}
+REQUIRES REVIEW: False
+WARNINGS: []
+
+MERGED TEXT:
+Hat?
+MUTATION
+REGISTER
+MUTATION
+. Ee hiar
+REGISTER
+I.
+S
+Path.
+F tefts?
+Ordars
+Iu!!
+s.
+Al. n
+Ie s?
+hy.
+.
+e te.
+h.
+Ee ms.
+Sot
+Ak...
+I
+As
+Cach
+so?
+e
+Fದ
+I nt.
+Sane . as
+1೯8
+ಹಪ
+ನ.
+CORe
+ನೆ
+I-e.
+Fheೆ
+Thg te I gnta?
+Gamk.
+..
+.Jsebe
+H
+I
+
+REGIONS:
+[region_001] (paddleocr-kannada, conf=0.652) Hat?
+[region_002] (paddleocr-english, conf=0.998) MUTATION
+[region_003] (paddleocr-english, conf=0.903) REGISTER
+[region_004] (paddleocr-english, conf=0.966) MUTATION
+[region_005] (paddleocr-kannada, conf=0.596) . Ee hiar
+[region_006] (paddleocr-english, conf=0.958) REGISTER
+[region_007] (paddleocr-kannada, conf=0.574) I.
+[region_008] (paddleocr-english, conf=0.716) S
+[region_009] (paddleocr-kannada, conf=0.548) Path.
+[region_010] (paddleocr-kannada, conf=0.509) F tefts?
+[region_011] (paddleocr-english, conf=0.869) Ordars
+[region_012] (paddleocr-kannada, conf=0.504) Iu!!
+[region_013] (paddleocr-kannada, conf=0.668) s.
+[region_014] (paddleocr-kannada, conf=0.613) Al. n
+[region_015] (paddleocr-kannada, conf=0.736) Ie s?
+[region_016] (paddleocr-kannada, conf=0.650) hy.
+[region_017] (paddleocr-kannada, conf=0.525) .
+[region_018] (paddleocr-kannada, conf=0.534) e te.
+[region_019] (paddleocr-kannada, conf=0.665) h.
+[region_020] (paddleocr-kannada, conf=0.629) Ee ms.
+[region_021] (paddleocr-english, conf=0.620) Sot
+[region_022] (paddleocr-kannada, conf=0.664) Ak...
+[region_023] (paddleocr-kannada, conf=0.556) I
+[region_024] (paddleocr-kannada, conf=0.838) As
+[region_025] (paddleocr-english, conf=0.612) Cach
+[region_026] (paddleocr-kannada, conf=0.531) so?
+[region_027] (paddleocr-kannada, conf=0.888) e
+[region_028] (paddleocr-kannada, conf=0.518) Fದ
+[region_029] (paddleocr-kannada, conf=0.674) I nt.
+[region_030] (paddleocr-kannada, conf=0.528) Sane . as
+[region_031] (paddleocr-kannada, conf=0.837) 1೯8
+[region_032] (paddleocr-kannada, conf=0.627) ಹಪ
+[region_033] (paddleocr-kannada, conf=0.825) ನ.
+[region_034] (paddleocr-english, conf=0.930) CORe
+[region_035] (paddleocr-kannada, conf=0.614) ನೆ
+[region_036] (paddleocr-kannada, conf=0.643) I-e.
+[region_037] (paddleocr-kannada, conf=0.633) Fheೆ
+[region_038] (paddleocr-kannada, conf=0.603) Thg te I gnta?
+[region_039] (paddleocr-kannada, conf=0.585) Gamk.
+[region_040] (paddleocr-english, conf=0.708) ..
+[region_041] (paddleocr-kannada, conf=0.725) .Jsebe
+[region_042] (paddleocr-kannada, conf=0.520) H
+[region_043] (paddleocr-kannada, conf=0.560) I

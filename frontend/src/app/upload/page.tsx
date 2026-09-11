@@ -68,6 +68,9 @@ export default function UploadPage() {
     try {
       const result = await uploadDocumentFile(selectedFile);
       setUploadResult(result);
+      if (result?.document?.id) {
+        router.push(`/documents/${result.document.id}`);
+      }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to upload file to backend.");
     } finally {
@@ -140,7 +143,10 @@ export default function UploadPage() {
                 </p>
                 {uploadResult.task_id && (
                   <p>
-                    <span className="font-sans font-semibold text-slate-500">Celery Task:</span> {uploadResult.task_id}
+                    <span className="font-sans font-semibold text-slate-500">
+                      {uploadResult.task_id.startsWith("local") ? "Processing Job:" : "Celery Task:"}
+                    </span>{" "}
+                    {uploadResult.task_id}
                   </p>
                 )}
               </div>
@@ -240,7 +246,7 @@ export default function UploadPage() {
           {isUploading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Uploading to MinIO & Queuing Task...</span>
+              <span>Uploading & Processing...</span>
             </>
           ) : (
             <>

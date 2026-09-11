@@ -1,0 +1,60 @@
+{
+  "id": 3,
+  "document_id": 3,
+  "extracted_data": {
+    "document_type": "bhoomi_rtc",
+    "document_id": "doc2",
+    "merged_text": "ಸಹ ಕoದಾಯ ಆದಕಾರ ರವರ ಕಛed.\nಕೋರಮಂಗಲ ಉಪ--ಎಫಾದ\nನಾಡಪಭು ಕಂಪೇಗೌಡಿಭವನ\nಕೋರವುಂಗಲ ಮುಖೈರಸ.ಆಡುಗೋ\nಲ0ಗಳೂರು. ದನಾ0ಕ: 20-೦0-202\nಎಐa ಸous a os-16-.70la\nಹಂಬರಹ\nಎಷಯ\nನೀಡಲುಕೋಂರುವ ಬಗ\nಉಳೇಖಗh-ಮಾನೈ ಬಂಟ- ಆಯುಕರುಿದಃಣರವರಿಆಂತಂಕ-ಕಜೇಕಟಪಣ\nIdo ao.e. iy I d.uu.I ioolpo?l Auಾot t oe-oe-a.\nB. ತಮ, uaea bನಾoಕ 9ll-ol-2o?4\nಕ\nಬೃಹತ್--ಬೆಂಗಳೂರು--ಮಹಾನಗರ--ಪಾಲಕೆ--ವಾೈಷಯ--ಸಹ--ಕಂದಾಯ--ಅಭಕಾಂ\nItೋರಮodಲy ಉಪ aಭಾಗದ ವಾಡ್s ಸoag -14೯-Ejipura, S.T. Bed Kormangala\nAಾuab?\nMrs. Dorothy Charles ರವರ ಹೆಸಂನಳ ದಾಖಲಾಗರುತದ.\nಸದಂ ತತನ ನವೇಶನದ ಏ೯ೀಣ೯: 2.2೦ತ.೦೦ತ.೯೦12 ಚದರ ಅಜ ಮತುಕಟಡದ\nಎನೀಣ೯ 5ಂ೦ ಚದರ ಅaಗಳಾಗರುತದೆ.\nಹಾಗೂ.ಪನುತತತಾಂಶದಳಿಖಾತಾ-ನಕಲು-ಮತುದೃಢೀಕರಣ ಪತವನು-ನೀಡಲು\nಸಾಧೃಖ೪ದ ಕಾರಣಿಅಸೆಸ್ಮಂಟ್ವಂಯಇರುವಂತೆಯಥಾ ನಕಲನು.ನೀಡಲಾಗರುತದಿಎಂದು ರಲ\nBh..ays.\nಮಾಲtlಳaaayದ.\nಸಹಾಪಹಕಂದಾಯಆಂಕಾಂಿಕಾರ\nಪತಯನೃತ\nI. SirlSmt. Dorothy Charles dವor.\nಒಕಛೀಂಿಕಡತಕೈ",
+    "regions_count": 27,
+    "engine_breakdown": {
+      "paddleocr-kannada": 27
+    },
+    "warnings": [],
+    "status": "valid",
+    "gis_validation": {
+      "gis_status": "INSUFFICIENT_DATA",
+      "is_verified": false,
+      "has_mismatch": false,
+      "parcel_id_found": false,
+      "state": "KA",
+      "district": "ಬೆಂಗಳೂರು",
+      "tehsil": "ಕೋರಮಂಗಲ",
+      "village": "ಕೋರಮಂಗಲ",
+      "khasra_number": "",
+      "gis_recorded_area_hectares": null,
+      "extracted_area_hectares": null,
+      "area_deviation_percent": null,
+      "coordinates_matched": null,
+      "point_in_polygon_passed": null,
+      "spatial_deviation_meters": null,
+      "flag_reasons": [
+        "Mandatory cadastral identifiers missing (Khasra/Survey No or Village/District)"
+      ],
+      "source_gis_layer": null,
+      "data_source_label": "synthetic_demo_cadastral"
+    },
+    "duplicate_analysis": {
+      "is_duplicate": false,
+      "match_type": "none",
+      "matched_document_id": null,
+      "sha256_match": false,
+      "similarity_score": 0.0,
+      "potential_duplicate_ids": [],
+      "evidence": null
+    }
+  },
+  "confidence_score": 0.91,
+  "is_valid": true,
+  "validation_info": {
+    "checks_passed": [
+      "ocr_completed: 27 regions extracted"
+    ],
+    "warnings": [],
+    "requires_human_review": false,
+    "validation_status": "valid",
+    "gis_verified": false,
+    "is_duplicate": false
+  },
+  "processing_time_ms": 18275,
+  "created_at": "2026-09-10T07:12:21.081931"
+}

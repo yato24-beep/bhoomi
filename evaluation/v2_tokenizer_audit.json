@@ -1,0 +1,9 @@
+{
+  "total_tests": 90,
+  "passed": 90,
+  "failed": 0,
+  "failures": [],
+  "tokenizer_type": "TokenizersBackend",
+  "vocab_size": 250002,
+  "checkpoint": "C:\\Land Record\\models\\trocr\\kannada_generalized_checkpoints\\best_checkpoint"
+}

@@ -1,0 +1,64 @@
+{
+  "type": "FeatureCollection",
+  "name": "tamilnadu_eservices_cadastral_demo",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "state": "TN",
+        "district": "KANCHIPURAM",
+        "tehsil": "SRIPERUMBUDUR",
+        "village": "NEMILI",
+        "khasra_number": "108/1",
+        "area_hectares": 0.5000,
+        "gis_layer_name": "tn_eservices_cadastral_demo",
+        "data_source_label": "synthetic_demo_cadastral",
+        "aliases": ["TN:காஞ்சிபுரம்:ஸ்ரீபெரும்புதூர்:நெமிலி:108/1"]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [79.9400, 12.9800],
+            [79.9430, 12.9800],
+            [79.9430, 12.9830],
+            [79.9400, 12.9830],
+            [79.9400, 12.9800]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "state": "TN",
+        "district": "CHENNAI",
+        "tehsil": "VELACHERY",
+        "village": "TARAMANI",
+        "khasra_number": "215/3",
+        "area_hectares": 0.2500,
+        "gis_layer_name": "tn_eservices_cadastral_demo",
+        "data_source_label": "synthetic_demo_cadastral",
+        "aliases": ["TN:சென்னை:வேளச்சேரி:தரமணி:215/3"]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [80.2400, 12.9850],
+            [80.2425, 12.9850],
+            [80.2425, 12.9875],
+            [80.2400, 12.9875],
+            [80.2400, 12.9850]
+          ]
+        ]
+      }
+    }
+  ]
+}

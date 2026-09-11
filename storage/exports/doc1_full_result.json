@@ -1,0 +1,40 @@
+{
+  "document_id": "doc1_hackathon",
+  "filename": "doc1.jpeg",
+  "overall_confidence": 0.645,
+  "regions_count": 78,
+  "engine_breakdown": {
+    "C:\\Land Record\\models\\trocr\\kannada_full_checkpoints\\checkpoint-step-55390": 78
+  },
+  "requires_human_review": true,
+  "review_warnings": [
+    "Region 'line_003': Low confidence (0.56 < 0.60)",
+    "Region 'line_007': Empty recognition output",
+    "Region 'line_009': Low confidence (0.56 < 0.60)",
+    "Region 'line_011': Low confidence (0.45 < 0.60)",
+    "Region 'line_015': Low confidence (0.60 < 0.60)",
+    "Region 'line_016': Low confidence (0.57 < 0.60)",
+    "Region 'line_034': Low confidence (0.58 < 0.60)",
+    "Region 'line_043': Low confidence (0.58 < 0.60)",
+    "Region 'line_051': Low confidence (0.48 < 0.60)",
+    "Region 'line_055': Low confidence (0.60 < 0.60)",
+    "Region 'line_058': Low confidence (0.54 < 0.60)",
+    "Region 'line_062': Low confidence (0.58 < 0.60)",
+    "Region 'line_065': Low confidence (0.59 < 0.60)",
+    "Region 'line_066': Low confidence (0.53 < 0.60)",
+    "Region 'line_067': Low confidence (0.52 < 0.60)",
+    "Region 'line_069': Low confidence (0.53 < 0.60)",
+    "Region 'line_070': Low confidence (0.54 < 0.60)",
+    "Region 'line_071': Low confidence (0.54 < 0.60)",
+    "Region 'line_072': Low confidence (0.54 < 0.60)",
+    "Region 'line_073': Low confidence (0.58 < 0.60)",
+    "Region 'line_075': Low confidence (0.59 < 0.60)",
+    "Region 'line_077': Low confidence (0.56 < 0.60)"
+  ],
+  "extracted_fields": {},
+  "kannada_transcription": "ಲಕ್ಷ್ಮೀ\n೫-೬\nಟ್ರೊಕ್\n೮೯೬\nಟ್ಟ್ಯ\n೫-೫೭\nಬಣ್ಯ\nಜ್ಞಾನವಿ\n೬೯೮\nಬಿಟ್ಟಾಟ್\nಫೆಟ್\nಫೆಟ್\n೬೯-೬\n೬೯೬\n೬೫೭\nಣೆಕ್ತಿ\nಘಿಫರೇಸ್ಸಿ\nಕ್ಷು\nಫೆತಿ\n೬೯-೬\n೯-೬\nಸ್ಥಿತಿಯನ್ನೇ\nಘಿಫರೇಖೆಗಳ\nಕ್ಕೂ\nಘಿಫರೇಷಲಿ\nಕ್ಸಿ\nಸ್ಥಿತಿ\nಸ್ಥಿತಿಯ\nತ್ಯಾಗ್\n೬೯-೬\nಕ್ಷಿಸಕ್ತಿ\nಟ್ಟ್ಯ\nಫೆಟ್ಟ\nಟ್ಟೆ\nಕ್ಕೂ\n೬೯-೬\nಕ್ಷಿತಿ\n೯೯೮\n೫-೬\n೬೯೬\nಜ್ಞಾನ\nಕ್ಷಿಷೆತ್ಯ\nಸ್ಥಿತಿಯ\nಅಳ್ತ\nಘಿಫರೇ\nಕ್ಷಿ\nಸ್ಥಿತಿ\nಸ್ಥಿತಿ\nಫೆಟ್ಟ\nಸ್ಥಿತಿ\nಕ್ಷಣಕ್ಷಣ\nಘಿಫರೇಸ್\nತ್ಯಾಗುತ್ತಲೇ\nಜ್ಞಾನ್ಯ\nಫೆಟ್\nಪ್ರಜ್ಞೆ\nಐಎಸ್\nಸನ್ನಿ\nತತ್ತರ\nಕ್ಷಣಕ್ಷಣ\nಜ್ಞಾನವಿ\nಢಕ್ರ\nಸ್ಥಿತಿಯ\nಫೆ-೬೬\nಟ್ಕ್ರ್\nಫೆ-೬೬\n೬೯-೬\nಲಕ್ಷ್ಮೀಪುರ\n೬೫೬೬\nಇಸ್ರೇಸ್ತಿ\nಫೆ-೪೬\nಫೆ-೬\nಕೂಚ್\n೬೯-೬೬\nಫೆ-೧೩\nಫೆ-೬೬\nಜ್ಞಾನಗಿ",
+  "english_translation": "Lakshmi\n೫-೬\nTrock\n896\nTtya\n೫-೫೭\nBanya\nKnowledgeable\n698\nBittat\nFet\nFet\n೬೯-೬\n696\n657\nowe\nGhipheraceae\nKhu\nFethi\n೬೯-೬\n೯-೬\nThe condition itself\nof glyphs\nto\nGhifareshali\nXi\ncondition\nof condition\ngive up\n೬೯-೬\nKshisakti\nTtya\nFetta\nTte\nto\n೬೯-೬\nfate\n998\n೫-೬\n696\nknowledge\nKshetya\nof condition\nlow\nGhiffer\nKshi\ncondition\ncondition\nFetta\ncondition\nmomentarily\nghiferase\nSacrifice\nknowledge\nFet\nConsciousness\nIS\nSonny\nHesitating\nmomentarily\nKnowledgeable\nDark\nof condition\nFeb-66\nTkr\nFeb-66\n೬೯-೬\nLakshmipur\n6566\nisresti\nFeb-46\nFeb-6\nCouch\n೬೯-೬೬\nFeb-13\nFeb-66\nKnowledgeable",
+  "pdf_path": "c:\\Land Record\\storage\\exports\\doc1_digitized_report.pdf",
+  "docx_path": "c:\\Land Record\\storage\\exports\\doc1_digitized_report.docx",
+  "timing_ms": 60932
+}

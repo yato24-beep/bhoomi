@@ -1,0 +1,42 @@
+# Generalized Full-Script Character-Balanced Fine-Tuning Configuration
+experiment_name: kannada_generalized_training
+languages:
+  - kannada
+
+output_dir: models/trocr/kannada_generalized_checkpoints
+batch_size: 12
+eval_batch_size: 12
+num_epochs: 4
+learning_rate: 0.00002
+weight_decay: 0.01
+warmup_steps: 40
+logging_steps: 10
+eval_steps: 100
+save_steps: 100
+save_total_limit: 2
+mixed_precision: "fp16"
+device: "cuda"
+seed: 42
+
+model:
+  model_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  tokenizer_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  model_version: "kannada_generalized_v1"
+  max_sequence_length: 32
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 2.5
+  contrast_range: [0.88, 1.12]
+  brightness_range: [0.88, 1.12]
+  noise_std: 0.015
+  blur_kernel_prob: 0.08
+
+dataset:
+  train_manifest: "training/datasets/kannada_character_balanced/train_balanced.jsonl"
+  val_manifest: "training/datasets/kannada_diagnostic_val/diagnostic_full.jsonl"
+  test_manifest: "training/datasets/kannada_diagnostic_val/diagnostic_full.jsonl"
+  validate_images: true
+  ignore_missing: false

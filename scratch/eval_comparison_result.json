@@ -1,0 +1,60 @@
+{
+  "previous_checkpoint": {
+    "label": "Previous Best Checkpoint (Step 55140, Epoch 6)",
+    "cer": 0.3959,
+    "wer": 0.85,
+    "samples": 100,
+    "time": 34.97239249999984,
+    "sample_preds": [
+      {
+        "ref": "ಚುರಮರಿ",
+        "hyp": "ಚುರುಮ"
+      },
+      {
+        "ref": "ಟಿವಿ",
+        "hyp": "ಟೀವಿ"
+      },
+      {
+        "ref": "ಕಡೆಯೂ",
+        "hyp": "ಕರೆಂದು"
+      },
+      {
+        "ref": "ಸಂಚಾರಿ",
+        "hyp": "ಸಂಪಾದ"
+      },
+      {
+        "ref": "ಶಿಕ್ಷಣದವರೆಗೂ",
+        "hyp": "ಇಷ್ಟವರಿವರೆಗೂ"
+      }
+    ]
+  },
+  "new_checkpoint": {
+    "label": "Newly Trained Checkpoint (Step 55390, Epoch 7)",
+    "cer": 0.3718,
+    "wer": 0.84,
+    "samples": 100,
+    "time": 35.1292237000016,
+    "sample_preds": [
+      {
+        "ref": "ಚುರಮರಿ",
+        "hyp": "ಚುರುಮೂ"
+      },
+      {
+        "ref": "ಟಿವಿ",
+        "hyp": "ಟೀವಿ"
+      },
+      {
+        "ref": "ಕಡೆಯೂ",
+        "hyp": "ಕರೆಂದು"
+      },
+      {
+        "ref": "ಸಂಚಾರಿ",
+        "hyp": "ಸಂಪಾದಿ"
+      },
+      {
+        "ref": "ಶಿಕ್ಷಣದವರೆಗೂ",
+        "hyp": "ಶಿಕ್ಷಕರಿರುವುದೇ"
+      }
+    ]
+  }
+}

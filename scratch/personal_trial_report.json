@@ -1,0 +1,75 @@
+{
+  "trial_name": "personal_handwritten_kannada_fine_tune_trial",
+  "base_checkpoint": "c:\\Land Record\\models\\trocr\\kannada_full_checkpoints\\best_checkpoint",
+  "trial_checkpoint": "c:\\Land Record\\models\\trocr\\personal_trial_checkpoints\\best_checkpoint",
+  "device": "cuda",
+  "num_epochs": 3,
+  "num_samples": 3,
+  "results": [
+    {
+      "image": "a.jpeg",
+      "ground_truth": "ಮರ",
+      "english": "TREE",
+      "orig_prediction": "ಮರ",
+      "orig_confidence": 0.8943,
+      "finetuned_prediction": "ಮರ",
+      "finetuned_confidence": 0.9183,
+      "exact_match_before": true,
+      "exact_match_after": true
+    },
+    {
+      "image": "o.jpeg",
+      "ground_truth": "ಕೋತಿ",
+      "english": "MONKEY",
+      "orig_prediction": "ಕೈರೀ",
+      "orig_confidence": 0.5743,
+      "finetuned_prediction": "ಕೋಟಿ",
+      "finetuned_confidence": 0.7766,
+      "exact_match_before": false,
+      "exact_match_after": false
+    },
+    {
+      "image": "p.jpeg",
+      "ground_truth": "ಹಣ್ಣು",
+      "english": "FRUIT",
+      "orig_prediction": "್ಯಖ೮",
+      "orig_confidence": 0.5281,
+      "finetuned_prediction": "ಧರಣಿ",
+      "finetuned_confidence": 0.5426,
+      "exact_match_before": false,
+      "exact_match_after": false
+    }
+  ],
+  "training_history": [
+    {
+      "epoch": 1,
+      "step": 1,
+      "avg_loss": 3.5441,
+      "val_cer": 0.8182,
+      "val_wer": 0.6667,
+      "epoch_time_sec": 1.48,
+      "throughput_samples_sec": 2.03,
+      "checkpoint_path": "models\\trocr\\personal_trial_checkpoints\\checkpoint-step-1"
+    },
+    {
+      "epoch": 2,
+      "step": 2,
+      "avg_loss": 3.969,
+      "val_cer": 0.5455,
+      "val_wer": 0.6667,
+      "epoch_time_sec": 0.9,
+      "throughput_samples_sec": 3.32,
+      "checkpoint_path": "models\\trocr\\personal_trial_checkpoints\\checkpoint-step-2"
+    },
+    {
+      "epoch": 3,
+      "step": 3,
+      "avg_loss": 1.9861,
+      "val_cer": 0.4545,
+      "val_wer": 0.6667,
+      "epoch_time_sec": 0.64,
+      "throughput_samples_sec": 4.65,
+      "checkpoint_path": "models\\trocr\\personal_trial_checkpoints\\checkpoint-step-3"
+    }
+  ]
+}

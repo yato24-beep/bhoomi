@@ -1,0 +1,14 @@
+Rotation 270: 13 lines, conf=0.6779
+[001] conf=0.831 | s
+[002] conf=0.906 | an?
+[003] conf=0.685 | .
+[004] conf=0.572 | ?
+[005] conf=0.613 | W sa!
+[006] conf=0.505 | Fims hdeದ?
+[007] conf=0.533 | I ee so s ak
+[008] conf=0.647 | Aey ar iu.
+[009] conf=0.518 | Ha h.
+[010] conf=0.510 | H.
+[011] conf=0.502 | J ah.
+[012] conf=0.995 | REGISTER
+[013] conf=0.997 | REGISTER

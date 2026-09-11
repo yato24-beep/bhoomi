@@ -1,0 +1,28 @@
+{
+  "document": "doc1.jpeg",
+  "status": "flagged_for_review",
+  "document_confidence": 0.6664,
+  "requires_review": true,
+  "regions_count": 78,
+  "engine_breakdown": {
+    "C:\\Land Record\\models\\trocr\\kannada_full_checkpoints\\best_checkpoint": 78
+  },
+  "original_kannada_text": "ಬಿಟ್ಟು\n೫-೬\nಟ್ಯೂಟ್\nಛತ್ಯ\n೬೯-೬\n೫-೫೭\n೧೯-೬೬\nಭಿ೫೭೭\nಚೀಟಿತ್ವ\nಫೆಟ್\nಟ್ವಿಕೆ\n೫-೫೭\n೬೯-೬\n೬೯-೬೬\n೯೯೬\nಘಿಫರೇಸ್ಸಿ\nತ್ತತ್ತ\nಫೆತಿ\n೬೯-೬\n೯-೯ರ\nಕ್ಷಿಸತ್ಯನ್ನೇ\nಘಿಫರೇಖೆಗಳ\nಫೆಡ\nತ್ಯಾಗುತ್ತಲೇ\nಕ್ಸಿ\nಸ್ಥಿತಿ\nಕ್ಷಿಸಗಿತ\nತ್ಯಾಗ್\n೯-೬೬\nಕ್ಷಿಸಕ್ತಿ\nಟ್ಟ್ಯ\nಫೆಪ್ಟ್\n೬೯-೬\n೬೯೬\nತ್ಯಾಗ್\nತ್ಕರ್ಕಿ\n೯-೬\nತ್ರಿಟಿ\n೬೯೬\nತ್ರಿಪುರ\nಕ್ಷೈಫಿಕ್ಸ್\nಸ್ಥಿತಿ\nತ್ಯಾಗ್\nಘಿಫರೇ\nದಲ್ಲಿ\nಸ್ಥಿತಿ\nಸ್ಥಿತಿ\nಫೆಡಕ್\nತ್ಯಾಗ್\nತ್ಯಾಗ್ಲಿ\nಕ್ಷಣಶೆಟ್ಟಿ\nತ್ಯಾಗುತ್ತಲೇ\nಜ್ಞಾನವಿ\nಫೆಟ್\nತ್ಯಾಗೇಶ್\n೬೯-೬೬೬\nಸನ್ನಿ\nತ-ಖಿತ್\nಷತ್ಯನ್ನೇ\nತ್ಯಾಗಲು\nಧೀಶ\nಸ್ಥಿತಿಯ\nಫೆ-೬೬\nಟ್ಪ್ಸ್\nಫೆ-೬೬\n೯೯೮\nಬ್ರೈತ್ಯ\nತ್ರಿಟಿ\nಇತ್ಯ\nಫೆ-೬೬\nತ್ಯಾಗ್\nಕೂಚ್\nತ್ಯಾಗ್\nಫೆ-೧೩\nಘಟಟ\n೬೯-೬೬",
+  "translated_text": "left\n೫-೬\nTut\nChhatya\n೬೯-೬\n೫-೫೭\n೧೯-೬೬\nBhi577\nCertification\nFet\nTweak\n೫-೫೭\n೬೯-೬\n೬೯-೬೬\n996\nGhipheraceae\nTatta\nFethi\n೬೯-೬\n9-9\nKhisatya itself\nof glyphs\nFed\nSacrifice\nXi\ncondition\nheat\ngive up\n೯-೬೬\nKshisakti\nTtya\nPhept\n೬೯-೬\n696\ngive up\nTkarki\n೯-೬\nTrinity\n696\nTripura\nXyfix\ncondition\ngive up\nGhiffer\nin the\ncondition\ncondition\nFedak\ngive up\nTagly\ntimeline\nSacrifice\nKnowledgeable\nFet\nTyagesh\n೬೯-೬೬೬\nSonny\nTa-Khit\nShatyam\nto sacrifice\nDeesh\nof condition\nFeb-66\nTps\nFeb-66\n998\nBraitya\nTrinity\nItya\nFeb-66\ngive up\nCouch\ngive up\nFeb-13\nincident\n೬೯-೬೬",
+  "extracted_fields": {},
+  "warnings": [
+    "Region 'line_007': Empty recognition output",
+    "Region 'line_009': Low confidence (0.53 < 0.60)",
+    "Region 'line_010': Empty recognition output",
+    "Region 'line_011': Low confidence (0.60 < 0.60)",
+    "Region 'line_013': Low confidence (0.56 < 0.60)",
+    "Region 'line_016': Low confidence (0.59 < 0.60)",
+    "Region 'line_023': Low confidence (0.52 < 0.60)",
+    "Region 'line_034': Low confidence (0.57 < 0.60)",
+    "Region 'line_053': Low confidence (0.54 < 0.60)",
+    "Region 'line_060': Low confidence (0.59 < 0.60)",
+    "Region 'line_066': Low confidence (0.58 < 0.60)",
+    "Region 'line_067': Low confidence (0.49 < 0.60)",
+    "Region 'line_072': Low confidence (0.57 < 0.60)"
+  ]
+}

@@ -1,1 +1,1 @@
-"""Field validation and domain rule checking modules."""
+"""Field normalization, rule validation, and cross-record consistency package."""

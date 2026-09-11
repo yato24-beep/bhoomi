@@ -1,0 +1,42 @@
+# Personal Handwriting Fine-Tuning Trial Configuration
+experiment_name: personal_handwritten_trial
+languages:
+  - kannada
+
+output_dir: models/trocr/personal_trial_checkpoints
+batch_size: 3
+eval_batch_size: 3
+num_epochs: 3
+learning_rate: 0.00002
+weight_decay: 0.01
+warmup_steps: 2
+logging_steps: 1
+eval_steps: 10
+save_steps: 10
+save_total_limit: 2
+mixed_precision: "fp16"
+device: "cuda"
+seed: 42
+
+model:
+  model_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  tokenizer_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  model_version: "personal_trial_v1"
+  max_sequence_length: 32
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 2.0
+  contrast_range: [0.90, 1.10]
+  brightness_range: [0.90, 1.10]
+  noise_std: 0.01
+  blur_kernel_prob: 0.05
+
+dataset:
+  train_manifest: "training/datasets/personal_trial/train.jsonl"
+  val_manifest: "training/datasets/personal_trial/val.jsonl"
+  test_manifest: "training/datasets/personal_trial/val.jsonl"
+  validate_images: true
+  ignore_missing: false

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Unseen Personal: new_kothi.jpeg",
+    "gt": "ಕೋತಿ",
+    "base_pred": "ಕೊಡಿ",
+    "base_conf": 59.019999999999996,
+    "base_exact": false,
+    "gen_pred": "ಕೋತಿ",
+    "gen_conf": 58.660000000000004,
+    "gen_exact": true,
+    "gen_rescored": "ಕೋತಿ",
+    "gen_rescored_conf": 58.660000000000004
+  },
+  {
+    "name": "Personal Crop: crop_o_kothi.png",
+    "gt": "ಕೋತಿ",
+    "base_pred": "ಕೇತಿ",
+    "base_conf": 52.25,
+    "base_exact": false,
+    "gen_pred": "ಕೋತಿ",
+    "gen_conf": 74.72999999999999,
+    "gen_exact": true,
+    "gen_rescored": "ಕೋತಿ",
+    "gen_rescored_conf": 74.72999999999999
+  },
+  {
+    "name": "Personal Crop: crop_a_mara.png",
+    "gt": "ಮರ",
+    "base_pred": "ಮರ",
+    "base_conf": 70.0,
+    "base_exact": true,
+    "gen_pred": "ಮರ",
+    "gen_conf": 76.08,
+    "gen_exact": true,
+    "gen_rescored": "ಮರ",
+    "gen_rescored_conf": 76.08
+  },
+  {
+    "name": "Personal Crop: crop_p_hannu.png",
+    "gt": "ಹಣ್ಣು",
+    "base_pred": "ತಿವಿ",
+    "base_conf": 50.92,
+    "base_exact": false,
+    "gen_pred": "೫೭",
+    "gen_conf": 60.980000000000004,
+    "gen_exact": false,
+    "gen_rescored": "೫೭",
+    "gen_rescored_conf": 60.980000000000004
+  }
+]

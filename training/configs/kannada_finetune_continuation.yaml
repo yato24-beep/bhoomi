@@ -1,0 +1,44 @@
+# Fine-Tuning Continuation Configuration for Kannada Village Handwriting
+experiment_name: kannada_handwriting_finetune_v2
+languages:
+  - kannada
+
+output_dir: models/trocr/kannada_full_checkpoints
+batch_size: 8
+eval_batch_size: 8
+num_epochs: 2
+learning_rate: 0.00001
+weight_decay: 0.01
+warmup_steps: 50
+logging_steps: 10
+eval_steps: 100
+save_steps: 100
+save_total_limit: 3
+mixed_precision: "fp16"
+device: "cuda"
+seed: 42
+
+model:
+  model_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  tokenizer_name_or_path: "models/trocr/kannada_full_checkpoints/best_checkpoint"
+  model_version: "kannada_finetuned_v2"
+  max_sequence_length: 32
+  image_size: [384, 384]
+  freeze_encoder: false
+
+augmentation:
+  enabled: true
+  rotation_range_deg: 4.0
+  contrast_range: [0.80, 1.20]
+  brightness_range: [0.85, 1.15]
+  noise_std: 0.020
+  blur_kernel_prob: 0.12
+
+dataset:
+  train_manifest: "training/datasets/iiit_kannada_train.jsonl"
+  val_manifest: "training/datasets/iiit_kannada_val.jsonl"
+  test_manifest: "training/datasets/test_kannada.jsonl"
+  max_train_samples: 2000
+  max_val_samples: 200
+  validate_images: false
+  ignore_missing: true

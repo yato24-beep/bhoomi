@@ -31,7 +31,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 # Default model paths configurable via environment variables
 DEFAULT_KANNADA_MODEL_PATH = os.environ.get(
     "KANNADA_HANDWRITING_MODEL_PATH",
-    "models/trocr/kannada_full_checkpoints/best_checkpoint",
+    "models/trocr/kannada_generalized_checkpoints/best_checkpoint",
 )
 DEFAULT_ENGLISH_MODEL_PATH = os.environ.get(
     "TROCR_PRETRAINED_MODEL_PATH",
@@ -411,8 +411,9 @@ class TrocrHandwritingRecognizer(BaseHandwritingRecognizer):
                 if getattr(self._model.config, "eos_token_id", None) is not None:
                     gen_kwargs["eos_token_id"] = self._model.config.eos_token_id
 
+            ignored_kwargs = {"preprocess_input", "enable_multipass", "override_preprocess", "preprocess"}
             for k, v in kwargs.items():
-                if k not in gen_kwargs:
+                if k not in gen_kwargs and k not in ignored_kwargs:
                     gen_kwargs[k] = v
 
             # Use autocast for FP16 on CUDA if enabled
@@ -445,6 +446,43 @@ class TrocrHandwritingRecognizer(BaseHandwritingRecognizer):
             mean_conf = compute_token_mean_confidence(token_probs) if token_probs else None
             geo_conf = compute_token_geometric_mean_confidence(token_probs) if token_probs else None
 
+            # Phase 7: Multi-Pass Recognition for challenging / low-confidence handwriting crops
+            best_variant_used = "variant_a_enhanced"
+            enable_multipass = kwargs.get("enable_multipass", False)
+            if enable_multipass and (mean_conf is None or mean_conf < 0.65):
+                from PIL import ImageEnhance, ImageFilter
+                variants = [
+                    ("variant_b_upscaled", rgb_image.resize((int(rgb_image.width * 1.5), int(rgb_image.height * 1.5)), Image.BICUBIC)),
+                    ("variant_c_contrast", ImageEnhance.Contrast(rgb_image).enhance(1.30)),
+                    ("variant_d_denoised", rgb_image.filter(ImageFilter.MedianFilter(size=3))),
+                ]
+                for var_name, var_img in variants:
+                    try:
+                        var_pixels = self._processor(images=var_img, return_tensors="pt").pixel_values
+                        if HAS_TORCH and torch is not None:
+                            var_pixels = var_pixels.to(self._device_str)
+                        with torch.no_grad(), autocast_ctx:
+                            var_outputs = self._model.generate(var_pixels, **gen_kwargs)
+                        var_ids = var_outputs.sequences if hasattr(var_outputs, "sequences") else var_outputs
+                        if hasattr(self._processor, "batch_decode"):
+                            var_raw = self._processor.batch_decode(var_ids, skip_special_tokens=True)[0]
+                        else:
+                            var_raw = ""
+                        var_text = var_raw.strip()
+                        var_scores = var_outputs.scores if hasattr(var_outputs, "scores") else None
+                        var_probs = self._extract_token_probabilities(var_scores, var_ids) if var_scores else []
+                        var_conf = compute_token_mean_confidence(var_probs) if var_probs else None
+
+                        if var_conf is not None and (mean_conf is None or var_conf > mean_conf):
+                            recognized_text = var_text
+                            raw_text = var_raw
+                            mean_conf = var_conf
+                            geo_conf = compute_token_geometric_mean_confidence(var_probs) if var_probs else geo_conf
+                            token_probs = var_probs
+                            best_variant_used = var_name
+                    except Exception:
+                        pass
+
             elapsed = time.perf_counter() - start_time
             requires_review = (
                 mean_conf is None
@@ -467,6 +505,7 @@ class TrocrHandwritingRecognizer(BaseHandwritingRecognizer):
                 "raw_text": raw_text,
                 "normalized_text": recognized_text,
                 "requires_human_review": requires_review,
+                "best_variant_used": best_variant_used,
                 "preprocessing": prep_metadata,
             }
             if self.language != "kannada" or "microsoft/trocr" in str(self.model_name_or_path):

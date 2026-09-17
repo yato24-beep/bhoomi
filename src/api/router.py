@@ -195,6 +195,27 @@ async def process_document_image(
                 "evidence": fval.evidence.model_dump() if fval.evidence else None,
             }
 
+        # Provide aliases for Karnataka / South Indian and standard frontend field names
+        if "khasra_number" in fields_dict and "survey_number" not in fields_dict:
+            survey_copy = dict(fields_dict["khasra_number"])
+            survey_copy["field_name"] = "survey_number"
+            fields_dict["survey_number"] = survey_copy
+
+        if "khatauni_number" in fields_dict and "property_number" not in fields_dict:
+            prop_copy = dict(fields_dict["khatauni_number"])
+            prop_copy["field_name"] = "property_number"
+            fields_dict["property_number"] = prop_copy
+
+        if "tehsil" in fields_dict and "taluk" not in fields_dict:
+            taluk_copy = dict(fields_dict["tehsil"])
+            taluk_copy["field_name"] = "taluk"
+            fields_dict["taluk"] = taluk_copy
+
+        if "document_date" in fields_dict and "date" not in fields_dict:
+            date_copy = dict(fields_dict["document_date"])
+            date_copy["field_name"] = "date"
+            fields_dict["date"] = date_copy
+
         response.extracted_fields = fields_dict
         response.validation = {
             "status": c_result.validation_status.value,

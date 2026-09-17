@@ -56,14 +56,14 @@ class ConfidenceScorer:
         ocr_conf = max(0.0, min(1.0, field_obj.confidence))
 
         # 2. Pattern Strength signal
-        if field_obj.extraction_method == ExtractionMethod.REGEX:
+        if field_obj.extraction_method in (ExtractionMethod.REGEX, ExtractionMethod.SEMANTIC_UNDERSTANDING):
             pattern_score = 0.95
         elif field_obj.extraction_method == ExtractionMethod.TABLE_LOOKUP:
             pattern_score = 0.90
         elif field_obj.extraction_method == ExtractionMethod.HANDWRITING_FUSION:
             pattern_score = 0.85
         else:
-            pattern_score = 0.70
+            pattern_score = 0.75
 
         # 3. Rule Validation signal
         field_errors = [item for item in validation_items if item.field_name == field_obj.field_name]
@@ -105,21 +105,25 @@ class ConfidenceScorer:
         else:
             gis_score = 0.90 if gis_result.is_verified else 0.80
 
-        # 6. Disagreement penalty
+        # Cross-field consistency penalty if this field was flagged
+        cross_field_penalty = 1.0
+        for inc in cross_record.inconsistencies:
+            if field_obj.field_name in inc.lower() or (field_obj.field_name == "site_area" and "area" in inc.lower()):
+                cross_field_penalty = 0.5
+                break
+
+        # Disagreement penalty
         disagreement_penalty = 0.0
         if field_obj.validation_status == ValidationStatus.CONFLICT:
             disagreement_penalty = 0.25
 
-        # Weighted calculation
-        raw_score = (
-            self.weights["ocr_confidence"] * ocr_conf
-            + self.weights["pattern_strength"] * pattern_score
-            + self.weights["rule_validation"] * rule_score
-            + self.weights["cross_record"] * cross_score
-            + self.weights["gis_consistency"] * gis_score
-            - disagreement_penalty
-            - rule_penalty
-        )
+        # Product calculation: (ocr_confidence * semantic_confidence * validation_pass)
+        validation_pass = rule_score * cross_field_penalty
+        evidence_product = ocr_conf * pattern_score * validation_pass
+
+        # Blend with cadastral context (GIS / cross-record)
+        context_factor = 0.85 + 0.15 * ((gis_score + cross_score) / 2.0)
+        raw_score = (evidence_product * context_factor) - disagreement_penalty - rule_penalty
 
         final_score = max(0.0, min(1.0, round(raw_score, 4)))
 
@@ -134,6 +138,19 @@ class ConfidenceScorer:
             if ml_pred is not None:
                 # 60% ML Calibrator + 40% Rule-Based Weighted Score
                 final_score = round(0.60 * ml_pred + 0.40 * final_score, 4)
+
+        # Enforce "Requires Verification" if evidence is insufficient or validation failed
+        is_insufficient = (
+            final_score < self.medium_threshold
+            or validation_pass < 0.70
+            or field_obj.validation_status in (ValidationStatus.UNVERIFIED, ValidationStatus.INVALID, ValidationStatus.CONFLICT)
+        )
+        if is_insufficient:
+            if field_obj.validation_status != ValidationStatus.INVALID:
+                field_obj.validation_status = ValidationStatus.UNVERIFIED
+            req_msg = "Requires Verification: Evidence confidence insufficient or validation check failed"
+            if req_msg not in field_obj.validation_messages:
+                field_obj.validation_messages.append(req_msg)
 
         breakdown = ConfidenceBreakdown(
             ocr_confidence=round(ocr_conf, 3),

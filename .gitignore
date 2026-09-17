@@ -137,3 +137,20 @@ backend/*.db
 # ================================================================
 .DS_Store
 Thumbs.db
+# Large model archive
+Land_Record_Models_FULL.zip
+
+# Local database files
+backend/doc_platform.db
+backend/doc_platform.db.*
+
+# Local debug outputs
+storage/debug/*
+
+# Scratch/debug files
+scratch/*
+
+# Do not commit demo mode
+backend/app/services/demo_mode.py
+
+demo.png

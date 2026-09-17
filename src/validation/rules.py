@@ -136,6 +136,31 @@ class RuleValidator:
                     actual=str_val,
                 ))
 
+        # Calendar Date validation for date fields
+        if field_obj.field_name in ("date", "document_date"):
+            val_str = str(val or field_obj.raw_value).strip()
+            if val_str:
+                from datetime import datetime
+                valid_date = False
+                for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y", "%Y/%m/%d"):
+                    try:
+                        dt = datetime.strptime(val_str, fmt)
+                        if 1900 <= dt.year <= 2099:
+                            valid_date = True
+                            break
+                    except ValueError:
+                        pass
+                if not valid_date:
+                    items.append(RuleValidationItem(
+                        rule_name=f"calendar_date_{field_obj.field_name}",
+                        field_name=field_obj.field_name,
+                        passed=False,
+                        severity="error",
+                        message=f"Date '{val_str}' is not a valid calendar date",
+                        expected="Valid calendar date (DD-MM-YYYY or YYYY-MM-DD)",
+                        actual=val_str,
+                    ))
+
         # String Length Check
         if "min_length" in rule_spec or "max_length" in rule_spec:
             str_len = len(str(val).strip())

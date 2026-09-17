@@ -357,62 +357,166 @@ class MultimodalOCRDocumentProcessor(BaseDocumentProcessor):
                     b_response=resp,
                     file_bytes=raw_bytes,
                 )
-                for fname, fval in c_result.fields.items():
-                    norm_box = None
-                    if fval.bbox:
-                        norm_box = BoundingBox(
-                            x_min=round(max(0.0, min(1.0, fval.bbox.x_min / max(img_w, 1))), 4),
-                            y_min=round(max(0.0, min(1.0, fval.bbox.y_min / max(img_h, 1))), 4),
-                            x_max=round(max(0.0, min(1.0, fval.bbox.x_max / max(img_w, 1))), 4),
-                            y_max=round(max(0.0, min(1.0, fval.bbox.y_max / max(img_h, 1))), 4),
-                        )
-                    fields.append(
-                        ExtractedFieldItem(
-                            field_name=fname,
-                            original_value=fval.raw_value,
-                            normalized_value=str(fval.normalized_value) if fval.normalized_value is not None else fval.raw_value,
-                            confidence_score=round(float(fval.confidence), 4),
-                            source_page=fval.page,
-                            bounding_box=norm_box,
-                        )
-                    )
-            except Exception as c_exc:
-                pass
+                # 12 Canonical Fields mapping
+                FIELD_CANONICAL_MAP = {
+                    "owner_name": "owner_name",
+                    "survey_number": "survey_number",
+                    "khasra_number": "survey_number",
+                    "khata_number": "khata_number",
+                    "property_number": "khata_number",
+                    "khatauni_number": "khata_number",
+                    "locality": "locality",
+                    "village": "locality",
+                    "taluk": "taluk",
+                    "sub_division": "taluk",
+                    "tehsil": "taluk",
+                    "district": "district",
+                    "city": "district",
+                    "address": "address",
+                    "property_address": "address",
+                    "site_area": "site_area",
+                    "land_area": "site_area",
+                    "built_up_area": "built_up_area",
+                    "date": "date",
+                    "document_date": "date",
+                    "issuing_authority": "issuing_authority",
+                    "issuing_organization": "issuing_authority",
+                    "authority": "issuing_authority",
+                    "organization": "issuing_authority",
+                }
 
-            # Fallback or supplementary region fields if Person C returned no fields
-            if not fields:
-                for idx, reg in enumerate(resp.ordered_regions):
-                    norm_box = None
-                    if reg.bbox:
-                        norm_box = BoundingBox(
-                            x_min=round(max(0.0, min(1.0, reg.bbox.x_min / max(img_w, 1))), 4),
-                            y_min=round(max(0.0, min(1.0, reg.bbox.y_min / max(img_h, 1))), 4),
-                            x_max=round(max(0.0, min(1.0, reg.bbox.x_max / max(img_w, 1))), 4),
-                            y_max=round(max(0.0, min(1.0, reg.bbox.y_max / max(img_h, 1))), 4),
-                        )
+                canonical_fields_seen = set()
+                if c_result and c_result.fields:
+                    doc_type_val = (
+                        getattr(c_result.document_type, "value", str(c_result.document_type))
+                        if c_result.document_type
+                        else "Land record"
+                    )
                     fields.append(
                         ExtractedFieldItem(
-                            field_name=f"region_{idx+1:03d}_{reg.language}",
-                            original_value=reg.raw_text,
-                            normalized_value=reg.normalized_text,
-                            confidence_score=reg.confidence if reg.confidence is not None else 0.85,
-                            source_page=reg.page_number,
-                            bounding_box=norm_box,
+                            field_name="document_type",
+                            original_value=doc_type_val,
+                            normalized_value=doc_type_val.replace("_", " ").title(),
+                            confidence_score=round(float(c_result.overall_confidence or 0.95), 4),
+                            source_page=1,
+                            bounding_box=None,
                         )
                     )
+                    canonical_fields_seen.add("document_type")
+
+                    for fname, fval in c_result.fields.items():
+                        target_canonical = FIELD_CANONICAL_MAP.get(fname.lower())
+                        if not target_canonical or target_canonical in canonical_fields_seen:
+                            continue
+                        if not fval.raw_value or not str(fval.raw_value).strip():
+                            continue
+
+                        norm_box = None
+                        if fval.bbox:
+                            norm_box = BoundingBox(
+                                x_min=round(max(0.0, min(1.0, fval.bbox.x_min / max(img_w, 1))), 4),
+                                y_min=round(max(0.0, min(1.0, fval.bbox.y_min / max(img_h, 1))), 4),
+                                x_max=round(max(0.0, min(1.0, fval.bbox.x_max / max(img_w, 1))), 4),
+                                y_max=round(max(0.0, min(1.0, fval.bbox.y_max / max(img_h, 1))), 4),
+                            )
+                        fields.append(
+                            ExtractedFieldItem(
+                                field_name=target_canonical,
+                                original_value=fval.raw_value,
+                                normalized_value=str(fval.normalized_value) if fval.normalized_value is not None else fval.raw_value,
+                                confidence_score=round(float(fval.confidence), 4),
+                                source_page=fval.page,
+                                bounding_box=norm_box,
+                            )
+                        )
+                        canonical_fields_seen.add(target_canonical)
+            except Exception as c_exc:
+                logger.error(f"Person C extraction error in MultimodalOCRDocumentProcessor: {c_exc}", exc_info=True)
+
+            # Check if document was classified as not a land record
+            if c_result and (c_result.document_type == "not_land_record" or getattr(c_result.document_type, "value", "") == "not_land_record"):
+                structured_data = {
+                    "document_type": "not_land_record",
+                    "document_type_label": "Not a land record",
+                    "is_land_record": False,
+                    "notice": "This document does not appear to be a land record.",
+                    "document_id": resp.document_id,
+                    "merged_text": resp.merged_text,
+                    "original_kannada_text": resp.original_kannada_text or resp.merged_text,
+                    "translated_text": resp.translated_text or resp.merged_text,
+                    "regions_count": len(resp.ordered_regions),
+                    "engine_breakdown": resp.engine_breakdown,
+                    "warnings": ["This document does not appear to be a land record."],
+                    "status": "invalid",
+                    "gis_validation": {},
+                    "duplicate_analysis": {},
+                    "extracted_fields": {},
+                }
+                return ProcessingResult(
+                    extracted_data=structured_data,
+                    fields=[],
+                    confidence_score=0.95,
+                    is_valid=False,
+                    validation_info={
+                        "checks_passed": [],
+                        "warnings": ["This document does not appear to be a land record."],
+                        "requires_human_review": True,
+                        "is_land_record": False,
+                        "notice": "This document does not appear to be a land record.",
+                    },
+                    processing_time_ms=int((time.perf_counter() - start_time) * 1000),
+                )
+
+            extracted_fields_dict = {}
+            if c_result and c_result.fields:
+                for fn, fv in c_result.fields.items():
+                    extracted_fields_dict[fn] = {
+                        "raw_value": fv.raw_value,
+                        "normalized_value": str(fv.normalized_value) if fv.normalized_value is not None else fv.raw_value,
+                        "confidence": float(fv.confidence),
+                        "validation_status": fv.validation_status.value if hasattr(fv.validation_status, "value") else str(fv.validation_status),
+                    }
+
+            from src.translation.translator import translate_document_text
+            # Pass semantic fields and evidence extracted by Person C to Step A normalization
+            trans_res = translate_document_text(
+                text=resp.merged_text,
+                semantic_fields=c_result.fields if c_result else None,
+                regions=resp.ordered_regions,
+            )
+            raw_ocr = resp.merged_text
+            clean_kannada = trans_res.kannada_translation or (resp.original_kannada_text or resp.merged_text)
+            english_trans = trans_res.english_translation or resp.translated_text or resp.merged_text
+
+            translation_warnings = list(trans_res.purity_report.warnings)
+            combined_warnings = list(resp.warnings)
+            for tw in translation_warnings:
+                if tw not in combined_warnings:
+                    combined_warnings.append(tw)
 
             structured_data = {
                 "document_type": c_result.document_type.value if c_result else "Land Record",
+                "document_type_label": getattr(c_result.document_type, "value", "Land record") if c_result else "Land record",
+                "is_land_record": True,
                 "document_id": resp.document_id,
-                "merged_text": resp.merged_text,
+                # 3 Distinct Representations
+                "original_ocr": raw_ocr,
+                "kannada_translation": clean_kannada,
+                "english_translation": english_trans,
+                # Backwards compatible keys
+                "merged_text": raw_ocr,
                 "original_kannada_text": resp.original_kannada_text or resp.merged_text,
-                "translated_text": resp.translated_text or resp.merged_text,
+                "clean_kannada_text": clean_kannada,
+                "translated_text": english_trans,
+                "translation_quality": trans_res.purity_report.quality,
+                "translation_warnings": translation_warnings,
                 "regions_count": len(resp.ordered_regions),
                 "engine_breakdown": resp.engine_breakdown,
-                "warnings": resp.warnings,
+                "warnings": combined_warnings,
                 "status": c_result.validation_status.value if c_result else resp.status,
                 "gis_validation": c_result.gis_validation.model_dump() if c_result else {},
                 "duplicate_analysis": c_result.duplicate_analysis.model_dump() if c_result else {},
+                "extracted_fields": extracted_fields_dict,
             }
 
             duration_ms = int((time.perf_counter() - start_time) * 1000)
@@ -426,11 +530,17 @@ class MultimodalOCRDocumentProcessor(BaseDocumentProcessor):
                 if c_result
                 else (not resp.requires_human_review)
             )
+            if trans_res.purity_report.requires_review:
+                is_valid = False
 
             validation_info = {
                 "checks_passed": [f"ocr_completed: {len(resp.ordered_regions)} regions extracted"],
-                "warnings": resp.warnings + (c_result.review_reasons if c_result else []),
-                "requires_human_review": resp.requires_human_review or (c_result.requires_human_review if c_result else False),
+                "warnings": combined_warnings + (c_result.review_reasons if c_result else []),
+                "requires_human_review": (
+                    resp.requires_human_review
+                    or (c_result.requires_human_review if c_result else False)
+                    or trans_res.purity_report.requires_review
+                ),
             }
             if c_result:
                 validation_info["validation_status"] = c_result.validation_status.value

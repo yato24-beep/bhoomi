@@ -9,6 +9,7 @@ from app.models.document import Document
 from app.models.extraction import ExtractionResult
 from app.models.extracted_field import ExtractedField
 from app.services.minio_storage import minio_storage
+from app.services.demo_mode import is_demo_mode, apply_demo_results, DEMO_FIELDS
 from app.pipeline.processor import get_document_processor
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,20 @@ def process_document_task(*args, **kwargs):
         if not document:
             logger.error(f"❌ Document ID {document_id} not found in database.")
             return {"status": "error", "message": f"Document ID {document_id} not found"}
+
+        # DEMO_MODE bypass: complete immediately without OCR/Celery/Gemini/translation
+        if is_demo_mode():
+            logger.info(f"✨ [DEMO_MODE] Instant completion for Document ID {document_id}")
+            apply_demo_results(db, document)
+            return {
+                "status": "success",
+                "document_id": document_id,
+                "filename": document.filename,
+                "fields_extracted": len(DEMO_FIELDS),
+                "confidence_score": 0.98,
+                "is_valid": True,
+                "final_status": "COMPLETED",
+            }
 
         # 2. Update document status to PROCESSING
         logger.info(f"🔄 Updating Document {document_id} status: {document.status} -> PROCESSING")

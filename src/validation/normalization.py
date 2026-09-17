@@ -45,14 +45,68 @@ class FieldNormalizer:
         # Remove common honorific titles in Hindi / Kannada / Tamil / English
         titles_pattern = r"^(?:श्रीमान|श्रीमती|सुश्री|श्री|ಶ್ರೀ|ಶ್ರೀಮತಿ|ತಿರು|திருமதி|स्व०|स्वर्गवासी|मर्हूम|जनाब|shri|smt|mr|mrs|miss|late|dr)\.?\s+"
         name = re.sub(titles_pattern, "", name, flags=re.IGNORECASE | re.UNICODE)
-        
+
         # Remove circled numbers (①, ②, ③)
         name = re.sub(r"[①②③④⑤⑥⑦⑧⑨⑩\(\)]", "", name)
+
+        # Remove trailing relationship / locational / register boilerplate
+        boilerplate_pattern = r"(?:\s*(?:ರವರ\s*ಹೆಸರಿನಲ್ಲಿ|ರವರ|ರವರಿಗೆ|ಇವರ|ದಾಖಲಾಗಿರುತ್ತದೆ|in\s*the\s*register|Bangalore|Bengaluru))+$"
+        name = re.sub(boilerplate_pattern, "", name, flags=re.IGNORECASE | re.UNICODE)
+
         # Remove trailing slash or symbols
         name = re.sub(r"[\/\-\:\,\.]+$", "", name).strip()
         # Collapse whitespace
-        name = re.sub(r"\s+", " ", name)
+        name = re.sub(r"\s+", " ", name).strip()
         return name
+
+
+    KNOWN_LOCALITIES = {
+        "ಜಯನಗರ": "Jayanagar",
+        "ಕೋರಮಂಗಲ": "Koramangala",
+        "ನಾರಾಯಣಘಟ್ಟ": "Narayanaghatta",
+        "ಕೆಂಗೇರಿ": "Kengeri",
+        "ಇಜಿಪುರ": "Ejipura",
+        "ಮಲ್ಲೇಶ್ವರಂ": "Malleshwaram",
+        "ಇಂದಿರಾನಗರ": "Indiranagar",
+        "ಬಸವನಗುಡಿ": "Basavanagudi",
+        "ಯಲಹಂಕ": "Yelahanka",
+        "ರಾಜಾಜಿನಗರ": "Rajajinagar",
+        "ಮಹಾದೇವಪುರ": "Mahadevapura",
+    }
+
+    KNOWN_TALUKS = {
+        "ಜಯನಗರಿಉಪಏಭಾಗ": "Jayanagar Sub-division",
+        "ಜಯನಗರ ಉಪವಿಭಾಗ": "Jayanagar Sub-division",
+        "ಜಯನಗರ ಉಪ-ವಿಭಾಗ": "Jayanagar Sub-division",
+        "ಕೋರಮಂಗಲ ಉಪವಿಭಾಗ": "Koramangala Sub-division",
+        "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ": "Bangalore South",
+    }
+
+    def normalize_locality(self, raw_loc: str) -> str:
+        """Cleans administrative locality / village strings by stripping field labels and mapping known Kannada entities."""
+        if not raw_loc:
+            return ""
+        clean = re.sub(r"^(?:Locality|ಸಳಸಳೀಯಹೆಸರು|ಸ್ಥಳೀಯ\s*ಹೆಸರು|ಬಡಾವಣೆ|Village|ಗ್ರಾಮ)[\s:.\-_|I]*", "", raw_loc.strip(), flags=re.IGNORECASE | re.UNICODE)
+        clean = clean.strip(" \t\n,.-:|I")
+        return self.KNOWN_LOCALITIES.get(clean, clean)
+
+    def normalize_taluk(self, raw_taluk: str) -> str:
+        """Cleans sub-division / taluk strings by stripping field labels."""
+        if not raw_taluk:
+            return ""
+        clean = re.sub(r"^(?:Taluk|ತಾಲೂಕು|ತಾಲ್ಲೂಕು|ತಾಲೂಕ್|Sub\s*Division|ಉಪ\s*ವಿಭಾಗ|ಉಪಏಭಾಗ)[\s:.\-_|I]*", "", raw_taluk.strip(), flags=re.IGNORECASE | re.UNICODE)
+        clean = clean.strip(" \t\n,.-:|I")
+        return self.KNOWN_TALUKS.get(clean, clean)
+
+    def normalize_district(self, raw_dist: str) -> str:
+        """Cleans district strings by stripping field labels."""
+        if not raw_dist:
+            return ""
+        clean = re.sub(r"^(?:District|ಜಿಲ್ಲೆ|ಬಲೈ)[\s:.\-_|I]*", "", raw_dist.strip(), flags=re.IGNORECASE | re.UNICODE)
+        clean = clean.strip(" \t\n,.-:|I")
+        if clean in ("ಬೆಂಗಳೂದು", "ಬೆಂಗಳೂರು"):
+            return "Bengaluru"
+        return clean
 
     def normalize_khasra(self, raw_khasra: str) -> str:
         """
@@ -64,6 +118,9 @@ class FieldNormalizer:
         """
         if not raw_khasra:
             return ""
+
+        # Remove label prefixes like "Survey/Number/", "Survey Number ", "Sy. No. ", "ಸರ್ವೆ ನಂ"
+        raw_khasra = re.sub(r"^(?:Survey[\s\-_/]*(?:Number|No|Num)?|Sy\.?[\s\-_/]*No\.?|ಸರ್ವೆ[\s\-_/]*(?:ನಂ|ನಂಬರ್)?|ಸವee[\s\-_/]*ಸoui)[\s:.\-_|I]*", "", raw_khasra.strip(), flags=re.IGNORECASE | re.UNICODE)
 
         converted = convert_devanagari_numerals(raw_khasra)
         if "W.NO" in converted.upper() or "WARD" in converted.upper():

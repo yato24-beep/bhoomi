@@ -53,6 +53,21 @@ class DocumentLineSegmenter:
         self.min_line_width = min_line_width
         self.padding_px = padding_px
         self.use_detector_fallback = use_detector_fallback
+        self._paddle_ocr = None
+
+    def _get_paddle_ocr(self) -> Any:
+        """Lazily initializes and caches a single PaddleOCR instance."""
+        if self._paddle_ocr is None:
+            import os
+            os.environ["FLAGS_use_mkldnn"] = "0"
+            os.environ["PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT"] = "0"
+            try:
+                from paddleocr import PaddleOCR
+                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="ka", enable_mkldnn=False)
+            except Exception as e:
+                logger.warning(f"Could not initialize PaddleOCR in DocumentLineSegmenter: {e}")
+                self._paddle_ocr = None
+        return self._paddle_ocr
 
     def segment_into_lines(
         self,
@@ -75,14 +90,12 @@ class DocumentLineSegmenter:
             try:
                 lines = self._segment_via_paddle(image, page_number)
             except Exception as exc:
-                logger.debug(f"Paddle line detection fallback: {exc}")
+                logger.warning(f"Paddle line detection fallback: {exc}")
                 lines = []
 
-        # Method 2: If detector found fewer than 5 lines, use morphological line grouping
-        if len(lines) < 5 and HAS_CV2 and cv2 is not None:
-            morph_lines = self._segment_via_morphology(image, page_number)
-            if len(morph_lines) >= len(lines):
-                lines = morph_lines
+        # Method 2: Only use morphology fallback if Paddle produced ZERO usable lines or failed
+        if not lines and HAS_CV2 and cv2 is not None:
+            lines = self._segment_via_morphology(image, page_number)
 
         # Method 3: Fallback uniform horizontal slice grid if image has text but segmentation failed
         if not lines:
@@ -93,82 +106,185 @@ class DocumentLineSegmenter:
         return sorted_lines
 
     def _segment_via_paddle(self, image: Image.Image, page_number: int) -> List[LineCrop]:
-        """Discovers text line bounding boxes using Paddle OCR model and classifies printed vs handwritten."""
-        import os
-        os.environ["FLAGS_use_mkldnn"] = "0"
-        os.environ["PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT"] = "0"
-        from paddleocr import PaddleOCR
+        """Discovers text line bounding boxes using Paddle OCR, clusters word tokens into full lines,
+        and accurately classifies script (Kannada, English, Alphanumeric) and handwriting status."""
+        ocr = self._get_paddle_ocr()
+        if ocr is None:
+            return []
 
-        ocr = PaddleOCR(use_angle_cls=False, lang="ka", enable_mkldnn=False, show_log=False)
         arr = np.array(image.convert("RGB"))
-        res = ocr.ocr(arr, cls=False, rec=True)
+        try:
+            res = ocr.ocr(arr)
+        except Exception as ocr_err:
+            logger.warning(f"Paddle OCR execution notice: {ocr_err}")
+            return []
+
         if not res or not res[0]:
             return []
 
-        boxes = res[0]
-        raw_crops: List[LineCrop] = []
         w, h = image.size
+        first_res = res[0]
+        extracted_items = []
 
-        for idx, item in enumerate(boxes):
-            # item format: [box_pts, (rec_text, rec_conf)] or box_pts if rec=False
-            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
-                b = item[0]
-                rec_text, rec_conf = str(item[1][0]).strip(), float(item[1][1])
-            else:
-                b = item
-                rec_text, rec_conf = "", 0.0
+        if isinstance(first_res, dict) or hasattr(first_res, "get") or hasattr(first_res, "rec_texts"):
+            # PaddleX 3.x OCRResult dictionary format
+            rec_texts = first_res.get("rec_texts", []) if hasattr(first_res, "get") else getattr(first_res, "rec_texts", [])
+            rec_scores = first_res.get("rec_scores", []) if hasattr(first_res, "get") else getattr(first_res, "rec_scores", [])
+            rec_boxes = first_res.get("rec_boxes", []) if hasattr(first_res, "get") else getattr(first_res, "rec_boxes", [])
+            rec_polys = first_res.get("rec_polys", []) if hasattr(first_res, "get") else getattr(first_res, "rec_polys", [])
 
-            xs = [pt[0] for pt in b]
-            ys = [pt[1] for pt in b]
-            x1 = max(0, int(min(xs)) - self.padding_px)
-            y1 = max(0, int(min(ys)) - self.padding_px)
-            x2 = min(w, int(max(xs)) + self.padding_px)
-            y2 = min(h, int(max(ys)) + self.padding_px)
+            for i in range(len(rec_texts)):
+                rec_text = str(rec_texts[i]).strip()
+                rec_conf = float(rec_scores[i]) if i < len(rec_scores) else 0.80
+                if not rec_text:
+                    continue
 
-            box_w = x2 - x1
-            box_h = y2 - y1
+                if i < len(rec_boxes) and rec_boxes[i] is not None:
+                    bx = rec_boxes[i]
+                    x1 = max(0, int(bx[0]))
+                    y1 = max(0, int(bx[1]))
+                    x2 = min(w, int(bx[2]))
+                    y2 = min(h, int(bx[3]))
+                elif i < len(rec_polys) and rec_polys[i] is not None:
+                    poly = rec_polys[i]
+                    xs = [pt[0] for pt in poly]
+                    ys = [pt[1] for pt in poly]
+                    x1 = max(0, int(min(xs)))
+                    y1 = max(0, int(min(ys)))
+                    x2 = min(w, int(max(xs)))
+                    y2 = min(h, int(max(ys)))
+                else:
+                    continue
 
-            if box_w < self.min_line_width or box_h < self.min_line_height:
+                box_w = x2 - x1
+                box_h = y2 - y1
+                if box_w < 5 or box_h < 5:
+                    continue
+
+                y_mid = (y1 + y2) / 2.0
+                extracted_items.append({
+                    "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+                    "y_mid": y_mid, "h": box_h, "w": box_w,
+                    "text": rec_text, "conf": rec_conf,
+                })
+        elif isinstance(first_res, (list, tuple)):
+            # Classic PaddleOCR 2.x list format
+            for item in first_res:
+                if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
+                    b = item[0]
+                    rec_text = str(item[1][0]).strip()
+                    rec_conf = float(item[1][1])
+                else:
+                    continue
+
+                if not rec_text:
+                    continue
+
+                xs = [pt[0] for pt in b]
+                ys = [pt[1] for pt in b]
+                x1 = max(0, int(min(xs)))
+                y1 = max(0, int(min(ys)))
+                x2 = min(w, int(max(xs)))
+                y2 = min(h, int(max(ys)))
+
+                box_w = x2 - x1
+                box_h = y2 - y1
+                if box_w < 5 or box_h < 5:
+                    continue
+
+                y_mid = (y1 + y2) / 2.0
+                extracted_items.append({
+                    "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+                    "y_mid": y_mid, "h": box_h, "w": box_w,
+                    "text": rec_text, "conf": rec_conf,
+                })
+
+        if not extracted_items:
+            return []
+
+        # Sort all items primarily top-to-bottom
+        extracted_items.sort(key=lambda item: item["y1"])
+
+        # Cluster word boxes into horizontal text lines
+        line_clusters: List[List[Dict[str, Any]]] = []
+        for item in extracted_items:
+            assigned = False
+            for cluster in line_clusters:
+                # Compare with cluster average vertical position
+                cluster_y_mids = [c["y_mid"] for c in cluster]
+                cluster_heights = [c["h"] for c in cluster]
+                avg_y_mid = sum(cluster_y_mids) / len(cluster_y_mids)
+                avg_h = sum(cluster_heights) / len(cluster_heights)
+
+                # Tolerance: overlap in Y band
+                y_diff = abs(item["y_mid"] - avg_y_mid)
+                if y_diff < max(avg_h * 0.65, item["h"] * 0.65, 12.0):
+                    cluster.append(item)
+                    assigned = True
+                    break
+
+            if not assigned:
+                line_clusters.append([item])
+
+        # Sort each line cluster left-to-right and construct unified LineCrops
+        raw_crops: List[LineCrop] = []
+        for idx, cluster in enumerate(line_clusters):
+            cluster.sort(key=lambda c: c["x1"])
+
+            lx1 = max(0, min(c["x1"] for c in cluster) - self.padding_px)
+            ly1 = max(0, min(c["y1"] for c in cluster) - self.padding_px)
+            lx2 = min(w, max(c["x2"] for c in cluster) + self.padding_px)
+            ly2 = min(h, max(c["y2"] for c in cluster) + self.padding_px)
+
+            # Combined text with space separation
+            line_text = " ".join(c["text"] for c in cluster if c["text"]).strip()
+            if not line_text:
                 continue
 
-            crop_img = image.crop((x1, y1, x2, y2))
-            bbox = BoundingBox(x_min=x1, y_min=y1, x_max=x2, y_max=y2)
+            # Length-weighted confidence
+            total_chars = sum(len(c["text"]) for c in cluster)
+            if total_chars > 0:
+                line_conf = sum(c["conf"] * len(c["text"]) for c in cluster) / total_chars
+            else:
+                line_conf = sum(c["conf"] for c in cluster) / len(cluster)
 
-            # Classify printed English vs printed Kannada vs handwriting
-            has_latin = any(c.isascii() and c.isalpha() for c in rec_text)
-            is_printed_english = has_latin and rec_conf > 0.40
-            is_printed_kannada = (not has_latin) and (rec_conf > 0.88)
+            crop_img = image.crop((lx1, ly1, lx2, ly2))
+            bbox = BoundingBox(x_min=lx1, y_min=ly1, x_max=lx2, y_max=ly2)
 
-            if is_printed_english:
-                is_handwritten = False
+            # Analyze script composition
+            has_kannada = any('\u0c80' <= ch <= '\u0cff' for ch in line_text)
+            has_latin = any(ch.isascii() and ch.isalpha() for ch in line_text)
+            has_digits = any(ch.isdigit() for ch in line_text)
+
+            if has_latin and not has_kannada:
+                # English text (e.g., "Mrs. Dorothy Charles", "Bruhat Bangalore", "Property No")
                 language = "english"
                 script = "Latin"
-                meta = {
-                    "source": "paddle_ocr",
-                    "pre_recognized_text": rec_text,
-                    "pre_confidence": rec_conf,
-                    "page_number": page_number,
-                }
-            elif is_printed_kannada:
                 is_handwritten = False
+            elif has_kannada and not has_latin:
+                # Pure Kannada text (e.g., "ಬೃಹತ್ ಬೆಂಗಳೂರು ಮಹಾನಗರ ಪಾಲಿಕೆ", "ದೃಢೀಕರಣ ಪತ್ರ")
                 language = "kannada"
                 script = "Kannada"
-                meta = {
-                    "source": "paddle_ocr",
-                    "pre_recognized_text": rec_text,
-                    "pre_confidence": rec_conf,
-                    "page_number": page_number,
-                }
+                # Keep as printed if Paddle recognized it cleanly (conf > 0.45)
+                is_handwritten = False
+            elif has_digits and not has_latin and not has_kannada:
+                # Pure numbers / dates / survey IDs (e.g., "68-76-470/a", "29-05-2024", "500.00")
+                language = "english"
+                script = "Numeric"
+                is_handwritten = False
             else:
-                is_handwritten = True
+                # Mixed Kannada + English / Numbers
                 language = "kannada"
-                script = "Kannada"
-                meta = {
-                    "source": "paddle_det",
-                    "paddle_hint": rec_text if rec_text else None,
-                    "paddle_hint_conf": rec_conf if rec_conf > 0 else None,
-                    "page_number": page_number,
-                }
+                script = "Mixed"
+                is_handwritten = False
+
+            meta = {
+                "source": "paddle_ocr_clustered",
+                "pre_recognized_text": line_text,
+                "pre_confidence": round(float(line_conf), 4),
+                "page_number": page_number,
+                "token_count": len(cluster),
+            }
 
             raw_crops.append(
                 LineCrop(
@@ -215,8 +331,69 @@ class DocumentLineSegmenter:
             x2 = min(w, x + bw + self.padding_px)
             y2 = min(h, y + bh + self.padding_px)
 
-            crop_img = image.crop((x1, y1, x2, y2))
-            bbox = BoundingBox(x_min=x1, y_min=y1, x_max=x2, y_max=y2)
+            # Try quick recognition on morphology crop to classify script/handwriting
+            rec_text = ""
+            rec_conf = 0.0
+            ocr = self._get_paddle_ocr()
+            if ocr is not None:
+                try:
+                    c_arr = np.array(crop_img.convert("RGB"))
+                    c_res = ocr.ocr(c_arr)
+                    if c_res and c_res[0]:
+                        cf = c_res[0]
+                        if isinstance(cf, dict) or hasattr(cf, "get") or hasattr(cf, "rec_texts"):
+                            c_texts = [str(t).strip() for t in (cf.get("rec_texts", []) if hasattr(cf, "get") else getattr(cf, "rec_texts", [])) if str(t).strip()]
+                            c_confs = [float(s) for s in (cf.get("rec_scores", []) if hasattr(cf, "get") else getattr(cf, "rec_scores", []))]
+                            rec_text = " ".join(c_texts).strip()
+                            rec_conf = sum(c_confs) / len(c_confs) if c_confs else 0.0
+                        elif isinstance(cf, (list, tuple)):
+                            c_texts = [
+                                str(item[1][0]).strip()
+                                for item in cf
+                                if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple))
+                            ]
+                            c_confs = [
+                                float(item[1][1])
+                                for item in cf
+                                if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple))
+                            ]
+                            rec_text = " ".join(t for t in c_texts if t).strip()
+                            rec_conf = sum(c_confs) / len(c_confs) if c_confs else 0.0
+                except Exception:
+                    pass
+
+            has_kannada = any('\u0c80' <= ch <= '\u0cff' for ch in rec_text) if rec_text else False
+            has_latin = any(ch.isascii() and ch.isalpha() for ch in rec_text) if rec_text else False
+            has_digits = any(ch.isdigit() for ch in rec_text) if rec_text else False
+
+            if has_latin and not has_kannada:
+                language = "english"
+                script = "Latin"
+                is_handwritten = False
+            elif has_kannada and not has_latin:
+                language = "kannada"
+                script = "Kannada"
+                is_handwritten = False
+            elif has_digits and not has_latin and not has_kannada:
+                language = "english"
+                script = "Numeric"
+                is_handwritten = False
+            elif rec_text:
+                language = "kannada"
+                script = "Mixed"
+                is_handwritten = False
+            else:
+                language = "kannada"
+                script = "Kannada"
+                is_handwritten = True
+
+            meta: Dict[str, Any] = {
+                "source": "morphology",
+                "page_number": page_number,
+            }
+            if rec_text:
+                meta["pre_recognized_text"] = rec_text
+                meta["pre_confidence"] = round(float(rec_conf), 4)
 
             lines.append(
                 LineCrop(
@@ -224,10 +401,10 @@ class DocumentLineSegmenter:
                     bbox=bbox,
                     image_crop=crop_img,
                     reading_order_index=idx,
-                    is_handwritten=True,
-                    language="kannada",
-                    script="Kannada",
-                    metadata={"source": "morphology", "page_number": page_number},
+                    is_handwritten=is_handwritten,
+                    language=language,
+                    script=script,
+                    metadata=meta,
                 )
             )
 

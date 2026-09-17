@@ -18,59 +18,131 @@
       "ಸರ್ವೆ ನಂ",
       "ಸರ್ವೆ ಸಂಖ್ಯೆ",
       "ಸಮೀಕ್ಷೆ ಸಂಖ್ಯೆ",
+      "ಸರ್ವೆ",
+      "ಸ.ನಂ",
       "survey no",
       "survey number",
-      "ward no",
-      "w.no"
+      "sy no",
+      "sy. no",
+      "sy.no",
+      "survey",
+      "survey n0"
     ],
     "hissa": [
       "ಹಿಸ್ಸಾ ನಂ",
       "ಹಿಸ್ಸಾ ಸಂಖ್ಯೆ",
-      "hissa no"
+      "ಹಿಸ್ಸಾ",
+      "hissa no",
+      "hissa"
     ],
     "khata": [
       "ಖಾತಾ ನಂ",
       "ಖಾತೆ ಸಂಖ್ಯೆ",
       "ಖಾತಾ ಸಂಖ್ಯೆ",
       "ಖಾತೆ ನಂ",
+      "ಖಾತಾ",
+      "ಖಾತೆ",
+      "ಆಸ್ತಿ ಸಂಖ್ಯೆ",
+      "ಸ್ವತ್ತಿನ ಸಂಖ್ಯೆ",
+      "ಆಸ್ತಿ ನಂ",
+      "ಸ್ವತ್ತಿನ ನಂ",
       "khata no",
+      "khata number",
+      "katha no",
       "khata certificate",
       "e-khata",
       "property no",
+      "property number",
+      "pid",
+      "pid no",
+      "account no",
+      "account number",
       "ಆಸ್ತಿ ಖಾತೆಯು"
     ],
     "owner": [
       "ಖಾತೆದಾರರ ಹೆಸರು",
       "ಖಾತೆದಾರ",
       "ಮಾಲೀಕರ ಹೆಸರು",
+      "ಮಾಲೀಕ",
       "ಭೂಮಾಲೀಕ",
+      "ಹೆಸರು",
       "owner name",
+      "owner",
+      "name",
       "khatedar",
       "stands in the name of",
+      "in the name of",
       "sri/smt",
-      "ಶ್ರೀ/ಶ್ರೀಮತಿ"
+      "sri",
+      "smt",
+      "mr",
+      "mrs",
+      "miss",
+      "ಶ್ರೀ/ಶ್ರೀಮತಿ",
+      "ಶ್ರೀ",
+      "ಶ್ರೀಮತಿ"
     ],
     "father_husband": [
       "ತಂದೆಯ ಹೆಸರು",
       "ಗಂಡನ ಹೆಸರು",
       "ಪತಿಯ ಹೆಸರು",
+      "ತಂದೆ",
+      "ಗಂಡ",
+      "ಪತಿ",
       "father name",
-      "husband name"
+      "father",
+      "husband name",
+      "husband",
+      "s/o",
+      "w/o",
+      "d/o"
     ],
     "area": [
       "ವಿಸ್ತೀರ್ಣ (ಎ-ಗು)",
       "ವಿಸ್ತೀರ್ಣ",
       "ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ",
+      "ನಿವೇಶನದ ವಿಸ್ತೀರ್ಣ",
+      "ಕಟ್ಟಡದ ವಿಸ್ತೀರ್ಣ",
       "extent",
-      "total extent"
+      "total extent",
+      "area",
+      "site area",
+      "built-up area",
+      "built up area",
+      "ಚದರ ಅಡಿ",
+      "sq ft",
+      "sq.ft",
+      "sqft",
+      "sq meter",
+      "sqm",
+      "acres",
+      "guntas"
     ],
     "village": [
       "ಗ್ರಾಮ",
       "ಗ್ರಾಮದ ಹೆಸರು",
+      "ಸ್ಥಳ",
       "village",
+      "village name",
       "ನಾರಾಯಣಘಟ್ಟ",
       "narayanaghatta",
-      "kengeri"
+      "kengeri",
+      "ಕೆಂಗೇರಿ"
+    ],
+    "ward": [
+      "ವಾರ್ಡ್",
+      "ವಾರ್ಡ್ ನಂ",
+      "ವಾರ್ಡ್ ಹೆಸರು",
+      "ward",
+      "ward no",
+      "ward number",
+      "ward name",
+      "w.no",
+      "w.no.",
+      "ejipura",
+      "ಏಜಿಪುರ",
+      "koramangala",
+      "ಕೋರಮಂಗಲ"
     ],
     "hobli": [
       "ಹೋಬಳಿ",
@@ -81,17 +153,32 @@
       "ತಾಲ್ಲೂಕು",
       "taluk",
       "taluka",
+      "zone",
+      "ವಲಯ",
       "ಮಹಾದೇವಪುರ",
       "mahadevapura",
-      "zone",
-      "ವಲಯ"
+      "bangalore south",
+      "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ",
+      "east zone",
+      "south zone"
     ],
     "district": [
       "ಜಿಲ್ಲೆ",
       "district",
       "bangalore",
       "bengaluru",
-      "ಬೆಂಗಳೂರು"
+      "ಬೆಂಗಳೂರು",
+      "bruhat bangalore",
+      "ಬೃಹತ್ ಬೆಂಗಳೂರು",
+      "bbmp",
+      "corporation",
+      "ಮಹಾನಗರ ಪಾಲಿಕೆ"
+    ],
+    "date": [
+      "ದಿನಾಂಕ",
+      "ದಿನ",
+      "date",
+      "dated"
     ]
   },
   "unit_conversions_to_hectares": {
@@ -109,6 +196,11 @@
     "ಅಣೆ": 0.000632,
     "sq_meter": 0.0001,
     "ಚದರ ಮೀಟರ್": 0.0001,
+    "sq_ft": 0.0000092903,
+    "sq ft": 0.0000092903,
+    "sq.ft": 0.0000092903,
+    "sqft": 0.0000092903,
+    "ಚದರ ಅಡಿ": 0.0000092903,
     "cent": 0.004047,
     "ಸೆಂಟ್": 0.004047
   },
@@ -117,23 +209,23 @@
       "type": "string",
       "required": false,
       "patterns": [
-        "(?:ಸರ್ವೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|ಸಮೀಕ್ಷೆ\\s*ಸಂಖ್ಯೆ|survey\\s*(?:no|number)?)[\\s:.-]*([೦-೯0-9]+(?:[\\/\\-][೦-೯0-9]+)*)",
+        "(?:ಸರ್ವೆ\\s*(?:ನಂ|ನಂಬರ್|ಸಂಖ್ಯೆ)?|ಸಮೀಕ್ಷೆ\\s*ಸಂಖ್ಯೆ|ಸ\\.ನಂ|survey\\s*(?:no|number|n0)?|sy\\.?\\s*(?:no|number)?)[\\s:.-]*([೦-೯0-9]+(?:[\\/\\-][೦-೯0-9]+)*)",
+        "(?:Property\\s*(?:No|Number)?|PID\\s*(?:No)?|ಆಸ್ತಿ\\s*(?:ಸಂಖ್ಯೆ|ನಂ)?|ಸ್ವತ್ತಿನ\\s*(?:ಸಂಖ್ಯೆ|ನಂ)?)[\\s:.-]*([A-Za-z0-9\\/\\-\\.]+)",
+        "(?:Ward\\s*(?:No|Number)?|W\\.NO\\.|ವಾರ್ಡ್\\s*(?:ನಂ)?)[\\s:.-]*([A-Za-z0-9\\.\\/\\-]+)",
+        "\\b([0-9]+-[0-9]+-[0-9]+(?:\\/[a-zA-Z0-9]+)?)\\b",
         "(W\\.NO\\.?\\s*[0-9]+)",
-        "(?:Ward\\s*(?:No|Number)?|W\\.NO\\.|ವಾರ್ಡ್\\s*(?:ನಂ)?)[\\s:.-]*([A-Za-z0-9\\.\\/]+)",
-        "@No([0-9]+)",
-        "\\b([೦-೯0-9]{1,4}(?:[\\/][೦-೯0-9]{1,3})?)\\b(?=.*(?:ಎಕರೆ|ಗುಂಟೆ|ವಿಸ್ತೀರ್ಣ))",
-        "^([0-9]{2,4})$",
-        "\\b([0-9]{2,4})\\b"
+        "\\b([೦-೯0-9]{1,4}(?:[\\/][೦-೯0-9]{1,3})?)\\b(?=.*(?:ಎಕರೆ|ಗುಂಟೆ|ವಿಸ್ತೀರ್ಣ))"
       ]
     },
     "khatauni_number": {
       "type": "string",
       "required": false,
       "patterns": [
+        "(?:ಖಾತಾ\\s*(?:ನಂ|ಸಂಖ್ಯೆ|ನಂಬರ್)?|ಖಾತೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ|ನಂಬರ್)?|e-khata|khata\\s*(?:no|number)?|katha\\s*(?:no|number)?)[\\s:.-]*([A-Za-z0-9\\/\\-\\.]+)",
+        "(?:Khatha\\s*of\\s*Property\\s*No|ಆಸ್ತಿ\\s*ಖಾತೆಯು|ಸಂಖ್ಯೆಯ\\s*ಆಸ್ತಿ|Property\\s*(?:No|Number)?|PID\\s*(?:No)?)[\\s:.-]*([A-Za-z0-9\\/\\-\\.]+)",
         "([A-Za-z0-9\\s\\|\\/\\-]+F\\s*-\\s*104)",
         "([0-9]{2,4}\\/[0-9]{2,4}\\/[A-Za-z0-9\\-]+)",
-        "(?:ಖಾತಾ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|ಖಾತೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?|e-khata|khata\\s*(?:no|number)?)[\\s:.-]*([A-Za-z0-9\\/\\-]+)",
-        "(?:Khatha\\s*of\\s*Property\\s*No|ಆಸ್ತಿ\\s*ಖಾತೆಯು|ಸಂಖ್ಯೆಯ\\s*ಆಸ್ತಿ|Property\\s*No)[\\s:.-]*([A-Za-z0-9\\/\\-]+)",
+        "\\b([0-9]+-[0-9]+-[0-9]+(?:\\/[a-zA-Z0-9]+)?)\\b",
         "(?:khata\\s*certificate\\s*(?:no)?)[\\s:.-]*([A-Za-z0-9\\-]+)",
         "(?:ಖಾತಾ\\s*(?:ನಕಲು|ಮತ್ತು\\s*ದೃಢೀಕರಣ|ಪತ್ರ|ನಂ|ಸಂಖ್ಯೆ)?|ಖಾತೆ\\s*(?:ನಂ|ಸಂಖ್ಯೆ)?)[\\s:.-]*([A-Za-z0-9\\/\\-]+)"
       ]
@@ -142,25 +234,27 @@
       "type": "string",
       "required": false,
       "patterns": [
+        "((?:Sri[\\/l|.]?Smt|Mrs?|Miss|Dr|Sri|Smt|ಶ್ರೀ\\/ಶ್ರೀಮತಿ|ಶ್ರೀ|ಶ್ರೀಮತಿ)\\.?\\s+[A-Za-z\u0C80-\u0CFF\\s\\,\\&①②\\(\\)\\.]+?)(?=\\s*(?:in\\s*the\\s*register|ರವರ|ರವರಿಗೆ|ಇವರ|Bangalore|Bengaluru|\\n|$))",
         "(EDWIN\\s*JOHN(?:\\s*,?\\s*KAREN\\s*MARIE)?)",
-        "(?:Sri[\\/l|.]?Smt|Mrs?|Miss|ಶ್ರೀ\\/ಶ್ರೀಮತಿ|Stands\\s*in\\s*the\\s*name\\s*of|SriSm)[\\s:.-]*([A-Za-z\\s\\,\\&①②\\(\\)]+?)(?=\\s*(?:in\\s*the\\s*register|ರವರ|ರವರಿಗೆ|ಇವರ|Bangalore|\\n|$))",
-        "([A-Za-z\\s\\.\\,\\&]+?)(?:\\s*ರವರ\\s*ಹೆಸರಿನಲ್ಲಿ)",
-        "(?:Jolr|J9HJN|EDWIN|JOHN|KAREN|MARIE)",
-        "(?:ಖಾತೆದಾರರ\\s*ಹೆಸರು|ಮಾಲೀಕರ\\s*ಹೆಸರು|ಭೂಮಾಲೀಕ|owner\\s*name)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\,\\①\\②\\&]+?)(?=\\s*(?:ತಂದೆ|ಗಂಡ|ಪತಿ|ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|ಇವರ\\s*ಹೆಸರಿನಲ್ಲಿ|\\n|$))"
+        "([A-Za-z\u0C80-\u0CFF\\s\\.\\,\\&]+?)(?:\\s*ರವರ\\s*ಹೆಸರಿನಲ್ಲಿ)",
+        "(?:ಖಾತೆದಾರರ\\s*ಹೆಸರು|ಮಾಲೀಕರ\\s*ಹೆಸರು|ಭೂಮಾಲೀಕ|owner\\s*name|owner)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\,\\①\\②\\&\\.]+?)(?=\\s*(?:ತಂದೆ|ಗಂಡ|ಪತಿ|ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|ಇವರ\\s*ಹೆಸರಿನಲ್ಲಿ|\\n|$))",
+        "(?:Name)[\\s:.-]*([A-Za-z\u0C80-\u0CFF\\s\\,\\&\\.]+?)(?=\\s*(?:\\n|Address|Property|Ward|Father|$))"
       ]
     },
+
     "father_or_husband_name": {
       "type": "string",
       "required": false,
       "patterns": [
-        "(?:ತಂದೆಯ\\s*ಹೆಸರು|ಗಂಡನ\\s*ಹೆಸರು|ಪತಿಯ\\s*ಹೆಸರು|ತಂದೆ|ಗಂಡ|s\\/o|w\\/o)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|\\n|$))"
+        "(?:ತಂದೆಯ\\s*ಹೆಸರು|ಗಂಡನ\\s*ಹೆಸರು|ಪತಿಯ\\s*ಹೆಸರು|ತಂದೆ|ಗಂಡ|s\\/o|w\\/o|d\\/o|father\\s*name|husband\\s*name)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಖಾತಾ|ವಿಸ್ತೀರ್ಣ|\\n|$))"
       ]
     },
     "land_area": {
       "type": "string",
       "required": false,
       "patterns": [
-        "(?:ವಿಸ್ತೀರ್ಣ|ಒಟ್ಟು\\s*ವಿಸ್ತೀರ್ಣ|extent|total\\s*extent)(?:\\s*\\([^)]*\\))?[\\s:.-]*([೦-೯0-9]+(?:[-/.][೦-೯0-9]+)*)\\s*(ಎಕರೆ|ಗುಂಟೆ|ಹೆಕ್ಟೇರ್|acre|gunta|ha)?",
+        "(?:ವಿಸ್ತೀರ್ಣ|ಒಟ್ಟು\\s*ವಿಸ್ತೀರ್ಣ|ನಿವೇಶನದ\\s*ವಿಸ್ತೀರ್ಣ|ಕಟ್ಟಡದ\\s*ವಿಸ್ತೀರ್ಣ|extent|total\\s*extent|built-up\\s*area|site\\s*area|area)(?:\\s*\\([^)]*\\))?[\\s:.-]*([೦-೯0-9]+(?:[-/.][೦-೯0-9]+)*)\\s*(ಚದರ\\s*ಅಡಿ|Sq\\.?\\s*Ft|Sq\\.?\\s*M|sqft|sqm|ಎಕರೆ|ಗುಂಟೆ|ಹೆಕ್ಟೇರ್|acre|gunta|ha)?",
+        "\\b([0-9]+(?:\\.[0-9]+)?)\\s*(?:Sq\\.?\\s*Ft|Sq\\.?\\s*M|sqft|sqm|ಚದರ\\s*ಅಡಿ|ಎಕರೆ|ಗುಂಟೆ|acre|gunta)",
         "\\b([೦-೯0-9]+[-/.][೦-೯0-9]+)\\b(?=.*(?:ಎಕರೆ|ಗುಂಟೆ|ವಿಸ್ತೀರ್ಣ|extent))",
         "([೦-೯0-9]+(?:\\.[೦-೯0-9]+)?)\\s*(?:ಎಕರೆ|ಗುಂಟೆ|acre|gunta|ಹೆಕ್ಟೇರ್)"
       ]
@@ -169,8 +263,8 @@
       "type": "string",
       "required": false,
       "patterns": [
-        "(?:ದಿನಾಂಕ|date)[\\s:.-]*([0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{2,4})",
-        "\\b([0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{2,4})\\b"
+        "(?:ದಿನಾಂಕ|date|dated)[\\s:.-]*([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4})",
+        "\\b([0-9]{1,2}[-/.][0-9]{1,2}[-/.][0-9]{2,4})\\b"
       ]
     },
     "document_title": {
@@ -179,15 +273,25 @@
       "patterns": [
         "(ಮ್ಯುಟೇಶನ್\\s*ರಿಜಿಸ್ಟರ್|Mutation\\s*Register)",
         "(ಪಹಣಿ|Pahani|RTC)",
-        "(ಖಾತಾ\\s*ಪ್ರಮಾಣ\\s*ಪತ್ರ|Khata\\s*Certificate)"
+        "(ದೃಢೀಕರಣ\\s*ಪತ್ರ|Certificate)",
+        "(ಖಾತಾ\\s*ಪ್ರಮಾಣ\\s*ಪತ್ರ|Khata\\s*Certificate)",
+        "(ಖಾತಾ\\s*ನಕಲು|Khata\\s*Extract)"
       ]
     },
     "village": {
       "type": "string",
       "required": false,
       "patterns": [
-        "(?:ಗ್ರಾಮ(?:\\s*ದ\\s*ಹೆಸರು)?|village)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಹೋಬಳಿ|ತಾಲೂಕು|ಜಿಲ್ಲೆ|\\n|$))",
-        "(ಕೋರಮಂಗಲ|Koramangala|ನಾರಾಯಣಘಟ್ಟ|Narayanaghatta|Kengeri|ಕೆಂಗೇರಿ|W\\.NO\\.\\s*[0-9]+)"
+        "(?:ಗ್ರಾಮ(?:\\s*ದ\\s*ಹೆಸರು)?|ಸ್ಥಳ|village)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\-]+?)(?=\\s*(?:ಹೋಬಳಿ|ತಾಲೂಕು|ವಲಯ|ವಾರ್ಡ್|ಜಿಲ್ಲೆ|\\n|$))",
+        "(ಕೋರಮಂಗಲ|Koramangala|ನಾರಾಯಣಘಟ್ಟ|Narayanaghatta|Kengeri|ಕೆಂಗೇರಿ)"
+      ]
+    },
+    "ward": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ವಾರ್ಡ್(?:\\s*(?:ನಂ|ಹೆಸರು|ಸಂಖ್ಯೆ))?|Ward(?:\\s*(?:No|Name|Number))?|W\\.NO\\.)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\-]+?)(?=\\s*(?:ಹೋಬಳಿ|ತಾಲೂಕು|ವಲಯ|ಜಿಲ್ಲೆ|\\n|$))",
+        "(Ejipura|ಏಜಿಪುರ|W\\.NO\\.\\s*[0-9]+|[0-9]+\\s*-\\s*Ejipura)"
       ]
     },
     "hobli": {
@@ -203,7 +307,7 @@
       "required": false,
       "patterns": [
         "(?:ತಾಲೂಕು|ತಾಲ್ಲೂಕು|taluk|taluka|Zone|ವಲಯ)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಜಿಲ್ಲೆ|\\n|$))",
-        "(ಕೋರಮಂಗಲ|Koramangala|ಮಹಾದೇವಪುರ|Mahadevapura|Bangalore\\s*South|ಬೆಂಗಳೂರು\\s*ದಕ್ಷಿಣ)"
+        "(ಕೋರಮಂಗಲ|Koramangala|ಮಹಾದೇವಪುರ|Mahadevapura|Bangalore\\s*South|ಬೆಂಗಳೂರು\\s*ದಕ್ಷಿಣ|East\\s*Zone|ಪೂರ್ವ\\s*ವಲಯ)"
       ]
     },
     "district": {
@@ -211,13 +315,38 @@
       "required": false,
       "patterns": [
         "(?:ಜಿಲ್ಲೆ|district)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s]+?)(?=\\s*(?:ಕರ್ನಾಟಕ|ರಾಜ್ಯ|ತಾಲೂಕು|ತಾಲ್ಲೂಕು|\\n|$))",
-        "(Bangalore|Bengaluru|ಬೆಂಗಳೂರು|Bruhat\\s*Bangalore|ಬೃಹತ್\\s*ಬೆಂಗಳೂರು)"
+        "(Bangalore|Bengaluru|ಬೆಂಗಳೂರು|Bruhat\\s*Bangalore|ಬೃಹತ್\\s*ಬೆಂಗಳೂರು|BBMP|Bruhat\\s*Bengaluru\\s*Mahanagara\\s*Palike)"
+      ]
+    },
+    "site_area": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ನಿವೇಶನದ\\s*ವಿಸ್ತೀರ್ಣ|site\\s*area)[\\s:.-]*([೦-೯0-9]+(?:[-/.][೦-೯0-9]+)*)\\s*(ಚದರ\\s*ಅಡಿ|Sq\\.?\\s*Ft|Sq\\.?\\s*M|sqft|sqm|acres?|guntas?|ಎಕರೆ|ಗುಂಟೆ)?",
+        "(?:Site\\s*Area|ನಿವೇಶನ)[\\s:.-]*([೦-೯0-9]+(?:\\.[೦-೯0-9]+)?)"
+      ]
+    },
+    "built_up_area": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ಕಟ್ಟಡದ\\s*ವಿಸ್ತೀರ್ಣ|built-?up\\s*area)[\\s:.-]*([೦-೯0-9]+(?:[-/.][೦-೯0-9]+)*)\\s*(ಚದರ\\s*ಅಡಿ|Sq\\.?\\s*Ft|Sq\\.?\\s*M|sqft|sqm|acres?|guntas?|ಎಕರೆ|ಗುಂಟೆ)?",
+        "(?:Built-?up\\s*Area|ಕಟ್ಟಡ)[\\s:.-]*([೦-೯0-9]+(?:\\.[೦-೯0-9]+)?)"
+      ]
+    },
+    "address": {
+      "type": "string",
+      "required": false,
+      "patterns": [
+        "(?:ವಿಳಾಸ|address|ಸ್ಥಳ)[\\s:.-]*([\\u0C80-\\u0CFF\\w\\s\\,\\.\\-\\/]+?)(?=\\s*(?:ದಿನಾಂಕ|date|\\n|$))",
+        "(S\\.T\\.\\s*Bed\\s*Kormangala|S\\.T\\.\\s*Bed\\s*Koramangala)"
       ]
     }
   },
+
   "validation_rules": {
     "land_area": {
-      "min": 0.0001,
+      "min": 0.000001,
       "max": 5000.0,
       "message": "Karnataka Land area must be positive float up to 5000 hectares"
     }

@@ -21,6 +21,7 @@ class ExtractionMethod(str, Enum):
     HANDWRITING_FUSION = "handwriting_fusion"
     STATE_RULE = "state_rule"
     FALLBACK = "fallback"
+    SEMANTIC_UNDERSTANDING = "semantic_understanding"
 
 
 class ValidationStatus(str, Enum):
@@ -61,6 +62,9 @@ class DocumentType(str, Enum):
     JAMABANDI = "jamabandi"
     SALE_DEED = "sale_deed"
     MUTATION_REGISTER = "mutation_register"
+    OTHER_GOV_PROPERTY = "other_gov_property"
+    LAND_RECORD = "land_record"
+    NOT_LAND_RECORD = "not_land_record"
     UNKNOWN = "unknown"
 
 

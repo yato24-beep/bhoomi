@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DocumentItem, DocumentSearchItem } from "@/lib/types";
 import { fetchDocuments, searchDocuments, deleteDocumentRecord, getDirectDownloadUrl } from "@/lib/api";
 import { StatusBadge } from "@/components/status-badge";
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [searchResults, setSearchResults] = useState<DocumentSearchItem[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,15 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("auth_user");
+      if (!user) {
+        router.push("/login");
+      }
+    }
+  }, [router]);
 
   const loadDocuments = useCallback(async () => {
     try {

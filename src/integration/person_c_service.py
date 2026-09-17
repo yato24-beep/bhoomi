@@ -4,6 +4,7 @@ Primary interface for Person C: Extraction, Validation, GIS, Duplicates, and Con
 Integrates outputs from Person A (DocumentOCRResult) and Person B (HandwritingResult).
 """
 
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 from loguru import logger
@@ -37,6 +38,7 @@ def extract_and_validate(
     duplicate_detector: Optional[DuplicateDetector] = None,
     config_loader: Optional[ConfigLoader] = None,
     db_session: Optional[Session] = None,
+    file_bytes: Optional[bytes] = None,
 ) -> FinalDocumentResult:
     """
     Person C Main Interface.
@@ -67,26 +69,85 @@ def extract_and_validate(
     state_config = loader.get_state_config(target_state)
     actual_state_code = state_config.get("state_code", target_state or "DEFAULT")
 
-    # 2. Structured Field Extraction
+    # Guard: If document is not a land record, halt extraction pipeline immediately
+    if ocr_result.classification and (
+        ocr_result.classification.document_type == DocumentType.NOT_LAND_RECORD
+        or getattr(ocr_result.classification.document_type, "value", "") == "not_land_record"
+    ):
+        return FinalDocumentResult(
+            document_id=doc_id,
+            sha256_hash=ocr_result.sha256_hash or "not_land_record",
+            state=actual_state_code,
+            document_type=DocumentType.NOT_LAND_RECORD,
+            fields={},
+            overall_confidence=0.95,
+            validation_status=ValidationStatus.INVALID,
+            review_reasons=["This document does not appear to be a land record."],
+            requires_human_review=True,
+            pipeline_stages_completed=["classification"],
+            processing_time_total_ms=round((time.perf_counter() - start_time) * 1000.0, 2),
+        )
+
+    # 2. Semantic Understanding & Structured Field Extraction
+    from src.extraction.semantic_understanding import semantic_understand, fuse_semantic_and_regex_fields
+
+    raw_text_content = ocr_result.raw_full_text or "\n".join(l.text for l in ocr_result.text_lines)
+    semantic_result = semantic_understand(
+        ordered_ocr_text=raw_text_content,
+        regions=ocr_result.text_lines,
+        document_context={
+            "document_id": doc_id,
+            "state": actual_state_code,
+            "classification": ocr_result.classification.model_dump() if ocr_result.classification else {},
+        },
+        image_bytes=file_bytes,
+    )
+    stages_completed.append("semantic_understanding")
+
+    # Step 2b: Run Existing Person C Rule & Regex Extraction
     extractor = FieldExtractor(state_config)
-    extracted_fields = extractor.extract_all(ocr_result, handwriting_result)
+    regex_fields = extractor.extract_all(ocr_result, handwriting_result)
+
+    # Step 2c: Fuse Semantic & Rule Extraction Candidates
+    extracted_fields = fuse_semantic_and_regex_fields(
+        semantic_result=semantic_result,
+        regex_fields=regex_fields,
+        ocr_result=ocr_result,
+        state_config=state_config,
+    )
     stages_completed.append("extraction")
     pipeline_logger.extraction_completed(len(extracted_fields))
 
     # 3. Field Normalization (Names, Dates, Land Units, Khasra format)
     normalizer = FieldNormalizer(state_config)
     for field_name, field_obj in extracted_fields.items():
-        if field_name == "owner_name" or field_name == "father_or_husband_name":
+        if field_name in ("owner_name", "father_or_husband_name"):
             field_obj.normalized_value = normalizer.normalize_name(field_obj.raw_value)
-        elif field_name == "khasra_number":
+        elif field_name in ("khasra_number", "survey_number", "khata_number", "property_number", "khatauni_number"):
             field_obj.normalized_value = normalizer.normalize_khasra(field_obj.raw_value)
-        elif field_name == "land_area":
+        elif field_name in ("land_area", "site_area", "built_up_area"):
             norm_area, raw_unit, norm_unit = normalizer.normalize_land_area(
                 field_obj.raw_value, field_obj.raw_unit
             )
-            field_obj.normalized_value = norm_area
-            field_obj.raw_unit = raw_unit
+            field_obj.raw_unit = raw_unit or field_obj.raw_unit or "Sq Ft"
             field_obj.normalized_unit = norm_unit
+            # If raw value represents urban plot/construction with Sq Ft, preserve readable string
+            raw_str = str(field_obj.raw_value).strip()
+            if "sq" in raw_str.lower() or "ft" in raw_str.lower() or "ಅಡಿ" in raw_str:
+                field_obj.normalized_value = raw_str
+            elif ("site" in field_name or "built" in field_name) and re.match(r"^\d+(?:\.\d+)?$", raw_str):
+                field_obj.normalized_value = f"{raw_str} Sq Ft"
+            else:
+                field_obj.normalized_value = norm_area
+        elif field_name in ("locality", "village"):
+            field_obj.normalized_value = normalizer.normalize_locality(field_obj.raw_value)
+        elif field_name in ("taluk", "tehsil", "sub_division"):
+            field_obj.normalized_value = normalizer.normalize_taluk(field_obj.raw_value)
+        elif field_name == "district":
+            field_obj.normalized_value = normalizer.normalize_district(field_obj.raw_value)
+        elif field_name in ("document_date", "date"):
+            norm_date = normalizer.normalize_date(field_obj.raw_value)
+            field_obj.normalized_value = norm_date or field_obj.raw_value.strip()
         elif field_name == "fasli_year":
             norm_fasli, _ = normalizer.normalize_fasli_year(field_obj.raw_value)
             field_obj.normalized_value = norm_fasli

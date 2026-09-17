@@ -477,17 +477,26 @@ class DocumentProcessingPipeline:
         recognized_lines = [r.normalized_text for r in recognized_regions if r.normalized_text]
         merged_text = "\n".join(recognized_lines)
 
-        # Step 7b: Kannada -> English Translation Stage
-        from src.translation.translator import translate_kannada_text
+        # Step 7b: Contextual Normalization & Meaning-Preserving Translation Stage
+        from src.translation.translator import translate_document_text
         original_kannada_lines = [
             r.normalized_text for r in recognized_regions
             if r.normalized_text and any('\u0c80' <= c <= '\u0cff' for c in r.normalized_text)
         ]
         original_kannada_text = "\n".join(original_kannada_lines) if original_kannada_lines else merged_text
-        try:
-            translated_text = translate_kannada_text(merged_text)
-        except Exception:
-            translated_text = merged_text
+
+        trans_res = translate_document_text(
+            text=merged_text,
+            regions=recognized_regions,
+        )
+        clean_kannada_text = trans_res.kannada_translation or original_kannada_text
+        translated_text = trans_res.english_translation or merged_text
+
+        # Language-purity validation audit
+        if trans_res.purity_report.requires_review:
+            for w in trans_res.purity_report.warnings:
+                if w not in review_warnings:
+                    review_warnings.append(w)
 
         doc_confidence = self._compute_document_confidence(recognized_regions)
 
@@ -528,8 +537,13 @@ class DocumentProcessingPipeline:
             image_path=resolved_img_path,
             ordered_regions=recognized_regions,
             merged_text=merged_text,
+            original_ocr=merged_text,
+            clean_kannada_text=clean_kannada_text,
+            kannada_translation=clean_kannada_text,
             translated_text=translated_text,
+            english_translation=translated_text,
             original_kannada_text=original_kannada_text,
+            translation_result=trans_res.model_dump(),
             document_confidence=doc_confidence,
             status=doc_status,
             requires_human_review=doc_requires_review,

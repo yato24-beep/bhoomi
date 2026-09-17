@@ -57,7 +57,8 @@ export default function DocumentDetailsPage() {
   const [fieldsSummary, setFieldsSummary] = useState<ExtractedFieldsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedJson, setCopiedJson] = useState(false);
-  const [copiedKannada, setCopiedKannada] = useState(false);
+  const [copiedRawKannada, setCopiedRawKannada] = useState(false);
+  const [copiedCleanKannada, setCopiedCleanKannada] = useState(false);
   const [copiedEnglish, setCopiedEnglish] = useState(false);
   const [showDeveloperDrawer, setShowDeveloperDrawer] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -117,6 +118,13 @@ export default function DocumentDetailsPage() {
   }, [documentId]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("auth_user");
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+    }
     loadData();
 
     // Auto-poll if document is in non-terminal processing state
@@ -182,6 +190,7 @@ export default function DocumentDetailsPage() {
 
   const isProcessing = document.status === "UPLOADED" || document.status === "PROCESSING";
   const extractedData = results?.extracted_data || {};
+  const isDemo = Boolean(extractedData?.demo_mode || (extractedData as any)?.is_demo);
   const validationInfo = results?.validation_info || {};
   const requiresReview = validationInfo.requires_human_review || !results?.is_valid;
   const warnings = validationInfo.warnings || [];
@@ -190,34 +199,85 @@ export default function DocumentDetailsPage() {
   const fieldsMap: Record<string, { value: string; confidence: number }> = {};
   if (fieldsSummary?.fields) {
     for (const f of fieldsSummary.fields) {
-      fieldsMap[f.field_name] = {
-        value: f.normalized_value || f.original_value || "Not confidently detected",
-        confidence: f.confidence_score,
-      };
+      if (f.normalized_value || f.original_value) {
+        fieldsMap[f.field_name.toLowerCase()] = {
+          value: f.normalized_value || f.original_value || "",
+          confidence: f.confidence_score,
+        };
+      }
     }
   }
 
-  const getFieldValue = (key: string, fallback = "Not confidently detected") => {
-    if (fieldsMap[key] && fieldsMap[key].value && fieldsMap[key].value !== "Not confidently detected") {
-      return fieldsMap[key].value;
+  // Also check results.extracted_data.extracted_fields
+  const extractedFieldsObj = (extractedData?.extracted_fields || {}) as Record<string, any>;
+
+  const getFieldInfo = (keys: string | string[], fallback = "Not confidently detected") => {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    for (const k of keyList) {
+      const lowerK = k.toLowerCase();
+      // 1. Check fieldsMap from fieldsSummary
+      if (fieldsMap[lowerK] && fieldsMap[lowerK].value && fieldsMap[lowerK].value !== "Not confidently detected") {
+        const val = fieldsMap[lowerK].value;
+        const conf = fieldsMap[lowerK].confidence ?? 0.85;
+        return {
+          value: val,
+          confidence: conf,
+          requiresVerification: conf < 0.70,
+        };
+      }
+      // 2. Check extractedFieldsObj from extracted_data
+      if (extractedFieldsObj[lowerK]) {
+        const ef = extractedFieldsObj[lowerK];
+        const val = typeof ef === "object" ? (ef.normalized_value || ef.raw_value) : ef;
+        const conf = typeof ef === "object" ? (ef.confidence ?? 0.85) : 0.85;
+        if (val && String(val).trim() && String(val) !== "Not confidently detected") {
+          return {
+            value: String(val).trim(),
+            confidence: Number(conf),
+            requiresVerification: Number(conf) < 0.70,
+          };
+        }
+      }
+      // 3. Check direct top-level extractedData keys
+      if (extractedData[lowerK] && typeof extractedData[lowerK] === "string" && extractedData[lowerK].trim()) {
+        return {
+          value: extractedData[lowerK].trim(),
+          confidence: 0.90,
+          requiresVerification: false,
+        };
+      }
     }
-    return fallback;
+    return {
+      value: fallback,
+      confidence: 0,
+      requiresVerification: false,
+    };
   };
 
-  const kannadaText = (extractedData.original_kannada_text || extractedData.merged_text || "").trim();
+  const isNotLandRecord = (
+    extractedData.is_land_record === false ||
+    extractedData.document_type === "not_land_record" ||
+    (results?.validation_info as any)?.is_land_record === false
+  );
+
+  const rawKannadaText = (extractedData.original_kannada_text || extractedData.merged_text || "").trim();
+  const cleanKannadaText = (extractedData.clean_kannada_text || extractedData.original_kannada_text || extractedData.merged_text || "").trim();
   const englishText = (extractedData.translated_text || extractedData.merged_text || "").trim();
 
-  // Structured Property Details List
+  // Exactly 12 REQUIRED Main Property Details Only
   const propertyFields = [
-    { label: "Survey Number", value: getFieldValue("khasra_number") },
-    { label: "Document Date", value: getFieldValue("document_date") },
-    { label: "Extent / Area", value: getFieldValue("land_area") },
-    { label: "Document Type", value: getFieldValue("document_title", extractedData.document_type || "Land Record") },
-    { label: "Owner Name", value: getFieldValue("owner_name") },
-    { label: "Father / Husband's Name", value: getFieldValue("father_or_husband_name") },
-    { label: "Village", value: getFieldValue("village") },
-    { label: "Taluk / Tehsil", value: getFieldValue("tehsil") },
-    { label: "District", value: getFieldValue("district") },
+    { label: "1. Document Type", ...getFieldInfo(["document_type_label", "document_title", "document_type"], extractedData.document_type_label || extractedData.document_type || "Land record") },
+    { label: "2. Owner Name", ...getFieldInfo(["owner_name"]) },
+    { label: "3. Survey Number", ...getFieldInfo(["survey_number", "khasra_number"]) },
+    { label: "4. Khata / Property Number", ...getFieldInfo(["khata_number", "property_number", "khatauni_number"]) },
+    { label: "5. Locality", ...getFieldInfo(["locality", "village"]) },
+    { label: "6. Taluk / Sub-Division", ...getFieldInfo(["taluk", "sub_division", "tehsil"]) },
+    { label: "7. District", ...getFieldInfo(["district", "city"]) },
+    { label: "8. Property Address", ...getFieldInfo(["address", "property_address"]) },
+    { label: "9. Land / Site Area", ...getFieldInfo(["site_area", "land_area"]) },
+    { label: "10. Built-up Area", ...getFieldInfo(["built_up_area"]) },
+    { label: "11. Document Date", ...getFieldInfo(["date", "document_date"]) },
+    { label: "12. Issuing Authority / Organization", ...getFieldInfo(["issuing_authority", "issuing_organization", "authority", "organization"]) },
   ];
 
   return (
@@ -235,6 +295,12 @@ export default function DocumentDetailsPage() {
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">{document.filename}</h1>
               <StatusBadge status={document.status} />
+              {isDemo && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                  <Sparkles className="w-3 h-3 text-purple-600" />
+                  DEMO MODE
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               ID #{document.id} &bull; Uploaded {new Date(document.created_at).toLocaleDateString()}
@@ -377,51 +443,73 @@ export default function DocumentDetailsPage() {
                       Land Record Digitization Result
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Structured extraction synthesized from multimodal OCR
+                      Structured extraction synthesized from multimodal OCR & semantic intelligence
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Digitized Successfully
-                    </span>
+                    {isNotLandRecord ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-sm">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                        Not a Land Record
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Digitized Successfully
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
                       Overall: {results ? `${(results.confidence_score * 100).toFixed(0)}%` : "85%"}
                     </span>
                   </div>
                 </div>
 
-                {/* Compact Validation & Cadastral Badges */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div>
-                      <span className="font-bold text-slate-900 block">Validation</span>
-                      <span className="text-slate-600 text-[11px]">Basic validation passed</span>
+                {/* Non-Land Record Prominent Warning Banner */}
+                {isNotLandRecord && (
+                  <div className="p-5 bg-rose-50 border-2 border-rose-300 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2.5 text-sm font-bold text-rose-900">
+                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                      This document does not appear to be a land record.
+                    </div>
+                    <p className="text-xs text-rose-800 leading-relaxed">
+                      The document classification system evaluated this file and determined it is not a land, cadastral, or property record. Land-record property extraction was halted to preserve cadastral integrity.
+                    </p>
+                  </div>
+                )}
+
+                {/* Compact Validation & Cadastral Badges (shown for land records) */}
+                {!isNotLandRecord && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Validation</span>
+                        <span className="text-slate-600 text-[11px]">Basic validation passed</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">GIS Cadastral</span>
+                        <span className="text-slate-600 text-[11px]">
+                          {validationInfo.gis_verified ? "Cadastral verified" : "Verified"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="font-bold text-slate-900 block">Duplicate Check</span>
+                        <span className="text-slate-600 text-[11px]">
+                          {validationInfo.is_duplicate ? "Possible duplicate" : "No duplicate found"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div>
-                      <span className="font-bold text-slate-900 block">GIS Cadastral</span>
-                      <span className="text-slate-600 text-[11px]">
-                        {validationInfo.gis_verified ? "Cadastral verified" : "Verified"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div>
-                      <span className="font-bold text-slate-900 block">Duplicate Check</span>
-                      <span className="text-slate-600 text-[11px]">
-                        {validationInfo.is_duplicate ? "Possible duplicate" : "No duplicate found"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {/* Low Confidence / OCR Review Warning Notice (if any) */}
-                {requiresReview && (
+                {requiresReview && !isNotLandRecord && (
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                     <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
@@ -438,95 +526,112 @@ export default function DocumentDetailsPage() {
                   </div>
                 )}
 
-                {/* PROPERTY DETAILS TABLE */}
+                {/* MAIN PROPERTY DETAILS (EXACTLY 12 FIELDS ONLY) */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Property Details
-                  </h3>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                    {propertyFields.map((f, idx) => (
-                      <div
-                        key={idx}
-                        className={`grid grid-cols-1 sm:grid-cols-3 p-3 text-xs ${
-                          idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
-                        }`}
-                      >
-                        <span className="font-semibold text-slate-600">{f.label}</span>
-                        <span
-                          className={`sm:col-span-2 font-medium ${
-                            f.value === "Not confidently detected"
-                              ? "text-slate-400 italic"
-                              : "text-slate-900 font-semibold"
-                          }`}
-                        >
-                          {f.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ORIGINAL KANNADA RECOGNITION */}
-                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Original Kannada Script
-                      </h3>
-                      {editedKannada !== null && (
-                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                          Verified & Corrected
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (isEditingKannada) {
-                            setIsEditingKannada(false);
-                          } else {
-                            if (editedKannada === null) setEditedKannada(kannadaText);
-                            setIsEditingKannada(true);
-                          }
-                        }}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-50 transition-colors"
-                      >
-                        {isEditingKannada ? "Save Changes" : "Edit / Verify Text"}
-                      </button>
-                      <button
-                        onClick={() => handleCopy(editedKannada !== null ? editedKannada : kannadaText, setCopiedKannada)}
-                        className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
-                      >
-                        {copiedKannada ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedKannada ? "Copied" : "Copy"}
-                      </button>
-                    </div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Property Details (12 Canonical Fields)
+                    </h3>
                   </div>
 
-                  {isEditingKannada ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editedKannada !== null ? editedKannada : kannadaText}
-                        onChange={(e) => setEditedKannada(e.target.value)}
-                        rows={6}
-                        className="w-full p-3 bg-white border-2 border-indigo-400 rounded-xl text-xs font-medium text-slate-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                        placeholder="Enter verified Kannada script here..."
-                      />
-                      <p className="text-[11px] text-slate-500 italic">
-                        Tip: You can correct any uncertain village handwriting characters directly before downloading reports.
-                      </p>
+                  {isNotLandRecord ? (
+                    <div className="p-6 text-center border border-dashed border-rose-200 rounded-xl bg-rose-50/50 space-y-1">
+                      <FileText className="w-8 h-8 text-rose-400 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-rose-900">Property Fields Not Populated</p>
+                      <p className="text-[11px] text-rose-700">Property details are only extracted and populated for verified land and property records.</p>
                     </div>
                   ) : (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-text">
-                      {(editedKannada !== null ? editedKannada : kannadaText) || "No Kannada script detected."}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                      {propertyFields.map((f, idx) => (
+                        <div
+                          key={idx}
+                          className={`grid grid-cols-1 sm:grid-cols-3 p-3 text-xs items-center gap-2 ${
+                            idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+                          }`}
+                        >
+                          <span className="font-semibold text-slate-600">{f.label}</span>
+                          <div className="sm:col-span-2 flex items-center justify-between gap-2">
+                            <span
+                              className={`font-medium ${
+                                f.value === "Not confidently detected"
+                                  ? "text-slate-400 italic"
+                                  : "text-slate-900 font-semibold"
+                              }`}
+                            >
+                              {f.value}
+                            </span>
+                            {f.value !== "Not confidently detected" && (
+                              <div>
+                                {f.requiresVerification ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded-full">
+                                    Requires Verification
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
+                                    {(f.confidence * 100).toFixed(0)}%
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* ENGLISH TRANSLATION */}
+                {/* 1. ORIGINAL KANNADA SCRIPT (RAW OCR EVIDENCE) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Original Kannada Script (Raw OCR Output)
+                      </h3>
+                      <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200">
+                        Source Evidence
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(rawKannadaText, setCopiedRawKannada)}
+                      className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
+                    >
+                      {copiedRawKannada ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedRawKannada ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-text font-mono">
+                    {rawKannadaText || "No raw Kannada OCR output detected."}
+                  </div>
+                </div>
+
+                {/* 2. CLEAN KANNADA TRANSLATION */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        Kannada Translation (Cleaned & Normalized)
+                      </h3>
+                      <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Natural Spacing
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(cleanKannadaText, setCopiedCleanKannada)}
+                      className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
+                    >
+                      {copiedCleanKannada ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedCleanKannada ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div className="p-4 bg-emerald-50/40 border border-emerald-200/70 rounded-xl text-xs font-medium text-slate-900 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-text">
+                    {cleanKannadaText || "No Kannada text available."}
+                  </div>
+                </div>
+
+                {/* 3. ENGLISH TRANSLATION */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                       <Languages className="w-3.5 h-3.5 text-indigo-600" />
                       English Translation
                     </h3>
@@ -538,7 +643,7 @@ export default function DocumentDetailsPage() {
                       {copiedEnglish ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <div className="p-4 bg-indigo-50/40 border border-indigo-100 rounded-xl text-xs font-medium text-slate-800 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-text">
+                  <div className="p-4 bg-indigo-50/40 border border-indigo-200/70 rounded-xl text-xs font-medium text-slate-900 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap select-text">
                     {englishText || "No English translation available."}
                   </div>
                 </div>

@@ -96,37 +96,19 @@ class PersonCAdapter:
         raw_full_text = b_response.merged_text or ""
         loader = ConfigLoader()
         detected_state = selected_state or loader.detect_state_from_text(raw_full_text)
+        state_upper = (detected_state or "KA").upper()
 
-        # Map state to typical land record document type
-        doc_type = DocumentType.UNKNOWN
-        state_upper = (detected_state or "").upper()
-        if "mutation" in raw_full_text.lower() or "register" in raw_full_text.lower():
-            doc_type = DocumentType.MUTATION_REGISTER
-            if not state_upper or state_upper == "DEFAULT":
-                state_upper = "KA"
-                detected_state = "KA"
-        elif state_upper in ("KA", "KARNATAKA"):
-            doc_type = DocumentType.BHOOMI_RTC
-            detected_state = "KA"
-        elif state_upper in ("UP", "UTTAR PRADESH"):
-            doc_type = DocumentType.KHATAUNI
-            detected_state = "UP"
-        elif state_upper in ("MP", "MADHYA PRADESH"):
-            doc_type = DocumentType.KHASRA
-            detected_state = "MP"
-        elif state_upper in ("MH", "MAHARASHTRA"):
-            doc_type = DocumentType.SATBARA
-            detected_state = "MH"
-        elif state_upper in ("BR", "BIHAR"):
-            doc_type = DocumentType.JAMABANDI
-            detected_state = "BR"
+        # Intelligent Content-Based Document Classification
+        from src.extraction.document_classifier import classify_land_document
+        class_res = classify_land_document(raw_full_text)
+        doc_type = class_res["document_type"]
 
         classification = DocumentClassificationResult(
             document_type=doc_type,
-            state=detected_state or "DEFAULT",
-            confidence=float(b_response.document_confidence) if b_response.document_confidence is not None else 0.90,
-            signals_matched=["detected_via_adapter"],
-            language="kn" if state_upper in ("KA", "KARNATAKA") else "hi",
+            state=detected_state or "KA",
+            confidence=float(class_res.get("confidence", 0.92)),
+            signals_matched=["content_based_classifier", class_res.get("document_type_label", "Land Record")],
+            language="kn" if state_upper in ("KA", "KARNATAKA") or any('\u0c80' <= c <= '\u0cff' for c in raw_full_text) else "en",
         )
 
         # Partition regions into printed OCR lines and handwritten regions
@@ -213,6 +195,7 @@ class PersonCAdapter:
             handwriting_result=handwriting_result,
             selected_state=selected_state or ocr_result.classification.state,
             db_session=db_session,
+            file_bytes=file_bytes,
         )
 
     @classmethod
@@ -222,7 +205,6 @@ class PersonCAdapter:
         c_result: FinalDocumentResult,
     ) -> Dict[str, Any]:
         """Synthesizes Person B's OCR output and Person C's FinalDocumentResult into a single,
-
         backwards-compatible dictionary response.
         """
         # Formulate structured fields dictionary
@@ -242,11 +224,27 @@ class PersonCAdapter:
                 "evidence": fval.evidence.model_dump() if fval.evidence else None,
             }
 
-        # Provide survey_number alias for khasra_number for Karnataka/South Indian revenue terminology
+        # Provide aliases for Karnataka / South Indian and standard frontend field names
         if "khasra_number" in fields_dict and "survey_number" not in fields_dict:
             survey_copy = dict(fields_dict["khasra_number"])
             survey_copy["field_name"] = "survey_number"
             fields_dict["survey_number"] = survey_copy
+
+        if "khatauni_number" in fields_dict and "property_number" not in fields_dict:
+            prop_copy = dict(fields_dict["khatauni_number"])
+            prop_copy["field_name"] = "property_number"
+            fields_dict["property_number"] = prop_copy
+
+        if "tehsil" in fields_dict and "taluk" not in fields_dict:
+            taluk_copy = dict(fields_dict["tehsil"])
+            taluk_copy["field_name"] = "taluk"
+            fields_dict["taluk"] = taluk_copy
+
+        if "document_date" in fields_dict and "date" not in fields_dict:
+            date_copy = dict(fields_dict["document_date"])
+            date_copy["field_name"] = "date"
+            fields_dict["date"] = date_copy
+
 
         combined_review = bool(b_response.requires_human_review or c_result.requires_human_review)
         

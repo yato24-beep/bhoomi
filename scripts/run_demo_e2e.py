@@ -42,19 +42,29 @@ class DemoClient:
         self.use_http = False
         self.test_client = None
 
-        # Check if live HTTP server is listening
-        try:
-            import requests
-            resp = requests.get(f"{self.base_url}/api/v1/health", timeout=1.0)
-            if resp.status_code == 200:
-                self.use_http = True
-                self.session = requests.Session()
-                print(f" Connected to live FastAPI server at {self.base_url}")
-        except Exception:
-            pass
+        # Check if live HTTP server is listening on base_url or candidate ports
+        candidates = [self.base_url]
+        if "7860" not in self.base_url and "8000" not in self.base_url:
+            candidates.extend(["http://127.0.0.1:7860", "http://127.0.0.1:8000"])
+        else:
+            candidates.extend(["http://127.0.0.1:7860", "http://127.0.0.1:8000"])
+
+        import requests
+        for cand in candidates:
+            cand_clean = cand.rstrip("/")
+            try:
+                resp = requests.get(f"{cand_clean}/api/v1/health", timeout=1.0)
+                if resp.status_code == 200:
+                    self.base_url = cand_clean
+                    self.use_http = True
+                    self.session = requests.Session()
+                    print(f" Connected to live FastAPI server at {self.base_url}")
+                    break
+            except Exception:
+                continue
 
         if not self.use_http:
-            print(" Live server not detected on localhost:8000. Using in-process FastAPI TestClient...")
+            print(f" Live server not detected on candidate ports. Using in-process FastAPI TestClient...")
             from fastapi.testclient import TestClient
             from backend.app.main import app
             self.test_client = TestClient(app)

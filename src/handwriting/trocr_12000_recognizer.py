@@ -61,17 +61,101 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 # Checkpoint paths
 DEFAULT_CHECKPOINT_12000_PATH = str(PROJECT_ROOT / "models" / "trocr" / "checkpoint-12000")
 DEFAULT_BASE_PROCESSOR_PATH = str(PROJECT_ROOT / "models" / "trocr" / "experimental" / "iitb_kannada_v002")
+TRACKED_BASE_PROCESSOR_PATH = str(PROJECT_ROOT / "src" / "handwriting" / "configs" / "iitb_kannada_v002")
 DEFAULT_TOKENIZER_NAME = "Chakita/KannadaBERT"
 
 # Global process-level cache for loaded (processor, tokenizer, model)
 _CHECKPOINT_12000_CACHE: Optional["TrOCR12000KannadaRecognizer"] = None
 
 
+def _has_weights(path_str: str) -> bool:
+    """Check if directory exists and contains PyTorch or Safetensors model weights."""
+    p = Path(path_str)
+    if not p.is_dir():
+        return False
+    return (p / "model.safetensors").exists() or (p / "pytorch_model.bin").exists()
+
+
+def resolve_or_download_trocr_checkpoint(model_path: Optional[str] = None) -> str:
+    """Resolves local checkpoint-12000 path or downloads from Hugging Face if absent.
+    
+    Priority:
+    1. Explicit model_path if valid weights exist
+    2. TROCR_CHECKPOINT_12000_PATH / KANNADA_HANDWRITING_MODEL_PATH
+    3. Container standard path: /data/models/trocr/checkpoint-12000
+    4. Local project path: models/trocr/checkpoint-12000
+    5. If absent and MODEL_REPO_ID is set: download via huggingface_hub into /data/models/trocr/checkpoint-12000
+    """
+    candidates = []
+    if model_path:
+        candidates.append(Path(model_path))
+    if os.environ.get("TROCR_CHECKPOINT_12000_PATH"):
+        candidates.append(Path(os.environ["TROCR_CHECKPOINT_12000_PATH"]))
+    if os.environ.get("KANNADA_HANDWRITING_MODEL_PATH"):
+        candidates.append(Path(os.environ["KANNADA_HANDWRITING_MODEL_PATH"]))
+    candidates.append(Path("/data/models/trocr/checkpoint-12000"))
+    candidates.append(PROJECT_ROOT / "models" / "trocr" / "checkpoint-12000")
+
+    for cand in candidates:
+        if _has_weights(str(cand)):
+            logger.info(f"Using local TrOCR checkpoint-12000 at: {cand}")
+            return str(cand.resolve())
+
+    # If absent locally, check MODEL_REPO_ID
+    model_repo_id = os.environ.get("MODEL_REPO_ID", "").strip()
+    if model_repo_id:
+        target_dir = Path("/data/models/trocr/checkpoint-12000")
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            target_dir = PROJECT_ROOT / "models" / "trocr" / "checkpoint-12000"
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(
+            f"[HUGGINGFACE] Checkpoint-12000 absent locally. "
+            f"Downloading from Hugging Face repository '{model_repo_id}' into {target_dir}..."
+        )
+        try:
+            from huggingface_hub import snapshot_download
+            token = os.environ.get("HF_TOKEN") or None
+            snapshot_download(
+                repo_id=model_repo_id,
+                local_dir=str(target_dir),
+                token=token,
+            )
+            logger.info(f"[HUGGINGFACE] Successfully downloaded TrOCR checkpoint into {target_dir}")
+            return str(target_dir.resolve())
+        except Exception as dl_err:
+            logger.error(f"[HUGGINGFACE] Failed downloading from '{model_repo_id}': {dl_err}")
+            return str(target_dir.resolve())
+
+    # Fallback to preferred path
+    default_cand = candidates[0] if candidates else Path("/data/models/trocr/checkpoint-12000")
+    return str(default_cand)
+
+
+def resolve_base_processor_path(proc_path: Optional[str] = None) -> str:
+    """Resolves IIT Bombay v0.0.2 base processor path with fallback to tracked config."""
+    candidates = []
+    if proc_path:
+        candidates.append(Path(proc_path))
+    if os.environ.get("TROCR_BASE_PROCESSOR_PATH"):
+        candidates.append(Path(os.environ["TROCR_BASE_PROCESSOR_PATH"]))
+    candidates.append(Path(DEFAULT_BASE_PROCESSOR_PATH))
+    candidates.append(Path(TRACKED_BASE_PROCESSOR_PATH))
+
+    for cand in candidates:
+        if (cand / "preprocessor_config.json").exists():
+            return str(cand.resolve())
+
+    return TRACKED_BASE_PROCESSOR_PATH
+
+
 class TrOCR12000KannadaRecognizer(BaseHandwritingRecognizer):
     """Production handwriting recognizer using fine-tuned TrOCR checkpoint-12000.
     
     Loads:
-    - Weights from checkpoint-12000
+    - Weights from checkpoint-12000 (configurable via MODEL_REPO_ID)
     - Image processor from IITB v0.0.2 base checkpoint
     - Tokenizer from Chakita/KannadaBERT
     """
@@ -89,27 +173,9 @@ class TrOCR12000KannadaRecognizer(BaseHandwritingRecognizer):
         length_penalty: float = 2.0,
         **kwargs: Any,
     ):
-        """Initializes the Checkpoint-12000 recognizer.
-        
-        Args:
-            model_path: Path to checkpoint-12000 directory (containing model.safetensors).
-            base_processor_path: Path to base directory with preprocessor_config.json.
-            tokenizer_name: HuggingFace Hub name or local path for Chakita/KannadaBERT.
-            device: 'cuda', 'cpu', or None for auto-detection.
-            auto_load: Whether to load weights immediately upon construction.
-            confidence_threshold: Threshold below which human review is requested.
-            num_beams: Number of beams for autoregressive generation (default: 4).
-            max_length: Maximum decoded sequence length (default: 64).
-            length_penalty: Beam search length penalty (default: 2.0).
-        """
-        resolved_model_path = model_path or os.environ.get(
-            "TROCR_CHECKPOINT_12000_PATH",
-            os.environ.get("KANNADA_HANDWRITING_MODEL_PATH", DEFAULT_CHECKPOINT_12000_PATH),
-        )
-        resolved_proc_path = base_processor_path or os.environ.get(
-            "TROCR_BASE_PROCESSOR_PATH",
-            DEFAULT_BASE_PROCESSOR_PATH,
-        )
+        """Initializes the Checkpoint-12000 recognizer."""
+        resolved_model_path = resolve_or_download_trocr_checkpoint(model_path)
+        resolved_proc_path = resolve_base_processor_path(base_processor_path)
         resolved_tok_name = tokenizer_name or os.environ.get(
             "TROCR_TOKENIZER_NAME",
             DEFAULT_TOKENIZER_NAME,
@@ -121,8 +187,8 @@ class TrOCR12000KannadaRecognizer(BaseHandwritingRecognizer):
         )
         self.confidence_threshold = confidence_threshold
 
-        self.model_path = str(Path(resolved_model_path).resolve()) if Path(resolved_model_path).exists() else resolved_model_path
-        self.base_processor_path = str(Path(resolved_proc_path).resolve()) if Path(resolved_proc_path).exists() else resolved_proc_path
+        self.model_path = resolved_model_path
+        self.base_processor_path = resolved_proc_path
         self.tokenizer_name = resolved_tok_name
 
         self.num_beams = num_beams
@@ -383,3 +449,7 @@ def get_checkpoint_12000_recognizer(
         _CHECKPOINT_12000_CACHE.load_model()
 
     return _CHECKPOINT_12000_CACHE
+
+
+# Canonical aliases
+get_trocr_12000_recognizer = get_checkpoint_12000_recognizer

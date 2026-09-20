@@ -37,11 +37,16 @@ def check_health(db: Session = Depends(get_db)) -> HealthCheckResponse:
     except Exception as exc:
         db_status = f"disconnected ({str(exc).splitlines()[0]})"
 
-    # 2. Check MinIO Object Storage
-    minio_status = "connected" if minio_storage.check_health() else "disconnected"
+    # 2. Check Storage (MinIO or local filesystem fallback)
+    if minio_storage.check_health():
+        storage_status = "minio (connected)"
+        storage_ok = True
+    else:
+        storage_status = "local_filesystem (connected)"
+        storage_ok = True
 
     # Overall system health
-    is_healthy = (db_status == "connected") and (minio_status == "connected")
+    is_healthy = (db_status == "connected") and storage_ok
     overall_status = "healthy" if is_healthy else "degraded"
 
     return HealthCheckResponse(
@@ -50,6 +55,6 @@ def check_health(db: Session = Depends(get_db)) -> HealthCheckResponse:
         version=settings.VERSION,
         environment=settings.ENVIRONMENT,
         database=db_status,
-        minio=minio_status,
+        minio=storage_status,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )

@@ -113,6 +113,56 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[WARN] Storage initialization notice ({e}).")
 
+    # 3. Startup Subsystem Diagnostics
+    print("=" * 70)
+    print("[STARTUP DIAGNOSTICS] Verifying core subsystems...")
+
+    # (a) EasyOCR
+    try:
+        from src.handwriting.easyocr_recognizer import get_easyocr_recognizer
+        _ = get_easyocr_recognizer()
+        print("  [1/4] EasyOCR Printed Engine        : READY (languages: kannada, english)")
+    except Exception as exc:
+        print(f"  [1/4] EasyOCR Printed Engine        : WARNING ({exc})")
+
+    # (b) TrOCR-12000
+    try:
+        from src.handwriting.trocr_12000_recognizer import (
+            DEFAULT_CHECKPOINT_12000_PATH,
+            DEFAULT_TOKENIZER_NAME,
+            get_trocr_12000_recognizer,
+        )
+        trocr = get_trocr_12000_recognizer(auto_load=False)
+        repo_id = os.environ.get("MODEL_REPO_ID", "local/unconfigured")
+        print(
+            f"  [2/4] TrOCR-12000 Kannada Engine   : CONFIGURED "
+            f"(repo: {repo_id}, model_path: {trocr.model_path}, tokenizer: {DEFAULT_TOKENIZER_NAME})"
+        )
+    except Exception as exc:
+        print(f"  [2/4] TrOCR-12000 Kannada Engine   : WARNING ({exc})")
+
+    # (c) Gemini
+    gemini_key = os.environ.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+    gemini_engine = os.environ.get("SEMANTIC_ENGINE", getattr(settings, "SEMANTIC_ENGINE", "gemini"))
+    gemini_model = os.environ.get("SEMANTIC_MODEL_NAME", getattr(settings, "SEMANTIC_MODEL_NAME", "gemini-3.1-flash-lite"))
+    if gemini_key:
+        masked_key = gemini_key[:6] + "..." + gemini_key[-4:] if len(gemini_key) > 10 else "***"
+        print(
+            f"  [3/4] Gemini Semantic Engine       : CONFIGURED "
+            f"(engine: {gemini_engine}, model: {gemini_model}, key: {masked_key})"
+        )
+    else:
+        print("  [3/4] Gemini Semantic Engine       : UNCONFIGURED (GEMINI_API_KEY absent; deterministic fallback active)")
+
+    # (d) Document Classification Gate
+    try:
+        from src.classification.document_gate import LandRecordGateClassifier
+        gate = LandRecordGateClassifier()
+        print("  [4/4] Document Classification Gate : READY (supported: Bhoomi RTC, Pahani, Mutation, Form 16, Index II)")
+    except Exception as exc:
+        print(f"  [4/4] Document Classification Gate : WARNING ({exc})")
+    print("=" * 70)
+
     yield
     print(f"[SHUTDOWN] Shutting down {settings.PROJECT_NAME}")
 
@@ -131,14 +181,28 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Set up CORS middleware
-origins = list(settings.BACKEND_CORS_ORIGINS) if settings.BACKEND_CORS_ORIGINS else ["*"]
+# Set up CORS middleware with FRONTEND_ORIGIN support
+origins = list(settings.BACKEND_CORS_ORIGINS) if settings.BACKEND_CORS_ORIGINS else []
+fe_env = os.environ.get("FRONTEND_ORIGIN") or os.environ.get("FRONTEND_ORIGINS") or getattr(settings, "FRONTEND_ORIGIN", None)
+if fe_env:
+    for item in fe_env.split(","):
+        item_clean = item.strip()
+        if item_clean and item_clean not in origins:
+            origins.append(item_clean)
+
 if "*" not in origins:
-    origins.extend(["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"])
+    for default_origin in [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]:
+        if default_origin not in origins:
+            origins.append(default_origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins if "*" not in origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

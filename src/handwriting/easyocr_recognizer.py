@@ -34,6 +34,11 @@ def get_easyocr_reader(languages: Sequence[str] = ("kn", "en"), gpu: bool = Fals
     return _EASYOCR_READER_CACHE[cache_key]
 
 
+def get_easyocr_recognizer(**kwargs: Any) -> "EasyOCRKannadaRecognizer":
+    """Factory helper returning an EasyOCRKannadaRecognizer instance."""
+    return EasyOCRKannadaRecognizer(**kwargs)
+
+
 class EasyOCRKannadaRecognizer(BaseHandwritingRecognizer):
     """Production printed-Kannada recognizer backed by EasyOCR.
 

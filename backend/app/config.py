@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
     # CORS (Cross-Origin Resource Sharing)
+    FRONTEND_ORIGIN: Optional[str] = None
     BACKEND_CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -39,19 +40,31 @@ class Settings(BaseSettings):
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str]], info) -> List[str]:
+        origins = []
         if isinstance(v, str):
             v_str = v.strip()
             if v_str.startswith("[") and v_str.endswith("]"):
                 import json
                 try:
-                    return json.loads(v_str)
+                    origins = json.loads(v_str)
                 except Exception:
-                    pass
-            return [i.strip() for i in v_str.split(",") if i.strip()]
+                    origins = [i.strip() for i in v_str.split(",") if i.strip()]
+            else:
+                origins = [i.strip() for i in v_str.split(",") if i.strip()]
         elif isinstance(v, list):
-            return v
-        return []
+            origins = list(v)
+
+        # Incorporate FRONTEND_ORIGIN and FRONTEND_ORIGINS if set in environment or values
+        import os
+        fe_env = os.environ.get("FRONTEND_ORIGIN") or os.environ.get("FRONTEND_ORIGINS")
+        if fe_env:
+            for item in fe_env.split(","):
+                item_clean = item.strip()
+                if item_clean and item_clean not in origins:
+                    origins.append(item_clean)
+
+        return origins
 
     # PostgreSQL Database Configuration
     POSTGRES_SERVER: str = "localhost"
@@ -122,6 +135,7 @@ class Settings(BaseSettings):
     }
 
     # Multimodal OCR & TrOCR Model Configuration
+    MODEL_REPO_ID: Optional[str] = None
     MODEL_CHECKPOINT_DIR: Optional[str] = None
     TROCR_MODEL_DIR: Optional[str] = None
     KANNADA_HANDWRITING_MODEL_PATH: Optional[str] = None
@@ -148,6 +162,8 @@ settings = Settings()
 # Synchronize model directory configuration to os.environ for seamless submodule access
 import os
 
+if settings.MODEL_REPO_ID and "MODEL_REPO_ID" not in os.environ:
+    os.environ["MODEL_REPO_ID"] = str(settings.MODEL_REPO_ID)
 if settings.PRINTED_OCR_ENGINE and "PRINTED_OCR_ENGINE" not in os.environ:
     os.environ["PRINTED_OCR_ENGINE"] = str(settings.PRINTED_OCR_ENGINE)
 if settings.TROCR_MODEL_DIR and "TROCR_MODEL_DIR" not in os.environ:

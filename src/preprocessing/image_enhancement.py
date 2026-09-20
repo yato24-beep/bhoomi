@@ -77,7 +77,21 @@ def load_image_as_pil(image_input: Union[str, Path, Image.Image, np.ndarray, byt
     raise TypeError(f"Unsupported image input type: {type(image_input).__name__}")
 
 
+_DOC_ORI_MODEL_CACHE: Optional[Any] = None
 _COARSE_DETECTOR_CACHE: Optional[Any] = None
+
+
+def get_doc_orientation_model() -> Optional[Any]:
+    """Retrieves or lazily instantiates the singleton PP-LCNet_x1_0_doc_ori model."""
+    global _DOC_ORI_MODEL_CACHE
+    if _DOC_ORI_MODEL_CACHE is None:
+        try:
+            from paddlex import create_model
+            _DOC_ORI_MODEL_CACHE = create_model("PP-LCNet_x1_0_doc_ori")
+        except Exception as e:
+            logger.debug("PP-LCNet_x1_0_doc_ori init notice: %s", e)
+            _DOC_ORI_MODEL_CACHE = False
+    return _DOC_ORI_MODEL_CACHE if _DOC_ORI_MODEL_CACHE is not False else None
 
 
 def get_coarse_orientation_detector() -> Optional[Any]:
@@ -96,23 +110,59 @@ def detect_and_correct_coarse_orientation(
     image: Image.Image,
     detector: Optional[Any] = None,
 ) -> Tuple[Image.Image, Dict[str, Any]]:
-    """Detects if document text lines run vertically (sideways photo) and rotates 90 degrees.
+    """Detects document page orientation (0, 90, 180, 270 degrees) and rotates upright.
 
-    In standard horizontal text, line bounding boxes are wider than tall (width >= height).
-    When a document is photographed in portrait orientation with text lines running sideways,
-    the detected line boxes are predominantly vertical (height > width).
-    If vertical boxes >= 1.5 * horizontal boxes and vertical count >= 8, the document is
-    rotated 90 degrees counter-clockwise (.rotate(90, expand=True)) so text lines align horizontally.
-    Paddle's use_angle_cls=True then handles 0 vs 180 degree line orientation.
+    Uses dedicated document-level orientation classifier (PP-LCNet_x1_0_doc_ori) to classify
+    the entire page orientation, cleanly separating page orientation from line orientation
+    and avoiding the Kannada textline 180-degree flip bug.
     """
     transposed = ImageOps.exif_transpose(image)
+    if transposed.mode != "RGB":
+        transposed = transposed.convert("RGB")
+
+    doc_ori_model = get_doc_orientation_model()
+    if doc_ori_model is not None:
+        try:
+            arr = np.array(transposed)
+            preds = list(doc_ori_model.predict(arr))
+            if preds and len(preds) > 0:
+                res = preds[0]
+                pred_label = str(res.get("label_names", ["0"])[0])
+                score = float(res.get("scores", [1.0])[0])
+                angle = int(pred_label) if pred_label.isdigit() else 0
+
+                if angle in (90, 180, 270) and score >= 0.35:
+                    rotated = transposed.rotate(angle, expand=True)
+                    meta = {
+                        "coarse_rotation_applied": True,
+                        "angle_degrees": angle,
+                        "confidence": round(score, 4),
+                        "model": "PP-LCNet_x1_0_doc_ori",
+                        "reason": f"doc_orientation_{angle}_detected",
+                    }
+                    return rotated, meta
+
+                return transposed, {
+                    "coarse_rotation_applied": False,
+                    "angle_degrees": 0,
+                    "confidence": round(score, 4),
+                    "model": "PP-LCNet_x1_0_doc_ori",
+                    "reason": "upright_orientation_confirmed",
+                }
+        except Exception as doc_err:
+            logger.debug("Doc orientation model notice: %s", doc_err)
+
+    # Fallback to geometric bounding-box aspect ratio check
     det = detector if detector is not None else get_coarse_orientation_detector()
     if det is None:
         return transposed, {"coarse_rotation_applied": False, "angle_degrees": 0, "reason": "detector_unavailable"}
 
     try:
-        arr = np.array(transposed.convert("RGB"))
-        res = det.ocr(arr, cls=False, rec=False)
+        arr = np.array(transposed)
+        try:
+            res = det.ocr(arr, cls=False, rec=False)
+        except TypeError:
+            res = det.ocr(arr)
         boxes = res[0] if res and res[0] else []
         h_count, v_count = 0, 0
         for b in boxes:
@@ -136,19 +186,6 @@ def detect_and_correct_coarse_orientation(
             }
             return rotated, meta
 
-        # Fallback: if document was photographed in portrait (height significantly > width),
-        # but registers are landscape format with vertical stroke energy
-        w_img, h_img = transposed.size
-        if h_img > w_img * 1.35 and (v_count > h_count or v_count >= 5):
-            rotated = transposed.rotate(90, expand=True)
-            return rotated, {
-                "coarse_rotation_applied": True,
-                "angle_degrees": 90,
-                "horizontal_boxes": h_count,
-                "vertical_boxes": v_count,
-                "reason": "aspect_ratio_and_vertical_strokes",
-            }
-
         return transposed, {
             "coarse_rotation_applied": False,
             "angle_degrees": 0,
@@ -157,10 +194,6 @@ def detect_and_correct_coarse_orientation(
             "reason": "upright_orientation_confirmed",
         }
     except Exception as exc:
-        w_img, h_img = transposed.size
-        if h_img > w_img * 1.35:
-            rotated = transposed.rotate(90, expand=True)
-            return rotated, {"coarse_rotation_applied": True, "angle_degrees": 90, "reason": f"aspect_ratio_fallback ({exc})"}
         return transposed, {"coarse_rotation_applied": False, "angle_degrees": 0, "reason": f"error: {str(exc)}"}
 
 
@@ -245,10 +278,28 @@ def enhance_contrast_clahe(
     clip_limit: float = 2.0,
     tile_grid_size: Tuple[int, int] = (8, 8),
 ) -> Tuple[Image.Image, Dict[str, Any]]:
-    """Applies Contrast Limited Adaptive Histogram Equalization (CLAHE) to handle uneven shadows across photographs."""
+    """Applies Contrast Limited Adaptive Histogram Equalization (CLAHE) to handle uneven shadows across photographs.
+
+    Dynamically skips CLAHE on clean, pristine high-contrast digital/scanned documents
+    to avoid gradient halo artifacts around sharp typographic glyphs.
+    """
     gray = to_grayscale(image)
+    arr = np.array(gray)
+
+    # Detect if image already has pristine high contrast (e.g. clean digital text on white background)
+    p5, p95 = float(np.percentile(arr, 5)), float(np.percentile(arr, 95))
+    white_frac = float(np.mean(arr >= 250))
+    is_pristine_digital = (white_frac >= 0.50 and (p95 - p5) >= 200 and p5 <= 35)
+
+    if is_pristine_digital:
+        return gray.copy(), {
+            "clahe_applied": False,
+            "clip_limit": clip_limit,
+            "reason": "clean_high_contrast_skipped",
+            "metrics": {"white_fraction": round(white_frac, 3), "p5": p5, "p95": p95},
+        }
+
     if HAS_CV2 and cv2 is not None:
-        arr = np.array(gray)
         clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
         enhanced_arr = clahe.apply(arr)
         out_img = Image.fromarray(enhanced_arr, mode="L")
@@ -542,7 +593,10 @@ def preprocess_document_image(
     if apply_contrast:
         current_img, contrast_meta = enhance_contrast_clahe(current_img, clip_limit=2.0)
         audit["contrast"] = contrast_meta
-        audit["pipeline_steps"].append("contrast_enhancement_clahe")
+        if contrast_meta.get("clahe_applied", True):
+            audit["pipeline_steps"].append("contrast_enhancement_clahe")
+        else:
+            audit["pipeline_steps"].append("contrast_skipped_clean_document")
 
     # Step 4: Light Denoise
     if apply_denoise:

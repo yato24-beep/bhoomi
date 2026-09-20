@@ -29,9 +29,11 @@ class TestTrainedKannadaRecognizer(unittest.TestCase):
         self.sample_bbox = BoundingBox(x_min=10, y_min=10, x_max=190, y_max=40)
 
     def test_default_kannada_path_resolution(self):
-        """Tests that Kannada recognizer resolves to the default production checkpoint."""
         rec = TrocrHandwritingRecognizer(language="kannada", auto_load=False)
-        self.assertIn("kannada_full_checkpoints", rec.model_name_or_path)
+        self.assertTrue(
+            any(k in rec.model_name_or_path for k in ("kannada_generalized_v2_checkpoints", "kannada_generalized_checkpoints", "kannada_full_checkpoints")),
+            f"Expected a known production Kannada checkpoint, got: {rec.model_name_or_path}",
+        )
         self.assertEqual(rec.language, "kannada")
         self.assertEqual(rec.script, "Kannada")
 

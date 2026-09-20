@@ -4,21 +4,61 @@ Provides multimodal routing to dispatch image crops to appropriate engines based
 1. Language/Script (Kannada, Telugu, Tamil, Hindi, English, etc.)
 2. Text Type (Handwritten vs. Printed)
 3. Explicit fallback/review routing for unsupported handwritten languages without fabrication.
+
+========================================================================================
+HANDWRITTEN KANNADA BACKEND: CHECKPOINT-12000 INTEGRATION & PERFORMANCE
+========================================================================================
+Architecture:
+- Base Vision-Encoder-Decoder: IIT Bombay Indic-TrOCR v0.0.2 (ViT-base 224px + RoBERTa)
+- Tokenizer: Chakita/KannadaBERT (100k vocabulary, zero <unk> on Kannada Unicode)
+- Model Weights: Checkpoint-12000 (trained on IIIT-INDIC-HW-WORDS isolated words)
+
+VERIFIED EMPIRICAL PERFORMANCE (DO NOT SOFTEN OR FABRICATE):
+1. In-Distribution (IIIT Isolated Kannada Words):
+   - CER: ~4.86% | WER: ~16.50% | Exact Match: 83.50%
+2. Out-of-Distribution (Locked Benchmark — 13 Real Archival Land-Record Crops):
+   - CER: ~93.06% - 93.73% | WER: ~96.08% - 96.92% | Exact Match: 15.38%
+
+KNOWN FAILURE MODE (LANGUAGE MODEL PRIOR):
+- The checkpoint was trained on isolated dictionary words, NEVER on real multi-word cursive lines.
+- On multi-word archival lines, the RoBERTa decoder hallucinates plausible-sounding Kannada
+  dictionary words (e.g. "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು", "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ") driven by LM priors
+  instead of decoding physical strokes.
+- Isolated word crops in the benchmark score 100% exact match; every multi-word line scores 0%.
+
+PRACTICAL PRODUCTION IMPLICATION:
+- Reliable for: Short, isolated field values (a single cleanly cropped name or number).
+- NOT reliable for: Full handwritten lines, cursive sentences, or archival paragraphs as-is.
+
+NEXT STEP (NOT YET DONE):
+- Retrain on real line-level handwriting data (ICDAR 2025 IHDR Task B page/line recognition).
+========================================================================================
 """
 
+import logging
+import os
 from typing import Any, Dict, List, Optional, Set, Union
 
 from schemas import BoundingBox, OCRResult
 from src.handwriting.confidence import build_confidence_audit_trail
+from src.handwriting.easyocr_recognizer import EasyOCRKannadaRecognizer
 from src.handwriting.paddle_recognizer import PaddleKannadaRecognizer
 from src.handwriting.recognizer import BaseHandwritingRecognizer, ImageInput
+from src.handwriting.trocr_12000_recognizer import (
+    TrOCR12000KannadaRecognizer,
+    get_checkpoint_12000_recognizer,
+)
 from src.handwriting.trocr_recognizer import (
     DEFAULT_ENGLISH_MODEL_PATH,
     DEFAULT_KANNADA_MODEL_PATH,
+    IITB_KANNADA_V002_MODEL_PATH,
     TrocrHandwritingRecognizer,
     get_english_handwriting_recognizer,
+    get_iitb_kannada_recognizer,
     get_kannada_handwriting_recognizer,
 )
+
+logger = logging.getLogger("language_script_router")
 
 # Standard language code normalization mapping
 LANGUAGE_ALIASES: Dict[str, str] = {
@@ -49,11 +89,16 @@ class LanguageScriptRouter:
     """Routes image crops to appropriate language and script OCR recognizers.
 
     Pre-configures:
-    - Handwritten Kannada -> Trained Kannada TrOCR checkpoint
-    - Printed Kannada -> PaddleOCR Kannada backend
+    - Handwritten Kannada -> Trained TrOCR Checkpoint-12000 (ViT + Chakita/KannadaBERT)
+    - Printed Kannada -> EasyOCR Kannada backend (primary) or PaddleOCR (configurable)
     - Handwritten English -> Pretrained TrOCR baseline
     - Printed English -> PaddleOCR English baseline
     - Unsupported handwritten languages -> Auditable review fallback without text fabrication
+
+    PERFORMANCE CHARACTERISTICS FOR HANDWRITTEN KANNADA:
+    - In-distribution isolated words: ~4.86% CER, 83.5% exact match.
+    - Real archival multi-word lines: ~93% CER (out-of-distribution, LM prior hallucination).
+    - Suitable for single isolated name/numeral crops; unsuitable for unsegmented cursive lines.
     """
 
     def __init__(
@@ -63,6 +108,7 @@ class LanguageScriptRouter:
         kannada_recognizer: Optional[BaseHandwritingRecognizer] = None,
         kannada_handwriting_recognizer: Optional[BaseHandwritingRecognizer] = None,
         auto_register_defaults: bool = False,
+        printed_ocr_engine: Optional[str] = None,
     ):
         """Initializes the script router.
 
@@ -72,6 +118,7 @@ class LanguageScriptRouter:
             kannada_recognizer: Optional pre-configured printed Kannada recognizer.
             kannada_handwriting_recognizer: Optional pre-configured handwritten Kannada recognizer.
             auto_register_defaults: Whether to register additional default handwriting and printed engines (e.g. English).
+            printed_ocr_engine: Optional engine selection ('easyocr' or 'paddleocr'). Defaults to env/config.
         """
         self._registry: Dict[str, BaseHandwritingRecognizer] = {}
         self._handwritten_registry: Dict[str, BaseHandwritingRecognizer] = {}
@@ -79,21 +126,35 @@ class LanguageScriptRouter:
         self._default_language = self._normalize_language_code(default_language)
 
         if auto_register_kannada:
-            # 1. Printed Kannada
-            printed_kn = (
-                kannada_recognizer
-                if kannada_recognizer is not None
-                else PaddleKannadaRecognizer(lang="kannada")
-            )
+            # 1. Printed Kannada Engine Selection (Configurable; EasyOCR by default)
+            if kannada_recognizer is not None:
+                printed_kn = kannada_recognizer
+            else:
+                engine_choice = (
+                    printed_ocr_engine
+                    or os.environ.get("PRINTED_OCR_ENGINE", "easyocr")
+                ).strip().lower()
+
+                if engine_choice == "paddleocr":
+                    printed_kn = PaddleKannadaRecognizer(lang="kannada")
+                else:
+                    printed_kn = EasyOCRKannadaRecognizer(languages=["kn", "en"])
+
             self.register_recognizer("kannada", printed_kn, is_handwritten=False, set_as_default=True)
 
-            # 2. Handwritten Kannada (Trained TrOCR Checkpoint)
+            # 2. Handwritten Kannada (Active: Trained TrOCR Checkpoint-12000)
             hw_kn = (
                 kannada_handwriting_recognizer
                 if kannada_handwriting_recognizer is not None
-                else get_kannada_handwriting_recognizer(auto_load=False)
+                else get_checkpoint_12000_recognizer(auto_load=False)
             )
             self.register_recognizer("kannada", hw_kn, is_handwritten=True)
+
+            logger.info(
+                f"[STARTUP] LanguageScriptRouter initialized: Printed backend='{printed_kn.model_name}' "
+                f"({type(printed_kn).__name__}), Handwritten backend='{hw_kn.model_name}' ({type(hw_kn).__name__})"
+            )
+
 
         if auto_register_defaults:
             # 3. Handwritten English (Pretrained TrOCR)

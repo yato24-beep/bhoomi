@@ -54,18 +54,63 @@ class DocumentLineSegmenter:
         self.padding_px = padding_px
         self.use_detector_fallback = use_detector_fallback
         self._paddle_ocr = None
+        self._paddle_attempted = False
 
     def _get_paddle_ocr(self) -> Any:
         """Lazily initializes and caches a single PaddleOCR instance."""
-        if self._paddle_ocr is None:
+        if self._paddle_ocr is None and not self._paddle_attempted:
+            self._paddle_attempted = True
             import os
+            os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
             os.environ["FLAGS_use_mkldnn"] = "0"
             os.environ["PADDLE_PDX_ENABLE_MKLDNN_BYDEFAULT"] = "0"
+            os.environ["FLAGS_enable_pir_api"] = "0"
+            os.environ["FLAGS_enable_pir_in_executor"] = "0"
+            try:
+                import paddle
+                paddle.set_flags({"FLAGS_use_mkldnn": False})
+            except Exception:
+                pass
             try:
                 from paddleocr import PaddleOCR
-                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="ka", enable_mkldnn=False)
+                try:
+                    self._paddle_ocr = PaddleOCR(
+                        use_doc_orientation_classify=False,
+                        use_doc_unwarping=False,
+                        use_textline_orientation=False,
+                        lang="ka",
+                        enable_mkldnn=False,
+                    )
+                except (TypeError, ValueError):
+                    try:
+                        self._paddle_ocr = PaddleOCR(
+                            use_textline_orientation=False,
+                            lang="ka",
+                            enable_mkldnn=False,
+                        )
+                    except (TypeError, ValueError):
+                        try:
+                            self._paddle_ocr = PaddleOCR(
+                                use_angle_cls=False,
+                                lang="ka",
+                                enable_mkldnn=False,
+                            )
+                        except (TypeError, ValueError):
+                            try:
+                                self._paddle_ocr = PaddleOCR(
+                                    use_textline_orientation=False,
+                                    lang="ka",
+                                )
+                            except (TypeError, ValueError):
+                                try:
+                                    self._paddle_ocr = PaddleOCR(
+                                        use_angle_cls=False,
+                                        lang="ka",
+                                    )
+                                except (TypeError, ValueError):
+                                    self._paddle_ocr = PaddleOCR(lang="ka")
             except Exception as e:
-                logger.warning(f"Could not initialize PaddleOCR in DocumentLineSegmenter: {e}")
+                logger.info(f"PaddleOCR not available in DocumentLineSegmenter: {e}")
                 self._paddle_ocr = None
         return self._paddle_ocr
 
@@ -331,6 +376,9 @@ class DocumentLineSegmenter:
             x2 = min(w, x + bw + self.padding_px)
             y2 = min(h, y + bh + self.padding_px)
 
+            bbox = BoundingBox(x_min=float(x1), y_min=float(y1), x_max=float(x2), y_max=float(y2))
+            crop_img = image.crop((x1, y1, x2, y2))
+
             # Try quick recognition on morphology crop to classify script/handwriting
             rec_text = ""
             rec_conf = 0.0
@@ -359,8 +407,8 @@ class DocumentLineSegmenter:
                             ]
                             rec_text = " ".join(t for t in c_texts if t).strip()
                             rec_conf = sum(c_confs) / len(c_confs) if c_confs else 0.0
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug(f"Morphology crop recognition notice: {exc}")
 
             has_kannada = any('\u0c80' <= ch <= '\u0cff' for ch in rec_text) if rec_text else False
             has_latin = any(ch.isascii() and ch.isalpha() for ch in rec_text) if rec_text else False

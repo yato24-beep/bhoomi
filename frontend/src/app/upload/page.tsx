@@ -31,6 +31,7 @@ export default function UploadPage() {
   }, [router]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isHandwritten, setIsHandwritten] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<DocumentUploadResponse | null>(null);
@@ -245,6 +246,19 @@ export default function UploadPage() {
             </button>
           </div>
         )}
+
+        {/* Automatic Hybrid Script & Style Routing Indicator (No manual model selection required) */}
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+          <div>
+            <span className="text-sm font-semibold text-slate-800">Automatic Script & Style Routing</span>
+            <p className="text-xs text-slate-500">
+              Per-region layout routing automatically directs printed Kannada to EasyOCR and handwritten Kannada to IIT Bombay Indic-TrOCR v0.0.2.
+            </p>
+          </div>
+          <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 ml-3">
+            Automatic
+          </span>
+        </div>
 
         {/* Submit Button */}
         <button

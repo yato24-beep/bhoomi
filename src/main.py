@@ -1,7 +1,10 @@
-"""
-src/main.py
-Root FastAPI application entry point, re-exporting the integrated platform application.
-"""
+import sys
+from pathlib import Path
+
+backend_dir = str(Path(__file__).resolve().parents[1] / "backend")
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from backend.app.main import app
 
 if __name__ == "__main__":

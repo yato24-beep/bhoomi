@@ -17,6 +17,10 @@ from schemas import BoundingBox, DocumentPage, OCRResult
 class RegionType(str, Enum):
     """Semantic region types recognized in land records."""
     TEXT = "text"
+    WORD = "word"
+    LINE = "line"
+    FIELD = "field"
+    PAGE = "page"
     TABLE_CELL = "table_cell"
     HEADER = "header"
     SIGNATURE = "signature"
@@ -24,6 +28,13 @@ class RegionType(str, Enum):
     THUMBPRINT = "thumbprint"
     MAP_OR_DIAGRAM = "map_or_diagram"
     UNKNOWN = "unknown"
+
+
+class ConfidenceState(str, Enum):
+    """Documented confidence states preventing premature score conversion."""
+    UNCALIBRATED = "UNCALIBRATED"
+    CALIBRATED = "CALIBRATED"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
 
 
 class ProcessingStatus(str, Enum):
@@ -78,6 +89,15 @@ class RecognizedRegionResult(BaseModel):
     script: str = Field(..., description="Recognized script identifier")
     is_handwritten: Optional[bool] = Field(None, description="Flag indicating if the text was recognized as handwritten")
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Model confidence score in [0.0, 1.0]")
+    recognizer_confidence_raw: Optional[float] = Field(None, description="Raw model confidence or posterior probability")
+    calibrated_confidence: Optional[float] = Field(None, description="Calibrated confidence probability; MUST be null if uncalibrated")
+    detection_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Detection confidence for this region/word")
+    routing_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Script/style routing classification confidence")
+    validation_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Semantic field validation confidence score")
+    confidence_state: ConfidenceState = Field(ConfidenceState.UNCALIBRATED, description="Documented confidence state: UNCALIBRATED, CALIBRATED, REVIEW_REQUIRED")
+    region_type: str = Field("word", description="Granularity of region: 'word', 'line', 'field', or 'page'")
+    routing_reason: Optional[str] = Field(None, description="Deterministic rule applied to route to this recognizer")
+    review_reason: Optional[str] = Field(None, description="Explicit reason why human review is required")
     model_name: Optional[str] = Field(None, description="Engine or checkpoint used (e.g. TrOCR Kannada, PaddleOCR)")
     model_version: Optional[str] = Field(None, description="Model version or checkpoint identifier")
     inference_time_ms: float = Field(0.0, description="Inference execution duration in milliseconds")
@@ -104,25 +124,53 @@ class DocumentProcessingResponse(BaseModel):
     translated_text: Optional[str] = Field(None, description="English translation of recognized Indic/Kannada text (representation 3)")
     english_translation: Optional[str] = Field(None, description="Clean, natural, meaning-preserving English text (representation 3)")
     translation_result: Optional[Dict[str, Any]] = Field(default=None, description="Structured translation result with language purity report")
+    translation_status: Optional[str] = Field(None, description="Status of machine translation ('completed', 'skipped_low_confidence', etc.)")
     document_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Character-length weighted mean confidence")
+    
+    # 4-part calibrated confidence reporting & explicit status
+    recognition_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Calibrated recognition confidence")
+    detection_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Calibrated layout/word detection confidence")
+    routing_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Calibrated style/script routing confidence")
+    field_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Calibrated spatial field extraction confidence")
+    calibrated_confidence: Optional[float] = Field(None, description="Calibrated document confidence; MUST be null if uncalibrated")
+    confidence_state: ConfidenceState = Field(ConfidenceState.UNCALIBRATED, description="Document-level confidence state: UNCALIBRATED, CALIBRATED, REVIEW_REQUIRED")
+    verification_status: str = Field("needs_verification", description="'accepted' | 'needs_verification'")
+
+    # Semantic layer V1 payload and human review queue
+    semantic_data: Optional[Dict[str, Any]] = Field(default=None, description="Structured semantic fields, repeated records, and validation summary")
+    review_items: List[Dict[str, Any]] = Field(default_factory=list, description="Items requiring human officer review")
+
     status: str = Field("completed", description="High-level processing status ('completed', 'flagged_for_review', 'failed')")
     requires_human_review: bool = Field(False, description="True if any region requires human verification")
     warnings: List[str] = Field(default_factory=list, description="Diagnostic warnings and review triggers")
+    stage_timings: Dict[str, float] = Field(default_factory=dict, description="Per-stage latency breakdown in ms")
+    structured_ocr: Optional[Dict[str, Any]] = Field(None, description="Standardized structured OCR JSON schema")
     engine_breakdown: Dict[str, int] = Field(default_factory=dict, description="Count of regions processed per engine")
     processing_time_ms: float = Field(0.0, description="Total pipeline latency in milliseconds")
     page: Optional[DocumentPage] = Field(None, description="DocumentPage schema for backwards compatibility with Person C")
 
+    # Document Gate & Verification
+    is_land_record: bool = Field(True, description="Whether document layout was verified as an authentic land record")
+    gate_classification: Optional[Dict[str, Any]] = Field(default=None, description="Visual layout gate classification decision and metrics")
+    bilingual_fields: Dict[str, Any] = Field(default_factory=dict, description="Word-aligned bilingual structured fields with transliterations")
+
     # Person C Integrated Intelligence Fields
-    extracted_fields: Dict[str, Any] = Field(default_factory=dict, description="Structured fields extracted by Person C")
+    extracted_fields: Dict[str, Any] = Field(default_factory=dict, description="Structured fields extracted by Person C / NER")
     validation: Optional[Dict[str, Any]] = Field(default=None, description="Rule & cross-record validation results")
     gis_validation: Optional[Dict[str, Any]] = Field(default=None, description="Cadastral GIS validation report")
     duplicate_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Duplicate detection analysis report")
     overall_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Multi-factor document confidence score")
-    state: Optional[str] = Field(default=None, description="Identified or confirmed state jurisdiction")
-    document_type: Optional[str] = Field(default=None, description="Classified land record document type")
+    document_type: Optional[str] = Field(default=None, description="Classified land record document type if confirmed, else None")
+    document_type_state: str = Field(default="UNKNOWN", description="Document type state: 'CONFIRMED' or 'UNKNOWN'")
+    classifier_source: Optional[str] = Field(default=None, description="Model or engine that produced classification")
+    classifier_score: Optional[float] = Field(default=None, description="Classification score or posterior")
+    classifier_evidence: List[str] = Field(default_factory=list, description="Textual or structural evidence for classification")
     tables: List[Dict[str, Any]] = Field(default_factory=list, description="Extracted table structures")
     pipeline_stages_completed: List[str] = Field(default_factory=list, description="Audit trail of completed pipeline stages")
     ocr: Optional[Dict[str, Any]] = Field(default=None, description="Preserved underlying OCR evidence breakdown")
+    diagnostics: Dict[str, Any] = Field(default_factory=dict, description="OCR recognizer diagnostic information")
+    demo_fixture_detected: bool = Field(default=False, description="True if document content matches the controlled synthetic demo fixture")
+    demo_fixture_name: Optional[str] = Field(default=None, description="Name of detected demo fixture")
 
     @property
     def full_text(self) -> str:

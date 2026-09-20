@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 # Specific domain keywords for each document category
 RTC_KEYWORDS = [
     "ಪಹಣಿ", "pahani", "ಭೂಮಿ", "bhoomi", "rtc", "ಹಕ್ಕು ದಾಖಲೆ", "ಖಾತೆದಾರರ ವಿವರ",
-    "ಸರ್ವೆ ನಂ", "ಸರ್ವೇ ನಂ", "survey no", "ಕಂದಾಯ", "ಹಿಸ್ಸಾ", "ಆರ್ ಟಿ ಸಿ", "ಹಿಡುವಳಿ"
+    "ಸರ್ವೆ ನಂ", "ಸರ್ವೇ ನಂ", "survey no", "ಕಂದಾಯ", "ಹಿಸ್ಸಾ", "ಆರ್ ಟಿ ಸಿ", "ಹಿಡುವಳಿ",
+    "ಸರ್ವೆ", "ಸರ್ವೇ", "ವಿಸ್ತೀರ್ಣ", "ಸರ್ವೆ ಸಂಖ್ಯೆ", "ಸರ್ವೇ ಸಂಖ್ಯೆ", "survey number"
 ]
 
 KHATA_KEYWORDS = [

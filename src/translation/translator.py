@@ -34,6 +34,17 @@ class LanguagePurityReport(BaseModel):
     warnings: List[str] = Field(default_factory=list)
 
 
+class RegionTranslationResult(BaseModel):
+    """Auditable region-level translation result preserving provenance."""
+    source_text: str = Field(..., description="Verbatim source recognized text")
+    source_region_id: Optional[str] = Field(None, description="Source OCR region identifier")
+    translation_text: Optional[str] = Field(None, description="Translated text output")
+    translation_status: str = Field("completed", description="'completed', 'blocked_low_confidence', 'blocked_uncalibrated_handwriting'")
+    translation_engine: str = Field("domain_glossary_v1", description="Translation engine or service identifier")
+    blocked_reason: Optional[str] = Field(None, description="Reason translation was blocked or flagged")
+    is_verified: bool = Field(False, description="Whether translation has been verified (always False for uncalibrated handwriting)")
+
+
 class TranslationResult(BaseModel):
     """Comprehensive output capturing the 3 distinct representations and validation metadata."""
     original_ocr: str = Field(..., description="1. Original raw recognized OCR text")
@@ -42,6 +53,16 @@ class TranslationResult(BaseModel):
     purity_report: LanguagePurityReport = Field(default_factory=LanguagePurityReport)
     fallback_normalization: bool = Field(False, description="True if fallback standalone pass was used without semantic evidence")
     protected_tokens: Dict[str, str] = Field(default_factory=dict, description="Verbatim protected entities")
+
+    # Translation Provenance Contract Fields
+    source_text: Optional[str] = Field(None, description="Verbatim source recognized text")
+    source_region_id: Optional[str] = Field(None, description="Source OCR region identifier if region-level")
+    translation_text: Optional[str] = Field(None, description="Clean translation text")
+    translation_status: str = Field("completed", description="'completed' | 'blocked_low_confidence' | 'blocked_uncalibrated_handwriting'")
+    translation_engine: str = Field("domain_glossary_v1", description="Translation engine or pipeline component")
+    blocked_reason: Optional[str] = Field(None, description="Reason translation was blocked or flagged")
+    is_verified: bool = Field(False, description="Whether translation has been verified (never True for uncalibrated handwriting)")
+    region_translations: List[RegionTranslationResult] = Field(default_factory=list, description="Per-region translation provenance")
 
     @property
     def clean_kannada_text(self) -> str:
@@ -734,6 +755,41 @@ def translate_document_text(
         allowed_verbatim_tokens=allowed_tokens,
     )
 
+    # Step D: Region-level translation provenance audit trail
+    region_translations: List[RegionTranslationResult] = []
+    if regions:
+        for r in regions:
+            r_text = getattr(r, "raw_text", None) or getattr(r, "text", "")
+            r_norm = getattr(r, "normalized_text", None) or r_text
+            r_id = getattr(r, "region_id", None)
+            is_hw = getattr(r, "is_handwritten", False) or getattr(r, "handwriting", False)
+
+            if is_hw:
+                # For uncalibrated handwriting: do NOT imply translated text has been verified
+                region_translations.append(
+                    RegionTranslationResult(
+                        source_text=r_text,
+                        source_region_id=r_id,
+                        translation_text=None,
+                        translation_status="blocked_uncalibrated_handwriting",
+                        translation_engine="domain_glossary_v1",
+                        blocked_reason="Uncalibrated handwriting requires human officer verification before accepting translation",
+                        is_verified=False,
+                    )
+                )
+            else:
+                region_translations.append(
+                    RegionTranslationResult(
+                        source_text=r_text,
+                        source_region_id=r_id,
+                        translation_text=r_norm,
+                        translation_status="completed",
+                        translation_engine="domain_glossary_v1",
+                        blocked_reason=None,
+                        is_verified=True,
+                    )
+                )
+
     return TranslationResult(
         original_ocr=text,
         kannada_translation=clean_kannada,
@@ -741,6 +797,14 @@ def translate_document_text(
         purity_report=purity_report,
         fallback_normalization=fallback_norm,
         protected_tokens=token_map,
+        source_text=text,
+        source_region_id=None,
+        translation_text=clean_english,
+        translation_status="completed",
+        translation_engine="domain_glossary_v1",
+        blocked_reason=None,
+        is_verified=True,
+        region_translations=region_translations,
     )
 
 

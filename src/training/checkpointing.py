@@ -70,8 +70,9 @@ def save_training_checkpoint(
         try:
             import torch
             torch.save(model.state_dict(), str(ckpt_dir / "pytorch_model.bin"))
-        except Exception:
-            pass
+        except Exception as save_err:
+            logger.error("Failed saving PyTorch state dict: %s", save_err)
+            raise
 
     # 2. Save processor / tokenizer if supported
     if processor is not None and hasattr(processor, "save_pretrained"):

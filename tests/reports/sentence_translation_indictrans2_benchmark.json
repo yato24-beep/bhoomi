@@ -1,0 +1,81 @@
+{
+  "model": "ai4bharat/indictrans2-indic-en-1B",
+  "model_status": "GATED_REPO_UNAUTHORIZED: Model 'ai4bharat/indictrans2-indic-en-1B' is gated by AI4Bharat on HuggingFace. Requires manual agreement at https://huggingface.co/ai4bharat/indictrans2-indic-en-1B and setting HF_TOKEN.",
+  "sentences_tested": 7,
+  "mean_chrf": 0.0046,
+  "sentence_level_count": 7,
+  "production_ready": false,
+  "production_gate": "mean_chrf > 0.40 AND all outputs sentence-level English",
+  "results": [
+    {
+      "id": "sent_01_registration",
+      "type": "administrative_sentence",
+      "source_kn": "ಈ ಜಮೀನು ಕಂದಾಯ ಇಲಾಖೆಯ ನಿಯಮಗಳ ಪ್ರಕಾರ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದೆ.",
+      "reference_en": "This land is registered according to the rules of the revenue department.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0031,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_02_survey_extent",
+      "type": "cadastral_statement",
+      "source_kn": "ಸರ್ವೆ ನಂಬರ್ 142/3 ರಲ್ಲಿ ಒಟ್ಟು 2 ಎಕರೆ ಕೃಷಿ ಭೂಮಿ ಇದೆ.",
+      "reference_en": "There is a total of 2 acres of agricultural land in survey number 142/3.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0032,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_03_encumbrance",
+      "type": "encumbrance_status",
+      "source_kn": "ಖಾತೆದಾರರು ಯಾವುದೇ ಸಾಲದ ಬಾಕಿಯನ್ನು ಹೊಂದಿಲ್ಲ.",
+      "reference_en": "The khatadar does not have any outstanding loan dues.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0041,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_04_mutation_order",
+      "type": "mutation_order",
+      "source_kn": "ವಾರಸುದಾರರ ಹಕ್ಕಿನ ಆಧಾರದ ಮೇಲೆ ಖಾತಾ ಬದಲಾವಣೆಯನ್ನು ಅನುಮೋದಿಸಲಾಗಿದೆ.",
+      "reference_en": "Khata mutation has been approved on the basis of heirship rights.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_05_boundaries",
+      "type": "boundary_description",
+      "source_kn": "ಪೂರ್ವಕ್ಕೆ ಸರ್ಕಾರಿ ರಸ್ತೆ ಮತ್ತು ಪಶ್ಚಿಮಕ್ಕೆ ರಾಜು ಅವರ ಜಮೀನು ಗಡಿಯಾಗಿದೆ.",
+      "reference_en": "The government road to the east and Raju's land to the west form the boundary.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0059,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_06_land_classification",
+      "type": "land_classification",
+      "source_kn": "ಈ ಭೂಮಿಯು ಖುಷ್ಕಿ ಜಮೀನು ಎಂದು ವರ್ಗೀಕರಿಸಲ್ಪಟ್ಟಿದೆ.",
+      "reference_en": "This land is classified as dry (unirrigated) land.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0042,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    },
+    {
+      "id": "sent_07_revenue_demand",
+      "type": "revenue_demand",
+      "source_kn": "ವಾರ್ಷಿಕ ಭೂ ಕಂದಾಯ ರೂ. 125 ಆಗಿರುತ್ತದೆ.",
+      "reference_en": "The annual land revenue is Rs. 125.",
+      "predicted_en": "[GATED_REPO_UNAUTHORIZED]",
+      "chrf_score": 0.0118,
+      "is_sentence_level": true,
+      "failure_mode": "MODEL_ACCESS_OR_LOAD_BLOCKED"
+    }
+  ]
+}

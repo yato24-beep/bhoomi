@@ -52,6 +52,27 @@ class ExtractedField(Base):
         nullable=True,
         doc="Coordinates on page: {'x_min': float, 'y_min': float, 'x_max': float, 'y_max': float}",
     )
+    english_value: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="English translation or transliteration for this field",
+    )
+    translation_status: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+        doc="Translation state: TRANSLATED, ALREADY_ENGLISH, NOT_APPLICABLE, FAILED, UNAVAILABLE",
+    )
+    translation_engine: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        doc="Translation engine used: domain_glossary, google_neural, aksharamukha_phonetic, passthrough",
+    )
+    source_type: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        default="pipeline",
+        nullable=True,
+        doc="Origin of field: pipeline, ocr, semantic, synthetic_demo_fixture",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

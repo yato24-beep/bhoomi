@@ -1,0 +1,128 @@
+{
+  "fixture_name": "synthetic_karnataka_rtc",
+  "document_label": "SYNTHETIC DEMO DATA",
+  "file_hashes": [
+    "deaa86f830447b2145acc8046b974cd4de7f1ba39146cb5fc5cc03b306e88781",
+    "61c151923d5522221dc8ceed54315e141fd8659a3c3cf84dde4c2d90bab6c8d3"
+  ],
+  "pixel_hashes": [
+    "7aedef07fbe2841ed3cb2b1f9b15db2bc0ab45285b1aecaeb9ab6608894aa5c2"
+  ],
+  "canonical_fields": {
+    "document_type": {
+      "raw_value": "Bhoomi RTC",
+      "normalized_value": "Bhoomi RTC",
+      "confidence": 0.98,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "district": {
+      "raw_value": "ಬೆಂಗಳೂರು ಗ್ರಾಮಾಂತರ",
+      "normalized_value": "Bengaluru Rural",
+      "english_value": "Bengaluru Rural",
+      "translation_engine": "domain_glossary",
+      "confidence": 0.95,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "taluk": {
+      "raw_value": "ದೊಡ್ಡಬಳ್ಳಾಪುರ",
+      "normalized_value": "ದೊಡ್ಡಬಳ್ಳಾಪುರ",
+      "english_value": "Doddaballapura",
+      "translation_engine": "domain_glossary",
+      "confidence": 0.93,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "hobli": {
+      "raw_value": "ಕಸಬಾ",
+      "normalized_value": "ಕಸಬಾ",
+      "english_value": "Kasaba",
+      "translation_engine": "google_neural",
+      "confidence": 0.92,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "village": {
+      "raw_value": "ನಾಗದೇವನಹಳ್ಳಿ",
+      "normalized_value": "ನಾಗದೇವನಹಳ್ಳಿ",
+      "english_value": "Nagadevanahalli",
+      "translation_engine": "aksharamukha_phonetic",
+      "confidence": 0.90,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "survey_number": {
+      "raw_value": "42",
+      "normalized_value": "42",
+      "english_value": "42",
+      "translation_engine": "passthrough",
+      "confidence": 0.94,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "hissa_number": {
+      "raw_value": "3",
+      "normalized_value": "3",
+      "english_value": "3",
+      "translation_engine": "passthrough",
+      "confidence": 0.92,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "khata_number": {
+      "raw_value": "108",
+      "normalized_value": "108",
+      "english_value": "108",
+      "translation_engine": "passthrough",
+      "confidence": 0.91,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "extent": {
+      "raw_value": "2-13",
+      "normalized_value": "2 acres 13 guntas",
+      "english_value": "2 acres 13 guntas",
+      "translation_engine": "passthrough",
+      "confidence": 0.89,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "owner_name": {
+      "raw_value": "ರಾಮಪ್ಪ ಬಿನ್ ತಮ್ಮಣ್ಣಪ್ಪ",
+      "normalized_value": "ರಾಮಪ್ಪ ಬಿನ್ ತಮ್ಮಣ್ಣಪ್ಪ",
+      "english_value": "Ramappa Bin Tammannappa",
+      "translation_engine": "aksharamukha_phonetic",
+      "confidence": 0.90,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "mutation_number": {
+      "raw_value": "MR T-42/2018",
+      "normalized_value": "MR T-42/2018",
+      "english_value": "MR T-42/2018",
+      "translation_engine": "passthrough",
+      "confidence": 0.93,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "registration_date": {
+      "raw_value": "2024-03-15",
+      "normalized_value": "2024-03-15",
+      "english_value": "2024-03-15",
+      "translation_engine": "passthrough",
+      "confidence": 0.95,
+      "source_type": "synthetic_demo_fixture"
+    },
+    "cultivator_name": {
+      "raw_value": "ಭೀಮಯ್ಯ",
+      "normalized_value": "ಭೀಮಯ್ಯ",
+      "english_value": "Bheemayya",
+      "translation_engine": "aksharamukha_phonetic",
+      "confidence": 0.45,
+      "source_type": "synthetic_demo_fixture",
+      "needs_review": true,
+      "review_reason": "Handwritten cultivator column requires officer verification"
+    }
+  },
+  "review_items": [
+    {
+      "region_id": "reg_cultivator_col12",
+      "field_name": "cultivator_name",
+      "raw_ocr_text": "ಭೀಮಯ್ಯ",
+      "calibrated_confidence": 0.45,
+      "review_reason": "Handwritten cultivator column requires officer verification",
+      "suggested_value": "ಭೀಮಯ್ಯ",
+      "needs_review": true
+    }
+  ]
+}

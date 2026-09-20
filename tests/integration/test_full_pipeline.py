@@ -63,20 +63,28 @@ class TestFullIntegratedPipeline(unittest.TestCase):
     """Test suite exercising the entire Person A -> Person B -> Person C pipeline."""
 
     def setUp(self):
-        # Create a basic synthetic document image
+        # Create a synthetic land record document image with grid structure
         self.dummy_image = Image.new("RGB", (600, 400), color=(250, 250, 248))
         draw = ImageDraw.Draw(self.dummy_image)
-        draw.rectangle([(20, 20), (580, 380)], outline=(180, 180, 180), width=2)
+        draw.rectangle([(20, 20), (580, 380)], outline=(100, 100, 100), width=2)
+        for y in range(50, 350, 40):
+            draw.line([(20, y), (580, y)], fill=(120, 120, 120), width=1)
+        for x in range(80, 520, 80):
+            draw.line([(x, 20), (x, 380)], fill=(120, 120, 120), width=1)
 
     def test_01_printed_kannada_document(self):
         """Test 1: Printed Kannada document produces Bhoomi RTC extraction."""
         rec = _MockPredictableRecognizer("ಸರ್ವೆ ಸಂಖ್ಯೆ: 142/2  ವಿಸ್ತೀರ್ಣ: 1.50 ಹೆಕ್ಟೇರ್", confidence=0.96, is_handwritten=False)
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer("kannada", rec, is_handwritten=False, set_as_default=True)
 
+        regions = [
+            RegionRequest(region_id="reg_1", bbox=BoundingBox(x_min=20, y_min=20, x_max=500, y_max=80), language="kannada", is_handwritten=False)
+        ]
         # Execute A + B
         b_resp = pipeline.process_document(
             image=self.dummy_image,
+            regions=regions,
             language="kannada",
             is_handwritten=False,
             document_id="TEST_01_KN_PRINTED",
@@ -95,11 +103,15 @@ class TestFullIntegratedPipeline(unittest.TestCase):
     def test_02_handwritten_kannada_document(self):
         """Test 2: Handwritten Kannada document routed through handwriting pipeline."""
         rec = _MockPredictableRecognizer("ಖಾತೆದಾರರ ಹೆಸರು: ಬಸವರಾಜ್ ಪಾಟೀಲ್", confidence=0.91, is_handwritten=True)
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer("kannada", rec, is_handwritten=True)
 
+        regions = [
+            RegionRequest(region_id="reg_1", bbox=BoundingBox(x_min=20, y_min=20, x_max=500, y_max=80), language="kannada", is_handwritten=True)
+        ]
         b_resp = pipeline.process_document(
             image=self.dummy_image,
+            regions=regions,
             language="kannada",
             is_handwritten=True,
             document_id="TEST_02_KN_HANDWRITTEN",
@@ -114,11 +126,15 @@ class TestFullIntegratedPipeline(unittest.TestCase):
     def test_03_printed_english_document(self):
         """Test 3: Printed English document extraction."""
         rec = _MockPredictableRecognizer("SURVEY NUMBER: 88/1  TOTAL EXTENT: 2.45 acre", confidence=0.97, is_handwritten=False)
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer("english", rec, is_handwritten=False)
 
+        regions = [
+            RegionRequest(region_id="reg_1", bbox=BoundingBox(x_min=20, y_min=20, x_max=500, y_max=80), language="english", is_handwritten=False)
+        ]
         b_resp = pipeline.process_document(
             image=self.dummy_image,
+            regions=regions,
             language="english",
             is_handwritten=False,
             document_id="TEST_03_EN_PRINTED",
@@ -135,11 +151,15 @@ class TestFullIntegratedPipeline(unittest.TestCase):
     def test_04_handwritten_english_document(self):
         """Test 4: Handwritten English document extraction."""
         rec = _MockPredictableRecognizer("Owner: Johnathan Doe\nFather: William Doe", confidence=0.92, is_handwritten=True)
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer("english", rec, is_handwritten=True)
 
+        regions = [
+            RegionRequest(region_id="reg_1", bbox=BoundingBox(x_min=20, y_min=20, x_max=500, y_max=80), language="english", is_handwritten=True)
+        ]
         b_resp = pipeline.process_document(
             image=self.dummy_image,
+            regions=regions,
             language="english",
             is_handwritten=True,
             document_id="TEST_04_EN_HANDWRITTEN",
@@ -153,7 +173,7 @@ class TestFullIntegratedPipeline(unittest.TestCase):
 
     def test_05_multi_region_document(self):
         """Test 5: Multi-region layout with discrete bounding boxes."""
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer(
             "kannada",
             _MockPredictableRecognizer("ಸರ್ವೆ ನಂ: 105", confidence=0.95),
@@ -180,13 +200,18 @@ class TestFullIntegratedPipeline(unittest.TestCase):
     def test_06_low_confidence_ocr(self):
         """Test 6: Low-confidence OCR triggers lower overall confidence."""
         rec = _MockPredictableRecognizer("ಗಾತಾ ಸಂ: 12", confidence=0.35, is_handwritten=False)
-        pipeline = DocumentProcessingPipeline()
+        pipeline = DocumentProcessingPipeline(enable_document_gating=False)
         pipeline.router.register_recognizer("kannada", rec, is_handwritten=False, set_as_default=True)
 
+        regions = [
+            RegionRequest(region_id="reg_1", bbox=BoundingBox(x_min=20, y_min=20, x_max=500, y_max=80), language="kannada", is_handwritten=False)
+        ]
         b_resp = pipeline.process_document(
             image=self.dummy_image,
+            regions=regions,
             document_id="TEST_06_LOW_CONF",
         )
+
 
         c_res = PersonCAdapter.execute_person_c(b_resp, selected_state="UP")
         self.assertLess(c_res.overall_confidence, 0.70)

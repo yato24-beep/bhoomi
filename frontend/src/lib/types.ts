@@ -27,6 +27,10 @@ export interface ExtractedFieldItem {
   confidence_score: number;
   source_page: number;
   bounding_box: BoundingBox | null;
+  english_value?: string | null;
+  translation_status?: string | null;
+  translation_engine?: string | null;
+  source_type?: string | null;
 }
 
 export interface ExtractedFieldsSummary {
@@ -45,6 +49,9 @@ export interface ExtractionResult {
   validation_info: Record<string, any>;
   processing_time_ms: number;
   created_at: string;
+  recognition_confidence_raw?: number | null;
+  calibrated_confidence?: number | null;
+  stage_timings?: Record<string, number> | null;
 }
 
 export interface DocumentUploadResponse {
@@ -73,3 +80,42 @@ export interface DocumentSearchResponse {
   limit: number;
   results: DocumentSearchItem[];
 }
+
+export interface ReviewItem {
+  review_id: string;
+  document_id: string;
+  page_number: number;
+  region_id: string;
+  bbox?: BoundingBox | [number, number, number, number] | null;
+  raw_ocr_text: string;
+  recognizer: string;
+  review_reason: string;
+  recognizer_confidence_raw?: number | null;
+  calibrated_confidence?: number | null;
+  status: string;
+  lifecycle_state: string;
+  decision?: string | null;
+  corrected_text?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  reviewer_notes?: string | null;
+  is_critical_field?: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface ReviewCorrectionRequest {
+  review_id: string;
+  decision: "ACCEPTED" | "CORRECTED" | "REJECTED" | string;
+  corrected_text?: string | null;
+  reviewer_notes?: string | null;
+  reviewed_by?: string | null;
+}
+
+export interface ReviewCorrectionResponse {
+  status: string;
+  review_id: string;
+  document_id: number;
+  item: ReviewItem;
+  requires_human_review: boolean;
+}
+

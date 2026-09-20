@@ -1,0 +1,144 @@
+{
+  "total_cadastral_gt_fields": 8,
+  "total_extracted_fields": 0,
+  "correctly_extracted_fields": 0,
+  "precision": 0.0,
+  "recall": 0.0,
+  "f1_score": 0.0,
+  "documents": [
+    {
+      "id": "doddaballapura_passage",
+      "is_cadastral_record": false,
+      "lines_count": 9,
+      "extracted_fields": {},
+      "ground_truth_fields": {},
+      "field_matches": {},
+      "error_analysis": [],
+      "false_positive_suppression": "PASS"
+    },
+    {
+      "id": "doc2_karnataka_rtc",
+      "is_cadastral_record": true,
+      "lines_count": 38,
+      "extracted_fields": {},
+      "ground_truth_fields": {
+        "document_type": "RTC Form 16"
+      },
+      "field_matches": {
+        "document_type": {
+          "status": "MISSED",
+          "expected": "RTC Form 16",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        }
+      },
+      "error_analysis": [
+        {
+          "field": "document_type",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: []"
+        }
+      ]
+    },
+    {
+      "id": "sample_bhoomi_rtc",
+      "is_cadastral_record": true,
+      "lines_count": 12,
+      "extracted_fields": {},
+      "ground_truth_fields": {
+        "survey_number": "45/1",
+        "owner_name": "Manjunath Gowda",
+        "extent_area": "2-14 Acres"
+      },
+      "field_matches": {
+        "survey_number": {
+          "status": "MISSED",
+          "expected": "45/1",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        },
+        "owner_name": {
+          "status": "MISSED",
+          "expected": "Manjunath Gowda",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        },
+        "extent_area": {
+          "status": "MISSED",
+          "expected": "2-14 Acres",
+          "root_cause": "EXTRACTION_PARSER_ERROR"
+        }
+      },
+      "error_analysis": [
+        {
+          "field": "survey_number",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: ['ಸರ್ವೆ ನಂಬರ್', 'ಸರ್ವೆ ನಂ', 'ಸರ್ವೇ ನಂಬರ್']"
+        },
+        {
+          "field": "owner_name",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: ['ಮಾಲೀಕರ ಹೆಸರು', 'ಖಾತೆದಾರರ ಹೆಸರು', 'ಖಾತೆದಾರರ ವಿವರ']"
+        },
+        {
+          "field": "extent_area",
+          "root_cause": "EXTRACTION_PARSER_ERROR",
+          "detail": "Anchor missing or corrupted in OCR output: ['ವಿಸ್ತೀರ್ಣ', 'ವಿಸ್ತಾರ', 'ಒಟ್ಟು ವಿಸ್ತೀರ್ಣ']"
+        }
+      ]
+    },
+    {
+      "id": "sample_satbara_7_12",
+      "is_cadastral_record": true,
+      "lines_count": 23,
+      "extracted_fields": {},
+      "ground_truth_fields": {
+        "district": "Pune",
+        "taluk": "Haveli",
+        "village": "Shirur",
+        "survey_number": "124/2A"
+      },
+      "field_matches": {
+        "district": {
+          "status": "MISSED",
+          "expected": "Pune",
+          "root_cause": "EXTRACTION_PARSER_ERROR"
+        },
+        "taluk": {
+          "status": "MISSED",
+          "expected": "Haveli",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        },
+        "village": {
+          "status": "MISSED",
+          "expected": "Shirur",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        },
+        "survey_number": {
+          "status": "MISSED",
+          "expected": "124/2A",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)"
+        }
+      },
+      "error_analysis": [
+        {
+          "field": "district",
+          "root_cause": "EXTRACTION_PARSER_ERROR",
+          "detail": "Anchor missing or corrupted in OCR output: ['ಜಿಲ್ಲೆ', 'ಜಿಲ್ಲಾ', 'district']"
+        },
+        {
+          "field": "taluk",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: ['ತಾಲೂಕು', 'ತಾಲ್ಲೂಕು', 'ತಾಲೂಕ']"
+        },
+        {
+          "field": "village",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: ['ಗ್ರಾಮದ ಹೆಸರು', 'ದಖಲೆ ಗ್ರಾಮ', 'ಹಳ್ಳಿಯ ಹೆಸರು']"
+        },
+        {
+          "field": "survey_number",
+          "root_cause": "OCR_ERROR (Anchor corrupted/absent in OCR output)",
+          "detail": "Anchor missing or corrupted in OCR output: ['ಸರ್ವೆ ನಂಬರ್', 'ಸರ್ವೆ ನಂ', 'ಸರ್ವೇ ನಂಬರ್']"
+        }
+      ]
+    }
+  ]
+}

@@ -158,9 +158,12 @@ export async function searchDocuments(
 /**
  * Upload a document file to backend API.
  */
-export async function uploadDocumentFile(file: File): Promise<DocumentUploadResponse> {
+export async function uploadDocumentFile(file: File, isHandwritten?: boolean): Promise<DocumentUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
+  if (isHandwritten !== undefined && isHandwritten !== null) {
+    formData.append("is_handwritten", String(isHandwritten));
+  }
 
   const res = await fetch(`${API_BASE_URL}/api/v1/documents/upload`, {
     method: "POST",
@@ -238,6 +241,55 @@ export async function translateText(
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.detail || "Translation request failed");
+  }
+
+  return res.json();
+}
+
+/**
+ * Fetch human review items for a document.
+ */
+export async function fetchDocumentReviewItems(documentId: number) {
+  const res = await fetch(`${API_BASE_URL}/api/v1/documents/${documentId}/review/items`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch review items for document #${documentId}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Submit a human review decision (ACCEPTED, CORRECTED, REJECTED)
+ */
+export async function submitDocumentReview(
+  documentId: number,
+  payload: {
+    review_id: string;
+    decision: string;
+    corrected_text?: string | null;
+    reviewer_notes?: string | null;
+    reviewed_by?: string | null;
+  }
+) {
+  const res = await fetch(`${API_BASE_URL}/api/v1/documents/${documentId}/review`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to submit review for document #${documentId}`);
   }
 
   return res.json();

@@ -50,8 +50,8 @@ def default_collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "languages": [item.get("language", "unknown") for item in batch],
                 "scripts": [item.get("script", "unknown") for item in batch],
             }
-        except Exception:
-            pass
+        except Exception as tensor_err:
+            logger.debug("Failed stacking tensor batch: %s", tensor_err)
 
     # Fallback dictionary for non-tensor or mock batches
     return {
@@ -103,8 +103,8 @@ class HandwritingTrainer:
         if self._model is not None and HAS_TORCH and torch is not None and isinstance(self._model, torch.nn.Module):
             try:
                 self._model.to(self.device_str)
-            except Exception:
-                pass
+            except Exception as dev_err:
+                logger.warning("Could not move model to %s: %s", self.device_str, dev_err)
 
         self.global_step: int = initial_step
         self.current_epoch: int = initial_epoch

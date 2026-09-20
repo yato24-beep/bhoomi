@@ -1,1 +1,9 @@
-"""Document and script classification modules."""
+from src.classification.document_gate import (
+    GateClassificationResult,
+    LandRecordGateClassifier,
+)
+
+__all__ = [
+    "GateClassificationResult",
+    "LandRecordGateClassifier",
+]

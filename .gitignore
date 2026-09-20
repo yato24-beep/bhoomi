@@ -86,6 +86,9 @@ data/samples/*
 !data/samples/.gitkeep
 data/corrections/*
 !data/corrections/.gitkeep
+data/calibration/
+training/datasets/
+training/fonts/
 external_datasets/
 
 # ================================================================
@@ -114,6 +117,8 @@ postgres_data/
 redis_data/
 storage/uploads/*
 !storage/uploads/.gitkeep
+storage/*.png
+storage/*.jpg
 backend/storage/uploads/*
 !backend/storage/uploads/.gitkeep
 
@@ -149,6 +154,10 @@ storage/debug/*
 
 # Scratch/debug files
 scratch/*
+
+# Large benchmark exports
+locked_benchmark_export.zip
+locked_benchmark_export/
 
 # Do not commit demo mode
 backend/app/services/demo_mode.py

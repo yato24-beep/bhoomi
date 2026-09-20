@@ -103,8 +103,8 @@ class KannadaBeamRescorer:
                             txt = data.get("text", "").strip()
                             if txt:
                                 self.lexicon.add(unicodedata.normalize("NFC", txt))
-                except Exception:
-                    pass
+                except Exception as lex_err:
+                    logger.warning("Failed reading lexicon from %s: %s", p, lex_err)
 
         # 2. Load from IIIT Kannada training manifest if available
         iiit_path = r"c:\Land Record\training\datasets\iiit_kannada_train.jsonl"
@@ -116,8 +116,8 @@ class KannadaBeamRescorer:
                         txt = data.get("text", "").strip()
                         if txt and len(txt) > 1:
                             self.lexicon.add(unicodedata.normalize("NFC", txt))
-            except Exception:
-                pass
+            except Exception as iiit_err:
+                logger.warning("Failed reading IIIT lexicon from %s: %s", iiit_path, iiit_err)
 
         if custom_lexicon:
             for w in custom_lexicon:

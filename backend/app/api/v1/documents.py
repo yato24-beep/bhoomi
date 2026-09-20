@@ -1,7 +1,7 @@
 import io
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, Form, HTTPException, status, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, and_
@@ -81,6 +81,7 @@ def _is_celery_available() -> bool:
 )
 async def upload_document(
     file: UploadFile = File(..., description="Document file to upload (PDF, PNG, JPG, WEBP, TIFF)"),
+    is_handwritten: Optional[bool] = Form(None, description="Whether document is handwritten"),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(require_officer_or_admin),
 ) -> DocumentUploadResponse:
@@ -205,7 +206,7 @@ async def upload_document(
     task_id = None
     if _is_celery_available():
         try:
-            task = process_document_task.delay(new_document.id)
+            task = process_document_task.delay(new_document.id, is_handwritten=is_handwritten)
             task_id = getattr(task, "id", None) or "celery-queued-task"
         except Exception:
             task_id = None
@@ -217,6 +218,7 @@ async def upload_document(
         thread = threading.Thread(
             target=process_document_task,
             args=(new_document.id,),
+            kwargs={"is_handwritten": is_handwritten},
             daemon=True,
             name=f"local-task-{new_document.id}",
         )
@@ -430,6 +432,43 @@ def get_document_results(
         )
 
     return result
+
+
+@router.get(
+    "/{document_id}/reviews",
+    summary="Get Document Human Review Items",
+    description="Retrieve items flagged for human verification and officer review. Allowed roles: ALL USERS.",
+)
+def get_document_reviews(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+) -> List[Dict[str, Any]]:
+    """Fetch human review queue items for a document."""
+    res_stmt = select(ExtractionResult).where(ExtractionResult.document_id == document_id)
+    result = db.execute(res_stmt).scalar_one_or_none()
+    if not result or not result.extracted_data:
+        return []
+
+    extracted_data = result.extracted_data or {}
+    review_items = list(extracted_data.get("review_items", []) or [])
+
+    # Supplement with any fields marked with low confidence (< 0.70)
+    fields_stmt = select(ExtractedField).where(ExtractedField.document_id == document_id)
+    fields = db.execute(fields_stmt).scalars().all()
+    for f in fields:
+        if f.confidence_score < 0.70 and not any(r.get("field_name") == f.field_name for r in review_items):
+            review_items.append({
+                "region_id": f"field_{f.id}",
+                "field_name": f.field_name,
+                "raw_ocr_text": f.original_value or f.normalized_value,
+                "calibrated_confidence": f.confidence_score,
+                "review_reason": f"Field '{f.field_name}' requires verification (confidence: {f.confidence_score:.2f})",
+                "suggested_value": f.normalized_value,
+                "needs_review": True,
+            })
+
+    return review_items
 
 
 @router.get(
@@ -799,4 +838,116 @@ def translate_land_record_text(
         source_lang=payload.source_lang or "auto",
         target_lang=payload.target_lang or "en",
     )
+
+
+class ReviewCorrectionRequest(BaseModel):
+    review_id: str
+    decision: str = "CORRECTED"  # ACCEPTED, CORRECTED, REJECTED
+    corrected_text: Optional[str] = None
+    reviewer_notes: Optional[str] = None
+    reviewed_by: Optional[str] = "reviewer_officer"
+
+
+@router.post(
+    "/{document_id}/review",
+    summary="Submit Human Review Decision",
+    description="Updates review queue items, persisting corrected transcription while preserving immutable raw OCR evidence.",
+)
+def submit_document_review(
+    document_id: int,
+    payload: ReviewCorrectionRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+):
+    """Submits human verification/correction for a review item and persists across restarts."""
+    from datetime import datetime, timezone
+
+    stmt = select(ExtractionResult).where(ExtractionResult.document_id == document_id)
+    ext = db.execute(stmt).scalar_one_or_none()
+    if not ext or not ext.extracted_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Extraction data for document {document_id} not found",
+        )
+
+    ext_data = dict(ext.extracted_data)
+    review_items = ext_data.get("review_items", [])
+    target_item = None
+    item_idx = -1
+
+    for idx, item in enumerate(review_items):
+        if item.get("review_id") == payload.review_id:
+            target_item = dict(item)
+            item_idx = idx
+            break
+
+    if not target_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Review item '{payload.review_id}' not found in document {document_id}",
+        )
+
+    # Immutable Raw OCR Evidence check: raw_ocr_text must NEVER be mutated
+    raw_ocr = target_item.get("raw_ocr_text", "")
+    reviewer = payload.reviewed_by or (current_user.email if current_user else "reviewer_officer")
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+    decision_upper = payload.decision.upper()
+    if decision_upper in ("ACCEPTED", "APPROVED"):
+        target_item["decision"] = "ACCEPTED"
+        target_item["status"] = "AUTO_ACCEPT"
+        target_item["lifecycle_state"] = "APPROVED"
+        target_item["corrected_text"] = raw_ocr
+    elif decision_upper in ("CORRECTED", "EDITED"):
+        target_item["decision"] = "CORRECTED"
+        target_item["status"] = "AUTO_ACCEPT"
+        target_item["lifecycle_state"] = "EDITED"
+        target_item["corrected_text"] = (payload.corrected_text or "").strip()
+    elif decision_upper == "REJECTED":
+        target_item["decision"] = "REJECTED"
+        target_item["status"] = "REJECTED_FAILED"
+        target_item["lifecycle_state"] = "REJECTED"
+        target_item["corrected_text"] = None
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid decision '{payload.decision}'. Must be ACCEPTED, CORRECTED, or REJECTED.",
+        )
+
+    target_item["raw_ocr_text"] = raw_ocr  # Strictly immutable
+    target_item["reviewed_by"] = reviewer
+    target_item["reviewed_at"] = timestamp
+    target_item["reviewer_notes"] = payload.reviewer_notes
+
+    # Update in review_items list
+    review_items[item_idx] = target_item
+    ext_data["review_items"] = review_items
+
+    # Check if any remaining pending items require review
+    still_pending = any(
+        it.get("lifecycle_state") in ("PENDING", "ASSIGNED", "IN_REVIEW")
+        or it.get("status") == "REVIEW_REQUIRED"
+        for it in review_items
+    )
+    if not still_pending:
+        val_info = dict(ext.validation_info or {})
+        val_info["requires_human_review"] = False
+        ext.validation_info = val_info
+        ext.is_valid = True
+
+    ext.extracted_data = ext_data
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(ext, "extracted_data")
+    flag_modified(ext, "validation_info")
+    db.commit()
+    db.refresh(ext)
+
+    return {
+        "status": "success",
+        "review_id": payload.review_id,
+        "document_id": document_id,
+        "item": target_item,
+        "requires_human_review": still_pending,
+    }
+
 

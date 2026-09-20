@@ -3,6 +3,7 @@ import io
 import re
 from typing import BinaryIO, Optional, Any
 from datetime import timedelta
+from pathlib import Path
 import urllib3
 
 try:
@@ -157,12 +158,18 @@ class MinIOStorageService:
                 pass
 
         filename = os.path.basename(object_name)
+        clean_rel = object_name.replace("uploads/", "").replace("uploads\\", "")
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
         # Search multiple possible local paths
         candidates = [
+            os.path.join(str(repo_root), "storage", "uploads", filename),
+            os.path.join(str(repo_root), "storage", "uploads", clean_rel),
+            os.path.join(str(repo_root), "backend", "storage", "uploads", filename),
+            os.path.join(str(repo_root), "backend", "storage", "uploads", clean_rel),
             os.path.join(os.getcwd(), "storage", "uploads", filename),
             os.path.join(os.getcwd(), "backend", "storage", "uploads", filename),
-            os.path.join(os.getcwd(), "storage", "uploads", object_name.replace("uploads/", "")),
-            os.path.join(os.getcwd(), "backend", "storage", "uploads", object_name.replace("uploads/", "")),
+            os.path.join(os.getcwd(), "storage", "uploads", clean_rel),
+            os.path.join(os.getcwd(), "backend", "storage", "uploads", clean_rel),
         ]
         for path in candidates:
             if os.path.exists(path):

@@ -25,3 +25,9 @@ bcrypt>=4.0.0
 # Testing & Client
 pytest>=8.0.0
 httpx>=0.27.0
+
+# Multimodal & Semantic Layer
+google-genai>=0.1.0
+pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.11.0

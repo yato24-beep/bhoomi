@@ -22,6 +22,9 @@ from src.handwriting.recognizer import (
 
 
 def __getattr__(name: str):
+    if name == "EasyOCRKannadaRecognizer":
+        from src.handwriting.easyocr_recognizer import EasyOCRKannadaRecognizer
+        return EasyOCRKannadaRecognizer
     if name == "PaddleKannadaRecognizer":
         from src.handwriting.paddle_recognizer import PaddleKannadaRecognizer
         return PaddleKannadaRecognizer
@@ -39,6 +42,7 @@ def __getattr__(name: str):
 __all__ = [
     "BaseHandwritingRecognizer",
     "ImageInput",
+    "EasyOCRKannadaRecognizer",
     "PaddleKannadaRecognizer",
     "TrocrHandwritingRecognizer",
     "LanguageScriptRouter",
@@ -50,3 +54,4 @@ __all__ = [
     "classify_confidence_tier",
     "build_confidence_audit_trail",
 ]
+

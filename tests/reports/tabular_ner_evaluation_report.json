@@ -1,0 +1,133 @@
+{
+  "total_gt_fields": 7,
+  "true_positives": 6,
+  "false_positives": 0,
+  "false_negatives": 1,
+  "precision": 1.0,
+  "recall": 0.8571,
+  "f1_score": 0.9231,
+  "ocr_error_count": 1,
+  "spatial_error_count": 0,
+  "documents": [
+    {
+      "id": "sample_bhoomi_rtc",
+      "image": "person-a\\data\\samples\\sample_karnataka_bhoomi_rtc.png",
+      "document_type": "Karnataka Bhoomi RTC Form 16",
+      "raw_token_count": 12,
+      "extracted_field_count": 2,
+      "field_evaluations": {
+        "survey_number": {
+          "status": "MATCH",
+          "expected": [
+            "45/1",
+            "45",
+            "45,1"
+          ],
+          "extracted": "45,1",
+          "matched_variant": "45,1",
+          "anchor_text": "Survew",
+          "spatial_relationship": "below",
+          "confidence": 0.5800485995189568
+        },
+        "owner_name": {
+          "status": "MATCH",
+          "expected": [
+            "Manjunath Gowda",
+            "ManjunathGowda",
+            "Mdnjundth Gowdq",
+            "Manjunath",
+            "Gowda",
+            "Muhjundth Gowdd"
+          ],
+          "extracted": "Muhjundth Gowdd",
+          "matched_variant": "Muhjundth Gowdd",
+          "anchor_text": "Khuthedur",
+          "spatial_relationship": "below",
+          "confidence": 0.5641331744843618
+        },
+        "extent_area": {
+          "status": "MISSED",
+          "expected": [
+            "2.14",
+            "2_14",
+            "2 14",
+            "214",
+            "2_14 Acres"
+          ],
+          "extracted": null,
+          "error_type": "OCR_ERROR_ANCHOR_MISSING"
+        }
+      },
+      "notes": "OCR produces 'Mdnjundth Gowdq' for 'Manjunath Gowda' — count as OCR error, not extraction error if field association is spatially correct",
+      "doc_tp": 2,
+      "doc_fp": 0,
+      "doc_fn": 1
+    },
+    {
+      "id": "sample_satbara_7_12",
+      "image": "person-a\\data\\samples\\sample_land_record_7_12.png",
+      "document_type": "Maharashtra Satbara 7/12 Extract",
+      "raw_token_count": 18,
+      "extracted_field_count": 6,
+      "field_evaluations": {
+        "village": {
+          "status": "MATCH",
+          "expected": [
+            "Shirur",
+            "Villqge: Shirur"
+          ],
+          "extracted": "Shirur",
+          "matched_variant": "Shirur",
+          "anchor_text": "Villqge: Shirur",
+          "spatial_relationship": "inline",
+          "confidence": 0.8894668275181573
+        },
+        "taluk": {
+          "status": "MATCH",
+          "expected": [
+            "Haveli",
+            "Hqveli",
+            "Huveli",
+            "Tqluk: Huveli"
+          ],
+          "extracted": "Huveli",
+          "matched_variant": "Huveli",
+          "anchor_text": "Tqluk: Huveli",
+          "spatial_relationship": "inline",
+          "confidence": 0.5418268330361594
+        },
+        "district": {
+          "status": "MATCH",
+          "expected": [
+            "Pune",
+            "District: Pune"
+          ],
+          "extracted": "Pune",
+          "matched_variant": "Pune",
+          "anchor_text": "District: Pune",
+          "spatial_relationship": "inline",
+          "confidence": 0.6323290261339938
+        },
+        "survey_number": {
+          "status": "MATCH",
+          "expected": [
+            "124/2A",
+            "124/25",
+            "124",
+            "124  24",
+            "124  25"
+          ],
+          "extracted": "124  24",
+          "matched_variant": "124  24",
+          "anchor_text": "Survey",
+          "spatial_relationship": "below",
+          "confidence": 0.2988154654175074
+        }
+      },
+      "notes": "Both survey numbers are valid. OCR produces 'Villgge' and 'Tqluk' — count as OCR errors.",
+      "doc_tp": 4,
+      "doc_fp": 0,
+      "doc_fn": 0
+    }
+  ]
+}

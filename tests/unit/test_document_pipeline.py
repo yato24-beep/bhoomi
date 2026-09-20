@@ -74,6 +74,7 @@ class TestDocumentProcessingPipeline(unittest.TestCase):
             default_language="kannada",
             confidence_threshold=0.60,
             apply_preprocessing=False,
+            enable_document_gating=False,  # Disable for unit tests — blank test images would be rejected
         )
 
     def test_full_image_mode_without_explicit_regions(self):

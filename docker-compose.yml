@@ -113,6 +113,11 @@ services:
       - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SEMANTIC_ENGINE=${SEMANTIC_ENGINE:-gemini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SEMANTIC_MODEL_NAME=${SEMANTIC_MODEL_NAME:-gemini-3.1-flash-lite}
+      - SEMANTIC_TIMEOUT_SECONDS=${SEMANTIC_TIMEOUT_SECONDS:-30}
+      - PYTHONPATH=/app:/src:/
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,6 +127,8 @@ services:
         condition: service_started
     volumes:
       - ./backend:/app
+      - ./src:/src
+      - ./models:/models
     networks:
       - doc_network
 
@@ -149,6 +156,11 @@ services:
       - REDIS_PORT=6379
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SEMANTIC_ENGINE=${SEMANTIC_ENGINE:-gemini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SEMANTIC_MODEL_NAME=${SEMANTIC_MODEL_NAME:-gemini-3.1-flash-lite}
+      - SEMANTIC_TIMEOUT_SECONDS=${SEMANTIC_TIMEOUT_SECONDS:-30}
+      - PYTHONPATH=/app:/src:/
     depends_on:
       postgres:
         condition: service_healthy
@@ -158,6 +170,8 @@ services:
         condition: service_started
     volumes:
       - ./backend:/app
+      - ./src:/src
+      - ./models:/models
     networks:
       - doc_network
 

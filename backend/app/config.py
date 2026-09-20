@@ -121,5 +121,46 @@ class Settings(BaseSettings):
         "application/octet-stream",
     }
 
+    # Multimodal OCR & TrOCR Model Configuration
+    MODEL_CHECKPOINT_DIR: Optional[str] = None
+    TROCR_MODEL_DIR: Optional[str] = None
+    KANNADA_HANDWRITING_MODEL_PATH: Optional[str] = None
+    TROCR_PRETRAINED_MODEL_PATH: str = "microsoft/trocr-small-handwritten"
+    DEFAULT_DEVICE: str = "auto"
+    OCR_DEVICE: str = "auto"
+    DEFAULT_OCR_LANGUAGE: str = "kannada"
+    OCR_CONFIDENCE_THRESHOLD: float = 0.60
+    PRINTED_OCR_ENGINE: str = "easyocr"
+    TRANSLATION_HIGH_CONFIDENCE_THRESHOLD: float = 0.85
+    TRANSLATION_MEDIUM_CONFIDENCE_THRESHOLD: float = 0.60
+
+    # Semantic Layer Configuration (Gemini / Local Multilingual AI)
+    SEMANTIC_ENGINE: str = "gemini"
+    GEMINI_API_KEY: Optional[str] = None
+    SEMANTIC_MODEL_NAME: str = "gemini-3.1-flash-lite"
+    SEMANTIC_TIMEOUT_SECONDS: int = 30
+    SEMANTIC_TEMPERATURE: float = 0.0
+
+
 
 settings = Settings()
+
+# Synchronize model directory configuration to os.environ for seamless submodule access
+import os
+
+if settings.PRINTED_OCR_ENGINE and "PRINTED_OCR_ENGINE" not in os.environ:
+    os.environ["PRINTED_OCR_ENGINE"] = str(settings.PRINTED_OCR_ENGINE)
+if settings.TROCR_MODEL_DIR and "TROCR_MODEL_DIR" not in os.environ:
+    os.environ["TROCR_MODEL_DIR"] = str(settings.TROCR_MODEL_DIR)
+if settings.MODEL_CHECKPOINT_DIR and "MODEL_CHECKPOINT_DIR" not in os.environ:
+    os.environ["MODEL_CHECKPOINT_DIR"] = str(settings.MODEL_CHECKPOINT_DIR)
+if settings.KANNADA_HANDWRITING_MODEL_PATH and "KANNADA_HANDWRITING_MODEL_PATH" not in os.environ:
+    os.environ["KANNADA_HANDWRITING_MODEL_PATH"] = str(settings.KANNADA_HANDWRITING_MODEL_PATH)
+if settings.SEMANTIC_ENGINE and "SEMANTIC_ENGINE" not in os.environ:
+    os.environ["SEMANTIC_ENGINE"] = str(settings.SEMANTIC_ENGINE)
+if settings.GEMINI_API_KEY and "GEMINI_API_KEY" not in os.environ:
+    os.environ["GEMINI_API_KEY"] = str(settings.GEMINI_API_KEY)
+if settings.SEMANTIC_MODEL_NAME and "SEMANTIC_MODEL_NAME" not in os.environ:
+    os.environ["SEMANTIC_MODEL_NAME"] = str(settings.SEMANTIC_MODEL_NAME)
+
+

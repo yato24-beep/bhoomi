@@ -13,6 +13,10 @@ class ExtractedFieldRead(BaseModel):
     confidence_score: float = Field(..., description="Extraction confidence score (0.0 to 1.0)")
     source_page: int = Field(..., description="1-indexed source document page")
     bounding_box: Optional[Dict[str, Any]] = Field(default=None, description="Normalized spatial coordinates")
+    english_value: Optional[str] = Field(default=None, description="English translation or transliteration")
+    translation_status: Optional[str] = Field(default=None, description="Translation state: TRANSLATED, ALREADY_ENGLISH, NOT_APPLICABLE, FAILED, UNAVAILABLE")
+    translation_engine: Optional[str] = Field(default=None, description="Translation engine identifier")
+    source_type: Optional[str] = Field(default="pipeline", description="Origin: pipeline, ocr, semantic, synthetic_demo_fixture")
     created_at: datetime = Field(..., description="Timestamp when the field was saved")
 
     model_config = ConfigDict(from_attributes=True)

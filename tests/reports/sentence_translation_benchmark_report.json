@@ -1,0 +1,47 @@
+{
+  "benchmark_type": "kannada_to_english_sentence_translation",
+  "status": "UNRESOLVED_INDEPENDENT_TRACK",
+  "recommendation": "Deploy AI4Bharat IndicTrans2 or NLLB-200 for sentence translation. Keep transliteration strictly for personal names.",
+  "results": [
+    {
+      "id": "sent_01_registration",
+      "source_kn": "ಈ ಜಮೀನು ಕಂದಾಯ ಇಲಾಖೆಯ ನಿಯಮಗಳ ಪ್ರಕಾರ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದೆ.",
+      "reference_en": "This land is registered according to the rules of the revenue department.",
+      "predicted_en": "ಈ ಜಮೀನು Revenue / Tax ಇಲಾಖೆಯ ನಿಯಮಗಳ ಪ್ರಕಾರ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿದೆ.",
+      "is_merely_transliteration": true,
+      "status": "UNRESOLVED_NEURAL_TRANSLATION_REQUIRED"
+    },
+    {
+      "id": "sent_02_survey_extent",
+      "source_kn": "ಸರ್ವೆ ನಂಬರ್ ೧೪೨/೩ ರಲ್ಲಿ ಒಟ್ಟು ೨ ಎಕರೆ ಕೃಷಿ ಭೂಮಿ ಇದೆ.",
+      "reference_en": "There is a total of 2 acres of agricultural land in survey number 142/3.",
+      "predicted_en": "Survey Number ೧೪೨/೩ ರಲ್ಲಿ ಒಟ್ಟು ೨ Acres ಕೃಷಿ ಭೂಮಿ ಇದೆ.",
+      "is_merely_transliteration": false,
+      "status": "UNRESOLVED_NEURAL_TRANSLATION_REQUIRED"
+    },
+    {
+      "id": "sent_03_encumbrance",
+      "source_kn": "ಖಾತೆದಾರರು ಯಾವುದೇ ಸಾಲದ ಬಾಕಿಯನ್ನು ಹೊಂದಿಲ್ಲ.",
+      "reference_en": "The khatadar does not have any outstanding loan dues.",
+      "predicted_en": "Khata Holderು ಯಾವುದೇ ಸಾಲದ ಬಾಕಿಯನ್ನು ಹೊಂದಿಲ್ಲ.",
+      "is_merely_transliteration": true,
+      "status": "UNRESOLVED_NEURAL_TRANSLATION_REQUIRED"
+    },
+    {
+      "id": "sent_04_ownership_transfer",
+      "source_kn": "ವಾರಸುದಾರರ ಹಕ್ಕಿನ ಆಧಾರದ ಮೇಲೆ ಖಾತಾ ಬದಲಾವಣೆಯನ್ನು ಅನುಮೋದಿಸಲಾಗಿದೆ.",
+      "reference_en": "Khata mutation has been approved on the basis of heirship rights.",
+      "predicted_en": "ವಾರಸುದಾರರ ಹಕ್ಕಿನ ಆಧಾರದ ಮೇಲೆ Khata ಬದಲಾವಣೆಯನ್ನು ಅನುಮೋದಿಸಲಾಗಿದೆ.",
+      "is_merely_transliteration": true,
+      "status": "UNRESOLVED_NEURAL_TRANSLATION_REQUIRED"
+    },
+    {
+      "id": "sent_05_boundaries",
+      "source_kn": "ಪೂರ್ವಕ್ಕೆ ಸರ್ಕಾರಿ ರಸ್ತೆ ಮತ್ತು ಪಶ್ಚಿಮಕ್ಕೆ ರಾಜು ಅವರ ಜಮೀನು ಗಡಿಯಾಗಿದೆ.",
+      "reference_en": "The government road to the east and Raju's land to the west form the boundary.",
+      "predicted_en": "ಪೂರ್ವಕ್ಕೆ ಸರ್ಕಾರಿ ರಸ್ತೆ ಮತ್ತು ಪಶ್ಚಿಮಕ್ಕೆ ರಾಜು ಅವರ ಜಮೀನು ಗಡಿಯಾಗಿದೆ.",
+      "is_merely_transliteration": true,
+      "status": "UNRESOLVED_NEURAL_TRANSLATION_REQUIRED"
+    }
+  ]
+}

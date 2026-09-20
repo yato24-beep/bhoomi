@@ -152,7 +152,7 @@ class CrossRecordValidator:
                             parsed = dt
                             break
                     except ValueError:
-                        pass
+                        continue
 
                 if parsed is None:
                     msg = f"Invalid calendar date '{raw_d}' for field '{date_key}'"
@@ -214,8 +214,8 @@ class CrossRecordValidator:
                         if num_match:
                             try:
                                 total += float(num_match.group(1))
-                            except ValueError:
-                                pass
+                            except ValueError as num_err:
+                                logger.debug("Failed parsing numeric cell value: %s", num_err)
         return round(total, 6)
 
     def _calculate_owner_shares(self, tables: List[TableStructure]) -> Optional[float]:

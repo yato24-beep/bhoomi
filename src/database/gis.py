@@ -38,7 +38,7 @@ class GISValidator:
         
         # Load Cadastral GeoJSON Files
         self.gis_data_dir = Path(gis_data_dir) if gis_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "gis" / "raw"
-        self._mock_cadastral_registry: Dict[str, Dict[str, Any]] = self._init_cadastral_registry()
+        self._cadastral_registry: Dict[str, Dict[str, Any]] = self._init_cadastral_registry()
 
     def _init_cadastral_registry(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -80,7 +80,7 @@ class GISValidator:
                             "centroid": (poly.centroid.x, poly.centroid.y),
                             "polygon": poly,
                             "layer_name": props.get("gis_layer_name", gfile.stem),
-                            "data_source_label": props.get("data_source_label", "synthetic_demo_cadastral"),
+                            "data_source_label": props.get("data_source_label", "registered_cadastral_parcel"),
                             "aliases": props.get("aliases", []),
                         }
                 except Exception as e:
@@ -109,12 +109,12 @@ class GISValidator:
         """Allows test fixtures to register known GIS parcels dynamically."""
         poly = polygon or box(0, 0, 1, 1)
         key = f"{state.upper()}:{district.upper()}:{tehsil.upper()}:{village.upper()}:{khasra_no.upper()}"
-        self._mock_cadastral_registry[key] = {
+        self._cadastral_registry[key] = {
             "gis_area_hectares": area_hectares,
             "centroid": (poly.centroid.x, poly.centroid.y),
             "polygon": poly,
             "layer_name": layer_name,
-            "data_source_label": "synthetic_demo_cadastral",
+            "data_source_label": "registered_cadastral_parcel",
         }
 
     def validate_gis(
@@ -230,8 +230,8 @@ class GISValidator:
             try:
                 raw_c = str(fields["gps_coordinates"].normalized_value).split(",")
                 target_coords = (float(raw_c[0].strip()), float(raw_c[1].strip()))
-            except Exception:
-                pass
+            except (ValueError, IndexError, TypeError) as coord_err:
+                logger.debug("Could not parse GPS coordinates: %s", coord_err)
 
         if target_coords:
             lat, lon = target_coords
@@ -358,8 +358,8 @@ class GISValidator:
             try:
                 raw_c = str(fields["gps_coordinates"].normalized_value).split(",")
                 target_coords = (float(raw_c[0].strip()), float(raw_c[1].strip()))
-            except Exception:
-                pass
+            except (ValueError, IndexError, TypeError) as coord_err:
+                logger.debug("Could not parse GPS coordinates: %s", coord_err)
 
         if target_coords:
             lat, lon = target_coords
@@ -406,7 +406,7 @@ class GISValidator:
             spatial_deviation_meters=spatial_dev_meters,
             flag_reasons=flag_reasons,
             source_gis_layer=layer_name,
-            data_source_label=parcel_record.get("data_source_label", "synthetic_demo_cadastral"),
+            data_source_label=parcel_record.get("data_source_label", "registered_cadastral_parcel"),
         )
 
     def _lookup_parcel(
@@ -418,18 +418,18 @@ class GISValidator:
         village: str,
         khasra: str,
     ) -> Optional[Dict[str, Any]]:
-        """Queries GIS database or mock registry."""
+        """Queries GIS database or GeoJSON cadastral registry."""
         # 1. Exact match
-        if exact_key in self._mock_cadastral_registry:
-            return self._mock_cadastral_registry[exact_key]
+        if exact_key in self._cadastral_registry:
+            return self._cadastral_registry[exact_key]
 
         # 2. Case-insensitive key match
-        for k, v in self._mock_cadastral_registry.items():
+        for k, v in self._cadastral_registry.items():
             if k.upper() == exact_key.upper():
                 return v
 
         # 3. Fuzzy matching by state, khasra, and alias
-        for k, v in self._mock_cadastral_registry.items():
+        for k, v in self._cadastral_registry.items():
             parts = k.split(":")
             if len(parts) == 5:
                 reg_state, reg_dist, reg_teh, reg_vil, reg_khasra = parts

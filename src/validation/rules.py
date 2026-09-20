@@ -149,7 +149,7 @@ class RuleValidator:
                             valid_date = True
                             break
                     except ValueError:
-                        pass
+                        continue
                 if not valid_date:
                     items.append(RuleValidationItem(
                         rule_name=f"calendar_date_{field_obj.field_name}",

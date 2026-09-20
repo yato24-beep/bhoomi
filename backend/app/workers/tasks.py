@@ -75,11 +75,13 @@ def process_document_task(*args, **kwargs):
 
         # 4. Invoke document processing pipeline
         processor = get_document_processor()
-        logger.info(f"⚙️ Running extraction pipeline ({processor.__class__.__name__}) on '{document.filename}'...")
+        is_hw = kwargs.get("is_handwritten")
+        logger.info(f"⚙️ Running extraction pipeline ({processor.__class__.__name__}) on '{document.filename}' (is_handwritten={is_hw})...")
         
         pipeline_result = processor.process(
             file_stream=minio_obj,
             filename=document.filename,
+            is_handwritten=is_hw,
         )
 
         # 5. Persist aggregate ExtractionResult
@@ -115,6 +117,10 @@ def process_document_task(*args, **kwargs):
                 confidence_score=f.confidence_score,
                 source_page=f.source_page,
                 bounding_box=f.bounding_box.model_dump() if f.bounding_box else None,
+                english_value=getattr(f, "english_value", None),
+                translation_status=getattr(f, "translation_status", None),
+                translation_engine=getattr(f, "translation_engine", None),
+                source_type=getattr(f, "source_type", "pipeline"),
             )
             db.add(field_record)
 

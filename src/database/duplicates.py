@@ -207,8 +207,8 @@ class DuplicateDetector:
                             potential_duplicate_ids=[matched_id],
                             evidence=f"High vector cosine similarity ({score:.3f}) with document '{matched_id}'",
                         )
-            except Exception:
-                pass
+            except Exception as vec_err:
+                logger.warning("Vector similarity check encountered error: %s", vec_err)
 
         return DuplicateResult(
             is_duplicate=False,

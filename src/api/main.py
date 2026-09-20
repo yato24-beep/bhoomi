@@ -54,7 +54,10 @@ def create_app() -> FastAPI:
         from src.api.router import ocr_health_check
         return await ocr_health_check()
 
+    from src.api.compat import router as compat_router
+
     app.include_router(ocr_router)
+    app.include_router(compat_router)
     return app
 
 

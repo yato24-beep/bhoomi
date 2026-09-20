@@ -50,8 +50,8 @@ async def ocr_health_check() -> Dict[str, Any]:
         "service": "land-record-ocr-pipeline",
         "version": "1.0.0",
         "supported_modalities": {
-            "printed_kannada": "PaddleOCR (ppocr_v4_kannada)",
-            "handwritten_kannada": "TrOCR (fine-tuned Kannada checkpoint)",
+            "printed_kannada": "EasyOCR (easyocr_kannada)",
+            "handwritten_kannada": "TrOCR Checkpoint-12000 (models/trocr/checkpoint-12000)",
             "printed_english": "PaddleOCR (ppocr_v4_en)",
             "handwritten_english": "TrOCR (microsoft/trocr-small-handwritten)",
         },
@@ -109,16 +109,39 @@ async def process_document_image(
             detail=f"Failed to read uploaded file: {str(e)}",
         )
 
-    # Step 2: Validate image content via PIL
-    try:
-        image_obj = Image.open(io.BytesIO(file_bytes))
-        image_obj.load()  # Force decode to verify image validity
-    except Exception as e:
-        logger.warning(f"Invalid image format for file '{file.filename}': {e}")
+    # Check max file size (50MB)
+    if len(file_bytes) > 50 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid or unreadable image format for file '{file.filename}'. Error: {str(e)}",
+            detail=f"File exceeds maximum allowed upload size (50MB). Received {len(file_bytes) / (1024 * 1024):.1f}MB.",
         )
+
+    # Step 2: Validate and load image/document pages via DocumentFormatAdapter
+    try:
+        from src.preprocessing.format_adapter import DocumentFormatAdapter, DocumentIngestionError
+        pages = DocumentFormatAdapter.load_pages(file_bytes, filename=file.filename)
+        if not pages:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No readable pages found in document '{file.filename}'.",
+            )
+        target_page_idx = max(0, min(page_number - 1, len(pages) - 1))
+        image_obj = pages[target_page_idx]
+    except HTTPException:
+        raise
+    except DocumentIngestionError as die:
+        logger.warning(f"Document ingestion error for file '{file.filename}': {die}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid or unreadable document format: {die.message}",
+        )
+    except Exception as e:
+        logger.warning(f"Invalid document format for file '{file.filename}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid or unreadable document format for file '{file.filename}'. Error: {str(e)}",
+        )
+
 
     # Step 3: Parse optional regions JSON if provided
     parsed_regions: Optional[List[Any]] = None
@@ -158,6 +181,10 @@ async def process_document_image(
             detail=f"Document processing failed in OCR pipeline: {str(e)}",
         )
 
+    # If document was rejected by the layout classifier gate, return early
+    if not response.is_land_record:
+        return response
+
     # Step 5: Execute Person C Structured Extraction, Normalization, GIS & Validation
     try:
         from src.integration.person_c_adapter import PersonCAdapter
@@ -176,24 +203,26 @@ async def process_document_image(
             "warnings": response.warnings,
             "engine_breakdown": response.engine_breakdown,
             "processing_time_ms": response.processing_time_ms,
+            "diagnostics": response.diagnostics,
         }
 
-        # Populate Person C fields on response
-        fields_dict: Dict[str, Any] = {}
+        # Populate Person C fields on response, preserving high-accuracy canonical semantic fields
+        fields_dict: Dict[str, Any] = dict(response.extracted_fields or {})
         for fname, fval in c_result.fields.items():
-            fields_dict[fname] = {
-                "field_name": fval.field_name,
-                "raw_value": fval.raw_value,
-                "normalized_value": fval.normalized_value,
-                "raw_unit": fval.raw_unit,
-                "normalized_unit": fval.normalized_unit,
-                "confidence": round(fval.confidence, 4),
-                "page": fval.page,
-                "bbox": fval.bbox.model_dump() if fval.bbox else None,
-                "validation_status": fval.validation_status.value,
-                "validation_messages": fval.validation_messages,
-                "evidence": fval.evidence.model_dump() if fval.evidence else None,
-            }
+            if fname not in fields_dict or not fields_dict[fname].get("raw_value"):
+                fields_dict[fname] = {
+                    "field_name": fval.field_name,
+                    "raw_value": fval.raw_value,
+                    "normalized_value": fval.normalized_value,
+                    "raw_unit": fval.raw_unit,
+                    "normalized_unit": fval.normalized_unit,
+                    "confidence": round(fval.confidence, 4),
+                    "page": fval.page,
+                    "bbox": fval.bbox.model_dump() if fval.bbox else None,
+                    "validation_status": fval.validation_status.value,
+                    "validation_messages": fval.validation_messages,
+                    "evidence": fval.evidence.model_dump() if fval.evidence else None,
+                }
 
         # Provide aliases for Karnataka / South Indian and standard frontend field names
         if "khasra_number" in fields_dict and "survey_number" not in fields_dict:

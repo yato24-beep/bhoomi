@@ -6,9 +6,26 @@
  * Employs bit-for-bit exact ByteLevel BPE token decoding from Chakita/KannadaBERT.
  */
 
-import * as ort from "onnxruntime-web";
+import type * as OrtTypes from "onnxruntime-web";
 import { ensureModelLoaded, ProgressCallback } from "./modelManager";
 import { decodeByteLevelTokens } from "./byteLevelDecoder";
+
+let ortModule: typeof import("onnxruntime-web") | null = null;
+
+async function getOrt(): Promise<typeof import("onnxruntime-web")> {
+  if (typeof window === "undefined") {
+    throw new Error("onnxruntime-web can only be executed in a browser environment.");
+  }
+  if (!ortModule) {
+    if ((window as any).ort?.InferenceSession) {
+      ortModule = (window as any).ort;
+    } else {
+      const imported = await import("onnxruntime-web");
+      ortModule = (imported as any).InferenceSession ? (imported as any) : ((imported as any).default || imported);
+    }
+  }
+  return ortModule!;
+}
 
 export interface BrowserOCRResult {
   text: string;
@@ -19,21 +36,24 @@ export interface BrowserOCRResult {
 }
 
 export class BrowserTrOCR {
-  private encoderSession: ort.InferenceSession;
-  private decoderSession: ort.InferenceSession;
+  private encoderSession: OrtTypes.InferenceSession;
+  private decoderSession: OrtTypes.InferenceSession;
   private idToToken: string[];
   private executionProvider: string;
+  private ort: typeof import("onnxruntime-web");
 
   constructor(
-    encoderSession: ort.InferenceSession,
-    decoderSession: ort.InferenceSession,
+    encoderSession: OrtTypes.InferenceSession,
+    decoderSession: OrtTypes.InferenceSession,
     idToToken: string[],
-    executionProvider: string
+    executionProvider: string,
+    ort: typeof import("onnxruntime-web")
   ) {
     this.encoderSession = encoderSession;
     this.decoderSession = decoderSession;
     this.idToToken = idToToken;
     this.executionProvider = executionProvider;
+    this.ort = ort;
   }
 
   /**
@@ -104,7 +124,7 @@ export class BrowserTrOCR {
 
     // Step 1: Preprocess image
     const pixelValues = await BrowserTrOCR.preprocessImage(source);
-    const pixelTensor = new ort.Tensor("float32", pixelValues, [1, 3, 224, 224]);
+    const pixelTensor = new this.ort.Tensor("float32", pixelValues, [1, 3, 224, 224]);
 
     // Step 2: Run vision encoder
     const encoderResults = await this.encoderSession.run({
@@ -119,7 +139,7 @@ export class BrowserTrOCR {
     const vocabSize = 100000;
 
     while (tokens.length < maxLength) {
-      const inputIdsTensor = new ort.Tensor(
+      const inputIdsTensor = new this.ort.Tensor(
         "int64",
         new BigInt64Array(tokens),
         [1, tokens.length]
@@ -205,7 +225,8 @@ export async function getBrowserTrOCR(
     message: "Initializing OCR engine...",
   });
 
-  // 2. Configure ORT wasm paths
+  // 2. Dynamically load ONNX Runtime Web in browser only
+  const ort = await getOrt();
   if (typeof window !== "undefined") {
     try {
       ort.env.wasm.wasmPaths = "/ort/";
@@ -275,8 +296,8 @@ export async function getBrowserTrOCR(
     return { enc, dec };
   };
 
-  let encoderSession: ort.InferenceSession;
-  let decoderSession: ort.InferenceSession;
+  let encoderSession: OrtTypes.InferenceSession;
+  let decoderSession: OrtTypes.InferenceSession;
 
   if (tryWebGPU) {
     try {
@@ -311,7 +332,7 @@ export async function getBrowserTrOCR(
 
   console.log(`[BrowserTrOCR] Successfully initialized ONNX Runtime sessions with provider: ${chosenEP}`);
 
-  cachedTrOCREngine = new BrowserTrOCR(encoderSession, decoderSession, idToToken, chosenEP);
+  cachedTrOCREngine = new BrowserTrOCR(encoderSession, decoderSession, idToToken, chosenEP, ort);
 
   onProgress?.({
     stage: "ready",

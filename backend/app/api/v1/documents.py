@@ -542,6 +542,7 @@ class BrowserOCRResultSaveRequest(BaseModel):
     execution_provider: Optional[str] = Field(default="wasm", description="Provider used: webgpu or wasm")
     latency_ms: Optional[int] = Field(default=0, description="Local inference latency in ms")
     storage_path: Optional[str] = Field(default=None, description="Optional storage path")
+    file_base64: Optional[str] = Field(default=None, description="Base64-encoded image bytes for persistent storage")
 
 
 @router.post(
@@ -558,13 +559,33 @@ def save_browser_result(
 ) -> DocumentUploadResponse:
     """Persist browser-generated TrOCR result directly without triggering server-side OCR tasks."""
     import hashlib
+    import base64
+    import io
 
     # Validate and normalize SHA-256 hash
     h = payload.file_hash.strip().lower()
     if len(h) != 64:
         h = hashlib.sha256(f"{payload.filename}_{payload.text}_{h}".encode("utf-8")).hexdigest()
 
-    storage_path = payload.storage_path or f"browser-ocr/{h}_{payload.filename}"
+    # If raw image bytes are provided as base64, persist to storage so download & preview succeed
+    storage_path = payload.storage_path
+    if payload.file_base64:
+        try:
+            file_bytes = base64.b64decode(payload.file_base64)
+            c_type = "image/png" if payload.filename.lower().endswith(".png") else "image/jpeg"
+            storage_path = minio_storage.upload_file(
+                file_stream=io.BytesIO(file_bytes),
+                filename=payload.filename,
+                file_hash=h,
+                file_size=len(file_bytes),
+                content_type=c_type,
+            )
+            logger.info(f"[Audit:Storage] Persisted browser-uploaded image to {storage_path} ({len(file_bytes)} bytes)")
+        except Exception as se:
+            logger.warning(f"[Audit:Storage] Could not persist browser image bytes to storage: {se}")
+
+    if not storage_path:
+        storage_path = f"browser-ocr/{h}_{payload.filename}"
 
     has_text = bool(payload.text and payload.text.strip())
     text_len = len(payload.text) if payload.text else 0
@@ -577,6 +598,64 @@ def save_browser_result(
         f"provider={payload.execution_provider}"
     )
 
+    # 1. Translate Kannada text to English
+    english_translation = ""
+    if has_text:
+        try:
+            from src.translation.translator import translate_bidirectional
+            english_translation = translate_bidirectional(
+                text=payload.text,
+                source_lang="kn",
+                target_lang="en",
+            )
+        except Exception as te:
+            logger.warning(f"Translation failed in save_browser_result: {te}")
+            english_translation = ""
+
+    # 2. Extract structured canonical fields using LandRecordFieldExtractor
+    extracted_fields: Dict[str, Any] = {
+        "handwritten_kannada_text": {
+            "raw_value": payload.text,
+            "normalized_value": payload.text,
+            "english_value": english_translation or None,
+            "confidence": round(float(payload.confidence), 4),
+            "validation_status": "valid",
+            "translation_status": "TRANSLATED" if english_translation else None,
+        }
+    }
+    bilingual_fields: Dict[str, Any] = {}
+
+    if has_text:
+        try:
+            from src.extraction.land_record_ner import LandRecordFieldExtractor
+            extractor = LandRecordFieldExtractor()
+            lines = [l.strip() for l in payload.text.split("\n") if l.strip()]
+            if not lines:
+                lines = [payload.text.strip()]
+            records = extractor.extract_fields(lines)
+            for fname, rec in records.items():
+                eng_val = None
+                try:
+                    from src.translation.translator import translate_bidirectional
+                    eng_val = translate_bidirectional(rec.normalized_value, source_lang="kn", target_lang="en")
+                except Exception:
+                    eng_val = None
+
+                extracted_fields[fname] = {
+                    "raw_value": rec.raw_value,
+                    "normalized_value": rec.normalized_value,
+                    "english_value": eng_val,
+                    "confidence": rec.confidence,
+                    "validation_status": "valid" if not rec.requires_human_review else "needs_review",
+                    "translation_status": "TRANSLATED" if eng_val else None,
+                }
+                bilingual_fields[fname] = {
+                    "kannada": rec.normalized_value,
+                    "english": eng_val,
+                }
+        except Exception as ee:
+            logger.warning(f"Field extraction failed in save_browser_result: {ee}")
+
     # Check for existing document by hash
     stmt = select(Document).where(Document.file_hash == h)
     target_doc = db.execute(stmt).scalar_one_or_none()
@@ -585,7 +664,7 @@ def save_browser_result(
     if target_doc:
         is_duplicate = True
         target_doc.status = "COMPLETED"
-        if not target_doc.storage_path:
+        if storage_path and not target_doc.storage_path:
             target_doc.storage_path = storage_path
     else:
         target_doc = Document(
@@ -610,23 +689,16 @@ def save_browser_result(
         "merged_text": payload.text,
         "original_kannada_text": payload.text,
         "clean_kannada_text": payload.text,
-        "translated_text": payload.text,
-        "english_translation": payload.text,
+        "translated_text": english_translation or payload.text,
+        "english_translation": english_translation,
         "kannada_translation": payload.text,
         "recognition_confidence": round(float(payload.confidence), 4),
         "execution_provider": payload.execution_provider,
         "latency_ms": payload.latency_ms or 0,
         "status": "completed",
         "verification_status": "accepted",
-        "extracted_fields": {
-            "handwritten_kannada_text": {
-                "raw_value": payload.text,
-                "normalized_value": payload.text,
-                "confidence": round(float(payload.confidence), 4),
-                "validation_status": "valid",
-            }
-        },
-        "bilingual_fields": {},
+        "extracted_fields": extracted_fields,
+        "bilingual_fields": bilingual_fields,
         "review_items": [],
     }
 
@@ -655,26 +727,31 @@ def save_browser_result(
         extraction_record.validation_info = validation_info
         extraction_record.processing_time_ms = payload.latency_ms or 0
 
-    # Persist primary ExtractedField row
+    # Persist granular ExtractedField rows
     db.execute(delete(ExtractedField).where(ExtractedField.document_id == target_doc.id))
-    field_record = ExtractedField(
-        document_id=target_doc.id,
-        field_name="handwritten_kannada_text",
-        original_value=payload.text,
-        normalized_value=payload.text,
-        confidence_score=round(float(payload.confidence), 4),
-        source_page=1,
-        source_type="browser_trocr",
-    )
-    db.add(field_record)
+    for fname, f_info in extracted_fields.items():
+        db.add(
+            ExtractedField(
+                document_id=target_doc.id,
+                field_name=fname,
+                original_value=f_info.get("raw_value"),
+                normalized_value=f_info.get("normalized_value"),
+                english_value=f_info.get("english_value"),
+                confidence_score=f_info.get("confidence", round(float(payload.confidence), 4)),
+                source_page=1,
+                source_type="browser_trocr",
+                translation_status=f_info.get("translation_status"),
+            )
+        )
 
     db.commit()
     db.refresh(target_doc)
 
     logger.info(
         f"[Audit:Stage5-BackendSave] Persisted ExtractionResult and ExtractedField for doc_id={target_doc.id} | "
-        f"fields_saved={list(extracted_data.keys())} | "
+        f"fields_saved={list(extracted_fields.keys())} | "
         f"canonical_ocr_len={len(extracted_data.get('original_ocr', ''))} | "
+        f"has_translation={bool(english_translation)} | "
         f"status={target_doc.status} | "
         f"is_duplicate={is_duplicate}"
     )
@@ -759,10 +836,30 @@ def download_document(
             detail=f"Error retrieving file: {str(e)}",
         )
 
+    # Determine Content-Type from file extension for proper browser rendering
+    ext = Path(document.filename).suffix.lower()
+    media_type_map = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".tiff": "image/tiff",
+        ".tif": "image/tiff",
+        ".pdf": "application/pdf",
+        ".bmp": "image/bmp",
+    }
+    media_type = media_type_map.get(ext, "application/octet-stream")
+
+    # Images should be displayed inline (for <img> tags), other files as attachments
+    if media_type.startswith("image/"):
+        disposition = f'inline; filename="{document.filename}"'
+    else:
+        disposition = f'attachment; filename="{document.filename}"'
+
     return StreamingResponse(
         minio_obj.stream(32 * 1024),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{document.filename}"'},
+        media_type=media_type,
+        headers={"Content-Disposition": disposition},
     )
 
 

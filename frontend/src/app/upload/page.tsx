@@ -34,7 +34,8 @@ export default function UploadPage() {
   }, [router]);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isHandwritten, setIsHandwritten] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isHandwritten, setIsHandwritten] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingLocal, setIsProcessingLocal] = useState(false);
@@ -51,7 +52,16 @@ export default function UploadPage() {
       setErrorMessage(`Invalid file format '${ext}'. Please upload a PDF or supported image (PNG, JPG, WEBP, TIFF).`);
       return;
     }
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
+    if (/\.(png|jpe?g|webp|tiff|bmp)$/i.test(file.name)) {
+      setPreviewUrl(URL.createObjectURL(file));
+      setIsHandwritten(true);
+    } else {
+      setPreviewUrl(null);
+    }
     setErrorMessage(null);
     setUploadResult(null);
   };
@@ -139,9 +149,18 @@ export default function UploadPage() {
           message: "OCR completed",
         });
 
-        // 4. Calculate file SHA-256 hash
+        // 4. Calculate file SHA-256 hash and encode file as base64 for storage persistence
         const fileBuffer = await selectedFile.arrayBuffer();
         const fileHash = await computeSHA256(fileBuffer);
+
+        // Convert ArrayBuffer to base64 for backend image storage
+        const uint8Arr = new Uint8Array(fileBuffer);
+        let binaryStr = "";
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8Arr.length; i += chunkSize) {
+          binaryStr += String.fromCharCode(...uint8Arr.subarray(i, i + chunkSize));
+        }
+        const fileBase64 = btoa(binaryStr);
 
         const payload = {
           filename: selectedFile.name,
@@ -152,6 +171,7 @@ export default function UploadPage() {
           execution_provider: localResult.executionProvider,
           latency_ms: localResult.latencyMs,
           tokens: localResult.tokens,
+          file_base64: fileBase64,
         };
 
         console.log(`[Audit:Stage4-RequestPayload] Submitting POST /api/v1/documents/browser-result:`, {

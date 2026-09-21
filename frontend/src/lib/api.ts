@@ -305,6 +305,7 @@ export interface SaveBrowserOcrPayload {
   latency_ms?: number;
   tokens?: number[];
   storage_path?: string;
+  file_base64?: string;
 }
 
 /**

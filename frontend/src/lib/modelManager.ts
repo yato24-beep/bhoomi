@@ -265,7 +265,7 @@ export async function ensureModelLoaded(
       const loadedBuffers = new Map<string, ArrayBuffer>();
 
       // Load already cached valid files
-      for (const filename of status.cachedFiles) {
+      for (const filename of Array.from(status.cachedFiles)) {
         const meta = manifest.files[filename];
         const key = `/__trocr_models__/${filename}`;
         const match = await cache.match(key);

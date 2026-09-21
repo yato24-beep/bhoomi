@@ -170,3 +170,4 @@ demo.png
 experiments/**/models/*.onnx
 experiments/**/models/*.onnx.data
 experiments/**/models/*.pt
+experiments/onnx_kannada_trocr/hf_staging/

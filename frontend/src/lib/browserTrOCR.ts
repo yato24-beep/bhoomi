@@ -198,6 +198,33 @@ export class BrowserTrOCR {
 let cachedTrOCREngine: BrowserTrOCR | null = null;
 
 /**
+ * Resolves a verified base URL for ONNX Runtime WASM binary assets.
+ * Checks local /ort/ endpoint first, and falls back cleanly to the official npm CDN
+ * (onnxruntime-web@1.30.0) if local assets are unreachable or unconfigured.
+ */
+async function resolveWasmPath(): Promise<string> {
+  const localProbe = "/ort/ort-wasm-simd-threaded.jsep.wasm";
+  const cdnFallback = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/";
+
+  if (typeof window === "undefined") {
+    return cdnFallback;
+  }
+
+  try {
+    const res = await fetch(localProbe, { method: "HEAD" });
+    if (res.ok && res.status === 200) {
+      console.log("[BrowserTrOCR] Verified local WASM binaries available at /ort/");
+      return "/ort/";
+    }
+  } catch (err) {
+    console.warn("[BrowserTrOCR] Local /ort/ probe failed, falling back to package CDN:", err);
+  }
+
+  console.log(`[BrowserTrOCR] Local /ort/ not reachable (status not 200); using verified package CDN: ${cdnFallback}`);
+  return cdnFallback;
+}
+
+/**
  * Initializes and returns the Browser TrOCR engine singleton.
  */
 export async function getBrowserTrOCR(
@@ -227,29 +254,41 @@ export async function getBrowserTrOCR(
 
   // 2. Dynamically load ONNX Runtime Web in browser only
   const ort = await getOrt();
+  const wasmBaseUrl = await resolveWasmPath();
+
   if (typeof window !== "undefined") {
     try {
-      ort.env.wasm.wasmPaths = "/ort/";
-      ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 2);
+      ort.env.wasm.wasmPaths = wasmBaseUrl;
+      // In browsers without crossOriginIsolated, SharedArrayBuffer multi-threading fails.
+      // Set to 1 if not crossOriginIsolated to prevent pthread worker crashes.
+      const canMultiThread = typeof window !== "undefined" && !!window.crossOriginIsolated;
+      ort.env.wasm.numThreads = canMultiThread
+        ? Math.min(4, navigator.hardwareConcurrency || 2)
+        : 1;
+      console.log(`[BrowserTrOCR] Configured ort.env.wasm: wasmPaths="${wasmBaseUrl}", numThreads=${ort.env.wasm.numThreads}, crossOriginIsolated=${canMultiThread}`);
     } catch (e) {
-      console.warn("[BrowserTrOCR] Could not set local wasm paths, using default:", e);
+      console.warn("[BrowserTrOCR] Could not configure WASM environment:", e);
     }
   }
 
-  // 3. Select Execution Provider (Prefer WebGPU with automatic WASM fallback)
-  let tryWebGPU = false;
-  let chosenEP = "wasm";
-
+  // 3. Genuine WebGPU capability check
+  let canUseWebGPU = false;
   if (typeof navigator !== "undefined" && "gpu" in navigator) {
     try {
       const adapter = await (navigator as any).gpu?.requestAdapter();
       if (adapter) {
-        tryWebGPU = true;
+        const device = await adapter.requestDevice();
+        if (device) {
+          device.destroy();
+          canUseWebGPU = true;
+        }
       }
-    } catch {
-      tryWebGPU = false;
+    } catch (e) {
+      console.warn("[BrowserTrOCR] WebGPU device check failed (not genuinely available):", e);
+      canUseWebGPU = false;
     }
   }
+  console.log(`[BrowserTrOCR] Genuine WebGPU support: ${canUseWebGPU}`);
 
   // 4. Retrieve model buffers
   const encoderBuf = buffers.get("encoder.onnx");
@@ -296,35 +335,33 @@ export async function getBrowserTrOCR(
     return { enc, dec };
   };
 
-  let encoderSession: OrtTypes.InferenceSession;
-  let decoderSession: OrtTypes.InferenceSession;
+  let encoderSession: OrtTypes.InferenceSession | null = null;
+  let decoderSession: OrtTypes.InferenceSession | null = null;
+  let chosenEP = "wasm";
 
-  if (tryWebGPU) {
+  if (canUseWebGPU) {
     try {
-      const sessions = await createSessionsWithEP(["webgpu", "wasm"]);
+      console.log(`[BrowserTrOCR] Attempting WebGPU session creation...`);
+      const sessions = await createSessionsWithEP(["webgpu"]);
       encoderSession = sessions.enc;
       decoderSession = sessions.dec;
       chosenEP = "webgpu";
       console.log("[BrowserTrOCR] WebGPU execution provider initialized successfully.");
     } catch (gpuErr) {
-      console.warn("[BrowserTrOCR] WebGPU session creation failed, falling back to WASM/CPU:", gpuErr);
-      try {
-        const sessions = await createSessionsWithEP(["wasm"]);
-        encoderSession = sessions.enc;
-        decoderSession = sessions.dec;
-        chosenEP = "wasm";
-        console.log("[BrowserTrOCR] Fallback to WASM/CPU execution provider succeeded.");
-      } catch (wasmErr: any) {
-        throw new Error(`WebGPU and WASM initialization both failed: ${wasmErr?.message || wasmErr}`);
-      }
+      console.warn("[BrowserTrOCR] WebGPU session creation failed; cleanly falling back to WASM/CPU:", gpuErr);
+      encoderSession = null;
+      decoderSession = null;
     }
-  } else {
+  }
+
+  if (!encoderSession || !decoderSession) {
+    console.log(`[BrowserTrOCR] Initializing WASM/CPU fallback provider (wasmPaths: ${wasmBaseUrl})...`);
     try {
       const sessions = await createSessionsWithEP(["wasm"]);
       encoderSession = sessions.enc;
       decoderSession = sessions.dec;
       chosenEP = "wasm";
-      console.log("[BrowserTrOCR] WASM/CPU execution provider initialized successfully.");
+      console.log("[BrowserTrOCR] Fallback to WASM/CPU execution provider succeeded.");
     } catch (wasmErr: any) {
       throw new Error(`WebGPU and WASM initialization both failed: ${wasmErr?.message || wasmErr}`);
     }

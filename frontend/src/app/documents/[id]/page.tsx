@@ -68,6 +68,7 @@ export default function DocumentDetailsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isEditingKannada, setIsEditingKannada] = useState(false);
   const [editedKannada, setEditedKannada] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role?: string; email?: string; full_name?: string } | null>(null);
 
   // Review Workflow State
   const [reviewSubmitting, setReviewSubmitting] = useState<string | null>(null);
@@ -156,10 +157,15 @@ export default function DocumentDetailsPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const user = localStorage.getItem("auth_user");
-      if (!user) {
+      const stored = localStorage.getItem("auth_user");
+      if (!stored) {
         router.push("/login");
         return;
+      }
+      try {
+        setCurrentUser(JSON.parse(stored));
+      } catch {
+        setCurrentUser(null);
       }
     }
     loadData();
@@ -182,8 +188,15 @@ export default function DocumentDetailsPage() {
     return () => clearInterval(interval);
   }, [documentId, loadData, document]);
 
+  const isAdmin = currentUser?.role === "ADMIN";
+
   const handleDelete = async () => {
-    if (!document || !confirm(`Delete document "${document.filename}"?`)) return;
+    if (!document) return;
+    if (!isAdmin) {
+      alert(`Permission denied: Document deletion requires Administrator privileges. Current role: ${currentUser?.role || "Unauthorized"}`);
+      return;
+    }
+    if (!confirm(`Delete document "${document.filename}"?`)) return;
     try {
       await deleteDocumentRecord(document.id);
       router.push("/");
@@ -467,13 +480,23 @@ export default function DocumentDetailsPage() {
             </>
           )}
 
-          <button
-            onClick={handleDelete}
-            className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors"
-            title="Delete Document"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={handleDelete}
+              className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors"
+              title="Delete Document"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => alert(`Permission denied: Document deletion requires Administrator privileges. Current role: ${currentUser?.role || "Unauthorized"}`)}
+              className="p-2 text-slate-300 border border-slate-200 rounded-lg transition-colors cursor-not-allowed"
+              title="Delete restricted to Administrator role"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

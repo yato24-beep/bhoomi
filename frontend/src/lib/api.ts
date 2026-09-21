@@ -10,6 +10,42 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
+ * Retrieve current JWT auth token from localStorage if in browser environment.
+ */
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("auth_token");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build authorization headers if a user session is active.
+ */
+export function getAuthHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}
+
+/**
+ * Format error details cleanly from backend responses.
+ */
+function extractErrorMessage(errorData: any, defaultMsg: string): string {
+  if (!errorData) return defaultMsg;
+  if (typeof errorData.detail === "string") return errorData.detail;
+  if (Array.isArray(errorData.detail)) {
+    return errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join("; ");
+  }
+  if (errorData.message && typeof errorData.message === "string") return errorData.message;
+  return defaultMsg;
+}
+
+/**
  * Fetch list of all uploaded documents with pagination.
  */
 export async function fetchDocuments(skip = 0, limit = 50): Promise<DocumentItem[]> {
@@ -167,12 +203,15 @@ export async function uploadDocumentFile(file: File, isHandwritten?: boolean): P
 
   const res = await fetch(`${API_BASE_URL}/api/v1/documents/upload`, {
     method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+    },
     body: formData,
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Failed to upload document (${res.status})`);
+    throw new Error(extractErrorMessage(errorData, `Failed to upload document (${res.status})`));
   }
 
   return res.json();
@@ -180,15 +219,23 @@ export async function uploadDocumentFile(file: File, isHandwritten?: boolean): P
 
 /**
  * Delete a document record and its storage.
+ * Requires ADMIN role Bearer token.
  */
-export async function deleteDocumentRecord(documentId: number): Promise<void> {
+export async function deleteDocumentRecord(documentId: number, token?: string): Promise<void> {
+  const authToken = token || getAuthToken();
+  const headers: Record<string, string> = {};
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
   const res = await fetch(`${API_BASE_URL}/api/v1/documents/${documentId}`, {
     method: "DELETE",
+    headers,
   });
 
   if (!res.ok && res.status !== 204) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Failed to delete document #${documentId}`);
+    throw new Error(extractErrorMessage(errorData, `Failed to delete document #${documentId}`));
   }
 }
 
@@ -283,13 +330,14 @@ export async function submitDocumentReview(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Failed to submit review for document #${documentId}`);
+    throw new Error(extractErrorMessage(errorData, `Failed to submit review for document #${documentId}`));
   }
 
   return res.json();
@@ -316,13 +364,14 @@ export async function saveBrowserOcrResult(payload: SaveBrowserOcrPayload): Prom
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Failed to save browser OCR result (${res.status})`);
+    throw new Error(extractErrorMessage(errorData, `Failed to save browser OCR result (${res.status})`));
   }
 
   return res.json();

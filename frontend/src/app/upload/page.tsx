@@ -115,10 +115,21 @@ export default function UploadPage() {
           );
         });
 
+        console.log(`[Audit:Stage1-Upload] Starting local handwritten OCR for: ${selectedFile.name} (${selectedFile.size} bytes)`);
+
         const localResult = await Promise.race([
           engine.recognize(selectedFile).finally(() => clearTimeout(timeoutId)),
           timeoutPromise,
         ]);
+
+        console.log(`[Audit:Stage1-Upload] OCR result received from engine:`, {
+          has_text: Boolean(localResult.text && localResult.text.trim()),
+          text_length: localResult.text ? localResult.text.length : 0,
+          confidence: localResult.confidence,
+          provider: localResult.executionProvider,
+          latency_ms: localResult.latencyMs,
+          token_count: localResult.tokens?.length || 0,
+        });
 
         setModelProgress({
           stage: "ready",
@@ -132,18 +143,35 @@ export default function UploadPage() {
         const fileBuffer = await selectedFile.arrayBuffer();
         const fileHash = await computeSHA256(fileBuffer);
 
+        const payload = {
+          filename: selectedFile.name,
+          file_hash: fileHash,
+          file_size: selectedFile.size,
+          text: localResult.text,
+          confidence: localResult.confidence,
+          execution_provider: localResult.executionProvider,
+          latency_ms: localResult.latencyMs,
+          tokens: localResult.tokens,
+        };
+
+        console.log(`[Audit:Stage4-RequestPayload] Submitting POST /api/v1/documents/browser-result:`, {
+          field_names: Object.keys(payload),
+          has_text: Boolean(payload.text && payload.text.trim()),
+          text_length: payload.text.length,
+          confidence: payload.confidence,
+          provider: payload.execution_provider,
+          hash_prefix: payload.file_hash.substring(0, 8),
+        });
+
         // 5. Save original document metadata and browser OCR output through lightweight backend endpoint
         let savedResult: DocumentUploadResponse;
         try {
-          savedResult = await saveBrowserOcrResult({
-            filename: selectedFile.name,
-            file_hash: fileHash,
-            file_size: selectedFile.size,
-            text: localResult.text,
-            confidence: localResult.confidence,
-            execution_provider: localResult.executionProvider,
-            latency_ms: localResult.latencyMs,
-            tokens: localResult.tokens,
+          savedResult = await saveBrowserOcrResult(payload);
+          console.log(`[Audit:Stage4-RequestPayload] Backend save response received:`, {
+            document_id: savedResult.document.id,
+            status: savedResult.document.status,
+            is_duplicate: savedResult.is_duplicate,
+            task_id: savedResult.task_id,
           });
         } catch (saveErr: any) {
           throw new Error(`Saving the local OCR result failed: ${saveErr.message || saveErr}`);

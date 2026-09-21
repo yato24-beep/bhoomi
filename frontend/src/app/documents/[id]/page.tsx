@@ -364,7 +364,23 @@ export default function DocumentDetailsPage() {
 
   const rawKannadaText = (extractedData.original_ocr || extractedData.original_kannada_text || extractedData.merged_text || "").trim();
   const cleanKannadaText = (extractedData.clean_kannada_text || extractedData.original_kannada_text || extractedData.merged_text || "").trim();
-  const englishText = (extractedData.translated_text || extractedData.merged_text || "").trim();
+  const englishText = (extractedData.english_translation || extractedData.translated_text || extractedData.merged_text || "").trim();
+
+  // Temporary non-sensitive audit logging for Stage 7
+  if (typeof window !== "undefined") {
+    console.log(`[Audit:Stage7-FrontendRead] Results page rendering doc #${documentId}:`, {
+      status: document.status,
+      extracted_data_keys: Object.keys(extractedData),
+      has_raw_kannada: Boolean(rawKannadaText),
+      raw_kannada_len: rawKannadaText.length,
+      has_clean_kannada: Boolean(cleanKannadaText),
+      clean_kannada_len: cleanKannadaText.length,
+      has_english: Boolean(englishText),
+      english_len: englishText.length,
+      recognition_conf: recognitionConf,
+      fields_count: fieldsSummary?.fields?.length || 0,
+    });
+  }
 
   // Exactly 12 REQUIRED Main Property Details Only
   const propertyFields = [

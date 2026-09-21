@@ -72,23 +72,64 @@ export class BrowserTrOCR {
       canvas.width = 224;
       canvas.height = 224;
       ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 224, 224);
     } else {
       throw new Error("BrowserTrOCR image preprocessing requires window and canvas context.");
     }
 
     if (source instanceof Blob || source instanceof File) {
-      const img = new Image();
-      const url = URL.createObjectURL(source);
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = reject;
-        img.src = url;
-      });
-      ctx.drawImage(img, 0, 0, 224, 224);
-      URL.revokeObjectURL(url);
+      if (typeof createImageBitmap !== "undefined") {
+        try {
+          const bitmap = await createImageBitmap(source);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, 224, 224);
+          ctx.drawImage(bitmap, 0, 0, 224, 224);
+          bitmap.close();
+        } catch {
+          // Fallback to Image element if createImageBitmap fails on unsupported format
+          const img = new Image();
+          const url = URL.createObjectURL(source);
+          try {
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = reject;
+              img.src = url;
+            });
+            if ("decode" in img) {
+              await (img as any).decode().catch(() => {});
+            }
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, 224, 224);
+            ctx.drawImage(img, 0, 0, 224, 224);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        }
+      } else {
+        const img = new Image();
+        const url = URL.createObjectURL(source);
+        try {
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = url;
+          });
+          if ("decode" in img) {
+            await (img as any).decode().catch(() => {});
+          }
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, 224, 224);
+          ctx.drawImage(img, 0, 0, 224, 224);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      }
     } else if (source instanceof ImageData) {
       ctx.putImageData(source, 0, 0);
     } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, 224, 224);
       ctx.drawImage(source, 0, 0, 224, 224);
     }
 
@@ -99,16 +140,34 @@ export class BrowserTrOCR {
     const planar = new Float32Array(3 * 224 * 224);
     const planeSize = 224 * 224;
 
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    let sumVal = 0;
+
     for (let i = 0; i < planeSize; i++) {
       const r = rgba[i * 4];
       const g = rgba[i * 4 + 1];
       const b = rgba[i * 4 + 2];
 
       // Channel 0: R, Channel 1: G, Channel 2: B
-      planar[i] = (r - 127.5) / 127.5;
-      planar[planeSize + i] = (g - 127.5) / 127.5;
-      planar[2 * planeSize + i] = (b - 127.5) / 127.5;
+      const rNorm = (r - 127.5) / 127.5;
+      const gNorm = (g - 127.5) / 127.5;
+      const bNorm = (b - 127.5) / 127.5;
+
+      planar[i] = rNorm;
+      planar[planeSize + i] = gNorm;
+      planar[2 * planeSize + i] = bNorm;
+
+      const pMin = Math.min(rNorm, gNorm, bNorm);
+      const pMax = Math.max(rNorm, gNorm, bNorm);
+      if (pMin < minVal) minVal = pMin;
+      if (pMax > maxVal) maxVal = pMax;
+      sumVal += rNorm + gNorm + bNorm;
     }
+
+    console.log(
+      `[Audit:Stage2-Preprocess] Image normalized to float32 tensor [1, 3, 224, 224]: min=${minVal.toFixed(3)}, max=${maxVal.toFixed(3)}, mean=${(sumVal / planar.length).toFixed(3)}`
+    );
 
     return planar;
   }
@@ -127,16 +186,20 @@ export class BrowserTrOCR {
     const pixelTensor = new this.ort.Tensor("float32", pixelValues, [1, 3, 224, 224]);
 
     // Step 2: Run vision encoder
+    console.log(`[Audit:Stage2-Inference] Running vision encoder (${this.executionProvider})...`);
     const encoderResults = await this.encoderSession.run({
       pixel_values: pixelTensor,
     });
     const encoderHiddenStates = encoderResults.last_hidden_state;
+    console.log(`[Audit:Stage2-Inference] Encoder completed. last_hidden_state shape: [${encoderHiddenStates.dims.join(", ")}]`);
 
     // Step 3: Autoregressive decoding (greedy search)
     const tokens: bigint[] = [BigInt(0)]; // decoder_start_token_id = 0 (<s>)
-    const confidences: number[] = [];
+    const textConfidences: number[] = [];
     const eosTokenId = BigInt(2);
     const vocabSize = 100000;
+
+    console.log(`[Audit:Stage2-Inference] Starting autoregressive decoding (max_length=${maxLength})...`);
 
     while (tokens.length < maxLength) {
       const inputIdsTensor = new this.ort.Tensor(
@@ -170,7 +233,10 @@ export class BrowserTrOCR {
       }
 
       tokens.push(BigInt(bestId));
-      confidences.push(Math.min(1.0, Math.max(0.1, 1 / (1 + Math.exp(-maxLogit / 10)))));
+      // Only track confidence for actual generated text tokens (skip initial <s> at step 0)
+      if (bestId > 4) {
+        textConfidences.push(Math.min(1.0, Math.max(0.1, 1 / (1 + Math.exp(-maxLogit / 10)))));
+      }
     }
 
     // Step 4: Token decoding via ByteLevel BPE
@@ -178,11 +244,25 @@ export class BrowserTrOCR {
     const decodedText = decodeByteLevelTokens(tokenStrings).trim();
 
     const avgConfidence =
-      confidences.length > 0
-        ? confidences.reduce((a, b) => a + b, 0) / confidences.length
-        : 0.85;
+      textConfidences.length > 0
+        ? textConfidences.reduce((a, b) => a + b, 0) / textConfidences.length
+        : (decodedText.length > 0 ? 0.85 : 0.0);
 
     const latencyMs = Math.round(performance.now() - startTime);
+
+    console.log(`[Audit:Stage3-ModelOutput] Decoding completed:`, {
+      has_text: Boolean(decodedText),
+      text_length: decodedText.length,
+      avg_confidence: parseFloat(avgConfidence.toFixed(4)),
+      token_count: tokens.length,
+      raw_tokens_sample: tokens.slice(0, 10).map(Number),
+      provider: this.executionProvider,
+      latency_ms: latencyMs,
+    });
+
+    if (!decodedText) {
+      console.warn(`[Audit:Stage3-ModelOutput] WARNING: BrowserTrOCR returned empty text! Tokens were:`, tokens.map(Number));
+    }
 
     return {
       text: decodedText,

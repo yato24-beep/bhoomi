@@ -209,13 +209,22 @@ CRITICAL INSTRUCTIONS:
         timeout_seconds: int = 30,
         temperature: float = 0.0,
     ):
-        if not api_key and not os.environ.get("GEMINI_API_KEY"):
-            try:
-                from dotenv import load_dotenv
-                load_dotenv()
-            except Exception:
-                pass
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "").strip()
+        if not api_key:
+            api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+            if not api_key:
+                try:
+                    from dotenv import load_dotenv
+                    load_dotenv()
+                    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+                except Exception:
+                    pass
+            if not api_key:
+                try:
+                    from backend.app.config import settings
+                    api_key = (getattr(settings, "GEMINI_API_KEY", "") or "").strip()
+                except Exception:
+                    pass
+        self.api_key = api_key
         self.model_name = (
             model_name
             or os.environ.get("SEMANTIC_MODEL_NAME", "gemini-3.1-flash-lite").strip()

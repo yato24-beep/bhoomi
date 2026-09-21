@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     DEMO_MODE: bool = False
+    PORT: int = 8000
+    ALLOW_LOCALHOST_CORS: bool = False
     
     # API Routing
     API_V1_STR: str = "/api/v1"
@@ -55,7 +57,7 @@ class Settings(BaseSettings):
         elif isinstance(v, list):
             origins = list(v)
 
-        # Incorporate FRONTEND_ORIGIN and FRONTEND_ORIGINS if set in environment or values
+        # Incorporate FRONTEND_ORIGIN and FRONTEND_ORIGINS if set in environment
         import os
         fe_env = os.environ.get("FRONTEND_ORIGIN") or os.environ.get("FRONTEND_ORIGINS")
         if fe_env:
@@ -63,6 +65,14 @@ class Settings(BaseSettings):
                 item_clean = item.strip()
                 if item_clean and item_clean not in origins:
                     origins.append(item_clean)
+
+        # In production, disallow wildcard '*' and only allow localhost if explicitly requested
+        env = (os.environ.get("ENVIRONMENT") or "development").lower()
+        if env == "production":
+            origins = [o for o in origins if o != "*"]
+            allow_local = (os.environ.get("ALLOW_LOCALHOST_CORS") or "false").lower() in ("true", "1", "yes")
+            if not allow_local:
+                origins = [o for o in origins if not ("localhost" in o or "127.0.0.1" in o)]
 
         return origins
 

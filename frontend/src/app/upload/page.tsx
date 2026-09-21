@@ -3,8 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { uploadDocumentFile } from "@/lib/api";
+import { uploadDocumentFile, saveBrowserOcrResult } from "@/lib/api";
 import { DocumentUploadResponse } from "@/lib/types";
+import { getBrowserTrOCR, BrowserOCRResult } from "@/lib/browserTrOCR";
+import { DownloadProgress, computeSHA256 } from "@/lib/modelManager";
 import {
   Upload,
   FileText,
@@ -15,6 +17,7 @@ import {
   Loader2,
   X,
   FileCheck,
+  Cpu,
 } from "lucide-react";
 
 export default function UploadPage() {
@@ -34,6 +37,9 @@ export default function UploadPage() {
   const [isHandwritten, setIsHandwritten] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessingLocal, setIsProcessingLocal] = useState(false);
+  const [modelProgress, setModelProgress] = useState<DownloadProgress | null>(null);
+  const [browserOcrResult, setBrowserOcrResult] = useState<BrowserOCRResult | null>(null);
   const [uploadResult, setUploadResult] = useState<DocumentUploadResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -71,19 +77,97 @@ export default function UploadPage() {
     e.preventDefault();
     if (!selectedFile) return;
 
-    setIsUploading(true);
     setErrorMessage(null);
     setUploadResult(null);
 
     try {
-      const result = await uploadDocumentFile(selectedFile);
+      const isImage = /\.(png|jpe?g|webp|tiff|bmp)$/i.test(selectedFile.name);
+
+      // If Handwritten Kannada is selected and the file is an image, run browser TrOCR locally
+      if (isHandwritten && isImage) {
+        setIsProcessingLocal(true);
+        setModelProgress({
+          stage: "checking",
+          loadedBytes: 0,
+          totalBytes: 0,
+          percentage: 0,
+          message: "Checking OCR model in local cache...",
+        });
+
+        // 1. Download/initialize model
+        const engine = await getBrowserTrOCR((p) => setModelProgress(p));
+
+        // 2. Processing image progress
+        setModelProgress({
+          stage: "checking",
+          loadedBytes: 100,
+          totalBytes: 100,
+          percentage: 100,
+          message: "Processing image...",
+        });
+
+        // 3. Run OCR locally with safety timeout ceiling (5 minutes so legitimate 1-2 min operations on slower CPUs are never cancelled)
+        let timeoutId: any;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error("OCR processing timed out. If your device is running on CPU/WASM, please try a smaller crop or enable WebGPU.")),
+            300000
+          );
+        });
+
+        const localResult = await Promise.race([
+          engine.recognize(selectedFile).finally(() => clearTimeout(timeoutId)),
+          timeoutPromise,
+        ]);
+
+        setModelProgress({
+          stage: "ready",
+          loadedBytes: 100,
+          totalBytes: 100,
+          percentage: 100,
+          message: "OCR completed",
+        });
+
+        // 4. Calculate file SHA-256 hash
+        const fileBuffer = await selectedFile.arrayBuffer();
+        const fileHash = await computeSHA256(fileBuffer);
+
+        // 5. Save original document metadata and browser OCR output through lightweight backend endpoint
+        let savedResult: DocumentUploadResponse;
+        try {
+          savedResult = await saveBrowserOcrResult({
+            filename: selectedFile.name,
+            file_hash: fileHash,
+            file_size: selectedFile.size,
+            text: localResult.text,
+            confidence: localResult.confidence,
+            execution_provider: localResult.executionProvider,
+            latency_ms: localResult.latencyMs,
+            tokens: localResult.tokens,
+          });
+        } catch (saveErr: any) {
+          throw new Error(`Saving the local OCR result failed: ${saveErr.message || saveErr}`);
+        }
+
+        // 6. Show final result ONLY after save succeeds
+        setBrowserOcrResult(localResult);
+        setUploadResult(savedResult);
+        setIsProcessingLocal(false);
+
+        // Exit immediately - do NOT continue into normal server upload or polling flow
+        return;
+      }
+
+      setIsUploading(true);
+      const result = await uploadDocumentFile(selectedFile, isHandwritten);
       setUploadResult(result);
       if (result?.document?.id) {
         router.push(`/documents/${result.document.id}`);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to upload file to backend.");
+      setErrorMessage(err.message || "Failed to process and upload document.");
     } finally {
+      setIsProcessingLocal(false);
       setIsUploading(false);
     }
   };
@@ -247,7 +331,74 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Automatic Hybrid Script & Style Routing Indicator (No manual model selection required) */}
+        {/* Handwritten Kannada In-Browser OCR Controls */}
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <input
+                id="handwritten-toggle"
+                type="checkbox"
+                checked={isHandwritten}
+                onChange={(e) => {
+                  setIsHandwritten(e.target.checked);
+                  if (!e.target.checked) {
+                    setBrowserOcrResult(null);
+                    setModelProgress(null);
+                  }
+                }}
+                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+              />
+              <label htmlFor="handwritten-toggle" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                Handwritten Kannada Document (In-Browser TrOCR)
+              </label>
+            </div>
+            <span
+              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                isHandwritten
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                  : "bg-slate-100 text-slate-600 border-slate-200"
+              }`}
+            >
+              {isHandwritten ? "Client Execution" : "Server Routing"}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            When enabled, the IIT Bombay Indic-TrOCR model automatically runs locally in your browser using WebGPU/WASM without consuming server memory.
+          </p>
+
+          {/* Model Download & Verification Progress Bar */}
+          {modelProgress && (isProcessingLocal || modelProgress.stage !== "ready") && (
+            <div className="pt-2 space-y-1.5 border-t border-slate-200">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-slate-700">{modelProgress.message}</span>
+                <span className="font-mono text-slate-500">{modelProgress.percentage}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-200"
+                  style={{ width: `${modelProgress.percentage}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Browser OCR Result Banner */}
+          {browserOcrResult && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-900">Recognized Kannada Text (Browser TrOCR)</span>
+                <span className="font-mono text-emerald-700">
+                  {browserOcrResult.executionProvider.toUpperCase()} • {browserOcrResult.latencyMs}ms • {(browserOcrResult.confidence * 100).toFixed(1)}% conf
+                </span>
+              </div>
+              <p className="font-medium text-slate-900 text-sm bg-white/80 p-2 rounded border border-emerald-100 font-sans">
+                {browserOcrResult.text || "—"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Automatic Hybrid Script & Style Routing Indicator */}
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
           <div>
             <span className="text-sm font-semibold text-slate-800">Automatic Script & Style Routing</span>
@@ -263,10 +414,15 @@ export default function UploadPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!selectedFile || isUploading}
+          disabled={!selectedFile || isUploading || isProcessingLocal}
           className="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isUploading ? (
+          {isProcessingLocal ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{modelProgress?.message || "Running Browser OCR..."}</span>
+            </>
+          ) : isUploading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Uploading & Processing...</span>

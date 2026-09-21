@@ -164,9 +164,10 @@ export default function DocumentDetailsPage() {
     }
     loadData();
 
-    // Auto-poll if document is in non-terminal processing state
+    // Auto-poll ONLY if document exists and is in a non-terminal processing state (UPLOADED / PROCESSING)
+    // Never poll if document is already COMPLETED (e.g. browser-OCR jobs) or before document is fetched
     const interval = setInterval(async () => {
-      if (!document || document.status === "UPLOADED" || document.status === "PROCESSING") {
+      if (document && (document.status === "UPLOADED" || document.status === "PROCESSING")) {
         try {
           const statusRes = await fetchDocumentStatus(documentId);
           if (statusRes.status !== "UPLOADED" && statusRes.status !== "PROCESSING") {
@@ -361,7 +362,7 @@ export default function DocumentDetailsPage() {
     (results?.validation_info as any)?.is_land_record === false
   );
 
-  const rawKannadaText = (extractedData.original_kannada_text || extractedData.merged_text || "").trim();
+  const rawKannadaText = (extractedData.original_ocr || extractedData.original_kannada_text || extractedData.merged_text || "").trim();
   const cleanKannadaText = (extractedData.clean_kannada_text || extractedData.original_kannada_text || extractedData.merged_text || "").trim();
   const englishText = (extractedData.translated_text || extractedData.merged_text || "").trim();
 

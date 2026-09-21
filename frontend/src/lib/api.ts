@@ -295,3 +295,36 @@ export async function submitDocumentReview(
   return res.json();
 }
 
+export interface SaveBrowserOcrPayload {
+  filename: string;
+  file_hash: string;
+  file_size?: number;
+  text: string;
+  confidence?: number;
+  execution_provider?: string;
+  latency_ms?: number;
+  tokens?: number[];
+  storage_path?: string;
+}
+
+/**
+ * Save browser-executed TrOCR handwritten Kannada results to backend.
+ */
+export async function saveBrowserOcrResult(payload: SaveBrowserOcrPayload): Promise<DocumentUploadResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/documents/browser-result`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to save browser OCR result (${res.status})`);
+  }
+
+  return res.json();
+}
+
+

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Form, HTTPException, status, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, delete
 from pydantic import BaseModel, Field
 
 from app.api.deps import (
@@ -521,6 +521,142 @@ def create_document_record(
     db.commit()
     db.refresh(document)
     return document
+
+
+class BrowserOCRResultSaveRequest(BaseModel):
+    """Schema for saving browser-generated TrOCR results directly."""
+    filename: str = Field(..., max_length=255, description="Original filename of the uploaded document")
+    file_hash: str = Field(..., description="SHA-256 hash of the document")
+    file_size: Optional[int] = Field(default=0, description="Size of file in bytes")
+    text: str = Field(..., description="Recognized Kannada text from browser TrOCR")
+    confidence: float = Field(default=0.85, ge=0.0, le=1.0, description="Confidence score from browser OCR")
+    execution_provider: Optional[str] = Field(default="wasm", description="Provider used: webgpu or wasm")
+    latency_ms: Optional[int] = Field(default=0, description="Local inference latency in ms")
+    storage_path: Optional[str] = Field(default=None, description="Optional storage path")
+
+
+@router.post(
+    "/browser-result",
+    response_model=DocumentUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save Browser TrOCR Result",
+    description="Stores browser-executed TrOCR handwritten Kannada results directly into the database as completed, bypassing server-side model loading.",
+)
+def save_browser_result(
+    payload: BrowserOCRResultSaveRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_viewer_or_above),
+) -> DocumentUploadResponse:
+    """Persist browser-generated TrOCR result directly without triggering server-side OCR tasks."""
+    import hashlib
+
+    # Validate and normalize SHA-256 hash
+    h = payload.file_hash.strip().lower()
+    if len(h) != 64:
+        h = hashlib.sha256(f"{payload.filename}_{payload.text}_{h}".encode("utf-8")).hexdigest()
+
+    storage_path = payload.storage_path or f"browser-ocr/{h}_{payload.filename}"
+
+    # Check for existing document by hash
+    stmt = select(Document).where(Document.file_hash == h)
+    target_doc = db.execute(stmt).scalar_one_or_none()
+    is_duplicate = False
+
+    if target_doc:
+        is_duplicate = True
+        target_doc.status = "COMPLETED"
+        if not target_doc.storage_path:
+            target_doc.storage_path = storage_path
+    else:
+        target_doc = Document(
+            filename=payload.filename,
+            file_hash=h,
+            status="COMPLETED",
+            storage_path=storage_path,
+        )
+        db.add(target_doc)
+        db.commit()
+        db.refresh(target_doc)
+
+    # Persist or update aggregate ExtractionResult
+    res_stmt = select(ExtractionResult).where(ExtractionResult.document_id == target_doc.id)
+    extraction_record = db.execute(res_stmt).scalar_one_or_none()
+
+    extracted_data = {
+        "document_type": "Handwritten Kannada Document",
+        "document_type_label": "Handwritten Kannada (Browser TrOCR)",
+        "is_land_record": True,
+        "original_ocr": payload.text,
+        "merged_text": payload.text,
+        "original_kannada_text": payload.text,
+        "clean_kannada_text": payload.text,
+        "translated_text": payload.text,
+        "english_translation": payload.text,
+        "kannada_translation": payload.text,
+        "recognition_confidence": round(float(payload.confidence), 4),
+        "execution_provider": payload.execution_provider,
+        "latency_ms": payload.latency_ms or 0,
+        "status": "completed",
+        "verification_status": "accepted",
+        "extracted_fields": {
+            "handwritten_kannada_text": {
+                "raw_value": payload.text,
+                "normalized_value": payload.text,
+                "confidence": round(float(payload.confidence), 4),
+                "validation_status": "valid",
+            }
+        },
+        "bilingual_fields": {},
+        "review_items": [],
+    }
+
+    validation_info = {
+        "checks_passed": ["browser_trocr_inference_completed"],
+        "warnings": [],
+        "requires_human_review": False,
+        "verification_status": "accepted",
+        "execution_provider": payload.execution_provider,
+    }
+
+    if not extraction_record:
+        extraction_record = ExtractionResult(
+            document_id=target_doc.id,
+            extracted_data=extracted_data,
+            confidence_score=round(float(payload.confidence), 4),
+            is_valid=True,
+            validation_info=validation_info,
+            processing_time_ms=payload.latency_ms or 0,
+        )
+        db.add(extraction_record)
+    else:
+        extraction_record.extracted_data = extracted_data
+        extraction_record.confidence_score = round(float(payload.confidence), 4)
+        extraction_record.is_valid = True
+        extraction_record.validation_info = validation_info
+        extraction_record.processing_time_ms = payload.latency_ms or 0
+
+    # Persist primary ExtractedField row
+    db.execute(delete(ExtractedField).where(ExtractedField.document_id == target_doc.id))
+    field_record = ExtractedField(
+        document_id=target_doc.id,
+        field_name="handwritten_kannada_text",
+        original_value=payload.text,
+        normalized_value=payload.text,
+        confidence_score=round(float(payload.confidence), 4),
+        source_page=1,
+        source_type="browser_trocr",
+    )
+    db.add(field_record)
+
+    db.commit()
+    db.refresh(target_doc)
+
+    return DocumentUploadResponse(
+        message="Browser OCR result saved successfully.",
+        is_duplicate=is_duplicate,
+        document=DocumentRead.model_validate(target_doc),
+        task_id="browser-ocr-completed",
+    )
 
 
 @router.get(

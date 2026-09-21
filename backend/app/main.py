@@ -130,16 +130,19 @@ async def lifespan(app: FastAPI):
         from src.handwriting.trocr_12000_recognizer import (
             DEFAULT_CHECKPOINT_12000_PATH,
             DEFAULT_TOKENIZER_NAME,
+            _has_weights,
             get_trocr_12000_recognizer,
         )
-        trocr = get_trocr_12000_recognizer(auto_load=False)
-        repo_id = os.environ.get("MODEL_REPO_ID", "local/unconfigured")
-        print(
-            f"  [2/4] TrOCR-12000 Kannada Engine   : CONFIGURED "
-            f"(repo: {repo_id}, model_path: {trocr.model_path}, tokenizer: {DEFAULT_TOKENIZER_NAME})"
-        )
+        if _has_weights(DEFAULT_CHECKPOINT_12000_PATH):
+            trocr = get_trocr_12000_recognizer(auto_load=False)
+            print(
+                f"  [2/4] TrOCR-12000 Kannada Engine   : LOCAL MODEL READY "
+                f"(model_path: {trocr.model_path}, tokenizer: {DEFAULT_TOKENIZER_NAME})"
+            )
+        else:
+            print("  [2/4] TrOCR-12000 Kannada Engine   : BROWSER INFERENCE MODE (Server weight loading bypassed for 512MB RAM compatibility)")
     except Exception as exc:
-        print(f"  [2/4] TrOCR-12000 Kannada Engine   : WARNING ({exc})")
+        print(f"  [2/4] TrOCR-12000 Kannada Engine   : NOTICE ({exc})")
 
     # (c) Gemini
     gemini_key = os.environ.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
@@ -181,7 +184,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Set up CORS middleware with FRONTEND_ORIGIN support
+# Set up CORS middleware with strict production origin verification
 origins = list(settings.BACKEND_CORS_ORIGINS) if settings.BACKEND_CORS_ORIGINS else []
 fe_env = os.environ.get("FRONTEND_ORIGIN") or os.environ.get("FRONTEND_ORIGINS") or getattr(settings, "FRONTEND_ORIGIN", None)
 if fe_env:
@@ -190,7 +193,15 @@ if fe_env:
         if item_clean and item_clean not in origins:
             origins.append(item_clean)
 
-if "*" not in origins:
+is_production = settings.ENVIRONMENT.lower() == "production"
+if is_production:
+    # Strictly disallow wildcard in production
+    origins = [o for o in origins if o != "*"]
+    # Only allow localhost if explicitly requested
+    if not getattr(settings, "ALLOW_LOCALHOST_CORS", False):
+        origins = [o for o in origins if not ("localhost" in o or "127.0.0.1" in o)]
+else:
+    # Development mode: allow standard local development ports if list empty
     for default_origin in [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -200,9 +211,11 @@ if "*" not in origins:
         if default_origin not in origins:
             origins.append(default_origin)
 
+print(f"[CORS] Configured allowed origins: {origins} (environment: {settings.ENVIRONMENT})")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if "*" not in origins else ["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -238,3 +251,11 @@ async def root():
             "auth_api": f"{settings.API_V1_STR}/auth",
         }
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    server_port = int(os.environ.get("PORT", getattr(settings, "PORT", 8000)))
+    print(f"[STARTUP] Launching Uvicorn on 0.0.0.0:{server_port} (Environment: {settings.ENVIRONMENT})")
+    uvicorn.run("app.main:app", host="0.0.0.0", port=server_port, reload=False)

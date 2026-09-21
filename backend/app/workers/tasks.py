@@ -49,6 +49,15 @@ def process_document_task(*args, **kwargs):
             logger.error(f"❌ Document ID {document_id} not found in database.")
             return {"status": "error", "message": f"Document ID {document_id} not found"}
 
+        if document.status == "COMPLETED":
+            logger.info(f"✅ Document ID {document_id} is already marked COMPLETED (e.g. browser OCR). Skipping server pipeline.")
+            return {
+                "status": "success",
+                "document_id": document_id,
+                "filename": document.filename,
+                "final_status": "COMPLETED",
+            }
+
         # DEMO_MODE bypass: complete immediately without OCR/Celery/Gemini/translation
         if is_demo_mode():
             logger.info(f"✨ [DEMO_MODE] Instant completion for Document ID {document_id}")

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, Upload, LayoutDashboard, ExternalLink, ShieldCheck, LogOut, User as UserIcon } from "lucide-react";
+import { FileText, Upload, LayoutDashboard, ExternalLink, ShieldCheck, LogOut, User as UserIcon, Cpu } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -37,6 +37,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Upload Document", href: "/upload", icon: Upload },
+    { name: "OCR Diagnostics", href: "/debug-ocr", icon: Cpu },
   ];
 
   if (pathname === "/login") {

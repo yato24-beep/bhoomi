@@ -101,9 +101,10 @@ def resolve_or_download_trocr_checkpoint(model_path: Optional[str] = None) -> st
             logger.info(f"Using local TrOCR checkpoint-12000 at: {cand}")
             return str(cand.resolve())
 
-    # If absent locally, check MODEL_REPO_ID
+    # If absent locally, check MODEL_REPO_ID (only download if explicitly authorized to protect 512MB RAM containers)
     model_repo_id = os.environ.get("MODEL_REPO_ID", "").strip()
-    if model_repo_id:
+    enable_server_dl = os.environ.get("ENABLE_SERVER_TROCR_DOWNLOAD", "false").lower() in ("true", "1", "yes")
+    if model_repo_id and enable_server_dl:
         target_dir = Path("/data/models/trocr/checkpoint-12000")
         try:
             target_dir.mkdir(parents=True, exist_ok=True)
@@ -128,6 +129,11 @@ def resolve_or_download_trocr_checkpoint(model_path: Optional[str] = None) -> st
         except Exception as dl_err:
             logger.error(f"[HUGGINGFACE] Failed downloading from '{model_repo_id}': {dl_err}")
             return str(target_dir.resolve())
+    elif model_repo_id and not enable_server_dl:
+        logger.info(
+            "[HUGGINGFACE] Server-side model download disabled (ENABLE_SERVER_TROCR_DOWNLOAD=false). "
+            "Client-side browser execution active."
+        )
 
     # Fallback to preferred path
     default_cand = candidates[0] if candidates else Path("/data/models/trocr/checkpoint-12000")

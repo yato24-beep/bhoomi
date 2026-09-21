@@ -163,3 +163,10 @@ locked_benchmark_export/
 backend/app/services/demo_mode.py
 
 demo.png
+.vercel
+.env*
+
+# Experimental model weights
+experiments/**/models/*.onnx
+experiments/**/models/*.onnx.data
+experiments/**/models/*.pt

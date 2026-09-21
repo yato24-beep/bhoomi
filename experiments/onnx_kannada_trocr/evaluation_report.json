@@ -1,0 +1,704 @@
+{
+  "timestamp": "2026-09-21 08:35:12",
+  "dataset_crops_count": 13,
+  "engines": {
+    "pytorch_fp32": {
+      "model_disk_size_mb": 843.11,
+      "post_load_rss_mb": 1289.92,
+      "peak_rss_mb": 1384.43,
+      "avg_latency_sec": 1.37,
+      "results": [
+        {
+          "file": "a_full_line.png",
+          "text": "ಮರ-ಶಾಲಿಟ",
+          "latency": 0.9436,
+          "analysis": {
+            "text": "ಮರ-ಶಾಲಿಟ",
+            "length": 8,
+            "kannada_chars": 7,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "crop_a_mara.png",
+          "text": "ಮರ",
+          "latency": 0.5472,
+          "analysis": {
+            "text": "ಮರ",
+            "length": 2,
+            "kannada_chars": 2,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "crop_o_kothi.png",
+          "text": "ಕೋತಿ",
+          "latency": 0.7025,
+          "analysis": {
+            "text": "ಕೋತಿ",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "crop_p_hannu.png",
+          "text": "ಹುಟು",
+          "latency": 0.7864,
+          "analysis": {
+            "text": "ಹುಟು",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_04.png",
+          "text": "೪೯೪೯",
+          "latency": 0.7044,
+          "analysis": {
+            "text": "೪೯೪೯",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_05.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+          "latency": 2.0912,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+            "length": 18,
+            "kannada_chars": 18,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_06.png",
+          "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ತು",
+          "latency": 1.6324,
+          "analysis": {
+            "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ತು",
+            "length": 19,
+            "kannada_chars": 19,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_07.png",
+          "text": "ಪರ್ಣುಸ್ಥಿತುಕೊಂಡಿದ್ದು",
+          "latency": 1.7931,
+          "analysis": {
+            "text": "ಪರ್ಣುಸ್ಥಿತುಕೊಂಡಿದ್ದು",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_08.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+          "latency": 2.1693,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_09.png",
+          "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+          "latency": 1.8722,
+          "analysis": {
+            "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "line_10.png",
+          "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+          "latency": 2.0024,
+          "analysis": {
+            "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "o_full_line.png",
+          "text": "ಕೋತಿ-ಲೋಟಾಟ",
+          "latency": 1.1568,
+          "analysis": {
+            "text": "ಕೋತಿ-ಲೋಟಾಟ",
+            "length": 10,
+            "kannada_chars": 9,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        },
+        {
+          "file": "p_full_line.png",
+          "text": "ಹಬ್ಬ-ಗೊಳಗಿತ್ತು",
+          "latency": 1.4053,
+          "analysis": {
+            "text": "ಹಬ್ಬ-ಗೊಳಗಿತ್ತು",
+            "length": 14,
+            "kannada_chars": 13,
+            "unk_count": 0,
+            "has_kannada": true
+          }
+        }
+      ]
+    },
+    "onnx_fp32": {
+      "model_disk_size_mb": 843.5,
+      "post_load_rss_mb": 1323.86,
+      "peak_rss_mb": 1427.51,
+      "avg_latency_sec": 2.753,
+      "matches_vs_baseline": 8,
+      "results": [
+        {
+          "file": "a_full_line.png",
+          "text": "ಮರ-ಶಾಲಿಟಾ",
+          "latency": 1.567,
+          "analysis": {
+            "text": "ಮರ-ಶಾಲಿಟಾ",
+            "length": 9,
+            "kannada_chars": 8,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "crop_a_mara.png",
+          "text": "ಮರ",
+          "latency": 0.688,
+          "analysis": {
+            "text": "ಮರ",
+            "length": 2,
+            "kannada_chars": 2,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_o_kothi.png",
+          "text": "ಕೋತಿ",
+          "latency": 1.032,
+          "analysis": {
+            "text": "ಕೋತಿ",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_p_hannu.png",
+          "text": "ಹುಟು",
+          "latency": 1.19,
+          "analysis": {
+            "text": "ಹುಟು",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_04.png",
+          "text": "ಅಟ್ರ್ಟಿ",
+          "latency": 1.239,
+          "analysis": {
+            "text": "ಅಟ್ರ್ಟಿ",
+            "length": 7,
+            "kannada_chars": 7,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_05.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+          "latency": 4.783,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+            "length": 18,
+            "kannada_chars": 18,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_06.png",
+          "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ಲಇನ್ನೆ",
+          "latency": 3.248,
+          "analysis": {
+            "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ಲಇನ್ನೆ",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_07.png",
+          "text": "ಪರ್ಣುಸ್ಥಿತುಕೊಂಡಿದ್ದು",
+          "latency": 3.955,
+          "analysis": {
+            "text": "ಪರ್ಣುಸ್ಥಿತುಕೊಂಡಿದ್ದು",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_08.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+          "latency": 4.459,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_09.png",
+          "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನ",
+          "latency": 4.018,
+          "analysis": {
+            "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನ",
+            "length": 24,
+            "kannada_chars": 24,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_10.png",
+          "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+          "latency": 4.874,
+          "analysis": {
+            "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "o_full_line.png",
+          "text": "ಕೋತಿ-ಲೋಟಾಟ",
+          "latency": 2.013,
+          "analysis": {
+            "text": "ಕೋತಿ-ಲೋಟಾಟ",
+            "length": 10,
+            "kannada_chars": 9,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "p_full_line.png",
+          "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+          "latency": 2.723,
+          "analysis": {
+            "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+            "length": 17,
+            "kannada_chars": 16,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        }
+      ]
+    },
+    "onnx_int8_beam": {
+      "model_disk_size_mb": 214.61,
+      "post_load_rss_mb": 861.71,
+      "peak_rss_mb": 1668.29,
+      "avg_latency_sec": 4.555,
+      "matches_vs_baseline": 6,
+      "results": [
+        {
+          "file": "a_full_line.png",
+          "text": "ಮರ-ಶಾಲಿಟಾ",
+          "latency": 3.06,
+          "analysis": {
+            "text": "ಮರ-ಶಾಲಿಟಾ",
+            "length": 9,
+            "kannada_chars": 8,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "crop_a_mara.png",
+          "text": "ಮರ",
+          "latency": 1.092,
+          "analysis": {
+            "text": "ಮರ",
+            "length": 2,
+            "kannada_chars": 2,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_o_kothi.png",
+          "text": "ಕೋತಿ",
+          "latency": 1.685,
+          "analysis": {
+            "text": "ಕೋತಿ",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_p_hannu.png",
+          "text": "ರುಖಾಯ",
+          "latency": 2.075,
+          "analysis": {
+            "text": "ರುಖಾಯ",
+            "length": 5,
+            "kannada_chars": 5,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_04.png",
+          "text": "ಅಟ್ರ್ಟಿ",
+          "latency": 2.084,
+          "analysis": {
+            "text": "ಅಟ್ರ್ಟಿ",
+            "length": 7,
+            "kannada_chars": 7,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_05.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+          "latency": 7.521,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+            "length": 18,
+            "kannada_chars": 18,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_06.png",
+          "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ಲಇನ್ನೆ",
+          "latency": 5.635,
+          "analysis": {
+            "text": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ಲಇನ್ನೆ",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_07.png",
+          "text": "ಪರ್ಣುಕಾರ್ಥಿಸುವುದಕ್ಕೂ",
+          "latency": 6.29,
+          "analysis": {
+            "text": "ಪರ್ಣುಕಾರ್ಥಿಸುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_08.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+          "latency": 7.786,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_09.png",
+          "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನ",
+          "latency": 6.391,
+          "analysis": {
+            "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನ",
+            "length": 24,
+            "kannada_chars": 24,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_10.png",
+          "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+          "latency": 7.334,
+          "analysis": {
+            "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "o_full_line.png",
+          "text": "ಕೋತಿ-ಲೋಟಾಟ",
+          "latency": 3.661,
+          "analysis": {
+            "text": "ಕೋತಿ-ಲೋಟಾಟ",
+            "length": 10,
+            "kannada_chars": 9,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "p_full_line.png",
+          "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+          "latency": 4.598,
+          "analysis": {
+            "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+            "length": 17,
+            "kannada_chars": 16,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        }
+      ]
+    },
+    "onnx_int8_greedy": {
+      "model_disk_size_mb": 214.61,
+      "post_load_rss_mb": 861.71,
+      "peak_rss_mb": 1668.29,
+      "avg_latency_sec": 1.239,
+      "matches_vs_baseline": 7,
+      "results": [
+        {
+          "file": "a_full_line.png",
+          "text": "ಮರ-ಶಾಲಿಟಾ",
+          "latency": 0.861,
+          "analysis": {
+            "text": "ಮರ-ಶಾಲಿಟಾ",
+            "length": 9,
+            "kannada_chars": 8,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "crop_a_mara.png",
+          "text": "ಮರ",
+          "latency": 0.428,
+          "analysis": {
+            "text": "ಮರ",
+            "length": 2,
+            "kannada_chars": 2,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_o_kothi.png",
+          "text": "ಕೋತಿ",
+          "latency": 0.562,
+          "analysis": {
+            "text": "ಕೋತಿ",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "crop_p_hannu.png",
+          "text": "ರುಖಾಯ",
+          "latency": 0.622,
+          "analysis": {
+            "text": "ರುಖಾಯ",
+            "length": 5,
+            "kannada_chars": 5,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_04.png",
+          "text": "೪೯೪೯",
+          "latency": 0.472,
+          "analysis": {
+            "text": "೪೯೪೯",
+            "length": 4,
+            "kannada_chars": 4,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_05.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+          "latency": 1.443,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+            "length": 18,
+            "kannada_chars": 18,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_06.png",
+          "text": "ವ್ಯಕ್ತಪಡಿಸುವುದೇಷ್ಣಿ",
+          "latency": 1.484,
+          "analysis": {
+            "text": "ವ್ಯಕ್ತಪಡಿಸುವುದೇಷ್ಣಿ",
+            "length": 19,
+            "kannada_chars": 19,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_07.png",
+          "text": "ಪರ್ಣುಕಾರ್ಥಿಸುವುದಕ್ಕೂ",
+          "latency": 1.676,
+          "analysis": {
+            "text": "ಪರ್ಣುಕಾರ್ಥಿಸುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_08.png",
+          "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+          "latency": 1.972,
+          "analysis": {
+            "text": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+            "length": 23,
+            "kannada_chars": 23,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "line_09.png",
+          "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನೆರಡು",
+          "latency": 2.245,
+          "analysis": {
+            "text": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನೆರಡು",
+            "length": 28,
+            "kannada_chars": 28,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        },
+        {
+          "file": "line_10.png",
+          "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+          "latency": 1.792,
+          "analysis": {
+            "text": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+            "length": 20,
+            "kannada_chars": 20,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "o_full_line.png",
+          "text": "ಕೋತಿ-ಲೋಟಾಟ",
+          "latency": 0.981,
+          "analysis": {
+            "text": "ಕೋತಿ-ಲೋಟಾಟ",
+            "length": 10,
+            "kannada_chars": 9,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": true
+        },
+        {
+          "file": "p_full_line.png",
+          "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+          "latency": 1.567,
+          "analysis": {
+            "text": "ಹಬ್ಬ-ಅಂಗಿಯಾಗಿತ್ತು",
+            "length": 17,
+            "kannada_chars": 16,
+            "unk_count": 0,
+            "has_kannada": true
+          },
+          "match_baseline": false
+        }
+      ]
+    }
+  }
+}

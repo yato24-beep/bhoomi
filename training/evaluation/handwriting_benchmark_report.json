@@ -1,0 +1,284 @@
+{
+  "baseline_kannada_generalized_v2": {
+    "model_type": "word_trained_legacy_baseline",
+    "path": "c:\\Users\\akars\\OneDrive\\Documents\\Land_Record_Models_FULL\\models\\trocr\\kannada_generalized_v2_checkpoints\\best_checkpoint",
+    "word_level": {
+      "granularity": "word",
+      "sample_count": 6,
+      "overall_cer": 0.9286,
+      "overall_wer": 0.6667,
+      "exact_match_rate": 0.3333,
+      "repetition_loop_count": 0,
+      "samples": [
+        {
+          "image": "crop_a_mara.png",
+          "gt": "ಮರ",
+          "prediction": "ಮರ",
+          "cer": 0.0,
+          "wer": 0.0,
+          "exact_match": true,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "crop_o_kothi.png",
+          "gt": "ಕೋತಿ",
+          "prediction": "ಫಟತಿ",
+          "cer": 0.5,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "crop_p_hannu.png",
+          "gt": "ಹಣ್ಣು",
+          "prediction": "ಹಣ್ಣು",
+          "cer": 0.0,
+          "wer": 0.0,
+          "exact_match": true,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "a_kannada_raw.png",
+          "gt": "ಅ",
+          "prediction": "ಮಲ",
+          "cer": 2.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "o_kannada_raw.png",
+          "gt": "ಒ",
+          "prediction": "ಕೋತಿ",
+          "cer": 4.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "p_kannada_raw.png",
+          "gt": "ಪ",
+          "prediction": "ಹಣ್ಣು",
+          "cer": 5.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        }
+      ]
+    },
+    "line_level": {
+      "granularity": "line",
+      "sample_count": 7,
+      "overall_cer": 1.0,
+      "overall_wer": 1.0,
+      "exact_match_rate": 0.0,
+      "repetition_loop_count": 0,
+      "samples": [
+        {
+          "image": "line_04.png",
+          "gt": "125",
+          "prediction": "೬೯೬",
+          "cer": 1.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_05.png",
+          "gt": "125 1 ರ",
+          "prediction": "ಕಾರ್ಯನಿರ್ವಕ್ಷಮ್ೂಕ್ಷಮ್ಯಕ್ಷಮ್ವಾಗಿಕ್ಷಮ್ಕ್ಷಮ್",
+          "cer": 5.7143,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_06.png",
+          "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ಕಂದಾಯ",
+          "prediction": "ಕಾರ್ಯನಿರ್ವಕ್ಷಮ್ಯಕ್ಷಮ್ಕ್ಷಮ್ೂಕ್ಷಮ್",
+          "cer": 0.931,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_07.png",
+          "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ತಂದೆ ಲಿಂಗಯ್ಯ 1 ನೇ ಹೆಂಡತಿ ಲಿಂಗಮ್ಮ ಇವರ ಮಕ್ಕಳು",
+          "prediction": "ಕಾರ್ಯನಿರ್ವಕ್ಷಮ್ಕ್ಷಮ್ೂಕ್ಷಮ್ವಾಗಿಕ್ಷಮ್ಯಕ್ಷಮ್",
+          "cer": 0.8358,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_08.png",
+          "gt": "148 0-15 ಇವರ ಹೆಸರಿಗೆ ರಾಜೀನಾಮೆ ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ವತಿಯಿಂದ ಬಂದಂತೆ",
+          "prediction": "ಕಾರ್ಯನಿರ್ವಕ್ಷಮ್ಕ್ಷಮ್ೂಕ್ಷಮ್ವಾಗಿಕ್ಷಮ್ಯಕ್ಷಮ್",
+          "cer": 0.8644,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_09.png",
+          "gt": "ದಿನಾಂಕ 20/09/2005 ರ ಪ್ರಕಾರ ಪಹಣಿ ಮತ್ತು ಹಕ್ಕು ದಾಖಲೆ ನಮೂದಿಸಲಾಗಿದೆ",
+          "prediction": "ಇಪತ್ರಿಕವಾಗಿಕ್ಷಮ್ಯಕ್ಷಮ್ಕ್ಷಮ್ೂಕ್ಷಮ್",
+          "cer": 0.8871,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_10.png",
+          "gt": "ಖಾತೆ ಬದಲಾವಣೆ ಮಂಜೂರಾಗಿದೆ ತಹಶೀಲ್ದಾರ್ ಆದೇಶ ಸಂಖ್ಯೆ",
+          "prediction": "ಕ್ಷಾರ್ಢನಂಬುಕೊ",
+          "cer": 0.8913,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        }
+      ]
+    }
+  },
+  "retrained_smoke_test_v1": {
+    "model_type": "synthetic_smoke_test_checkpoint",
+    "path": "C:\\Users\\akars\\OneDrive\\Documents\\land-record-digitization\\models\\trocr\\smoke_test_best_checkpoint",
+    "word_level": {
+      "granularity": "word",
+      "sample_count": 6,
+      "overall_cer": 3.0,
+      "overall_wer": 1.5,
+      "exact_match_rate": 0.0,
+      "repetition_loop_count": 0,
+      "samples": [
+        {
+          "image": "crop_a_mara.png",
+          "gt": "ಮರ",
+          "prediction": "್",
+          "cer": 1.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "crop_o_kothi.png",
+          "gt": "ಕೋತಿ",
+          "prediction": "್",
+          "cer": 1.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "crop_p_hannu.png",
+          "gt": "ಹಣ್ಣು",
+          "prediction": "Edit links",
+          "cer": 2.0,
+          "wer": 2.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "a_kannada_raw.png",
+          "gt": "ಅ",
+          "prediction": "ICICI Strike",
+          "cer": 12.0,
+          "wer": 2.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "o_kannada_raw.png",
+          "gt": "ಒ",
+          "prediction": "್",
+          "cer": 1.0,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "p_kannada_raw.png",
+          "gt": "ಪ",
+          "prediction": "ECOWAS FORMER",
+          "cer": 13.0,
+          "wer": 2.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        }
+      ]
+    },
+    "line_level": {
+      "granularity": "line",
+      "sample_count": 7,
+      "overall_cer": 0.9304,
+      "overall_wer": 1.0667,
+      "exact_match_rate": 0.0,
+      "repetition_loop_count": 0,
+      "samples": [
+        {
+          "image": "line_04.png",
+          "gt": "125",
+          "prediction": "ICICI",
+          "cer": 1.6667,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_05.png",
+          "gt": "125 1 ರ",
+          "prediction": "SpaceX Raybould ್ರ್ನ ನೆ 22 ಗಿ",
+          "cer": 3.7143,
+          "wer": 2.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_06.png",
+          "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ಕಂದಾಯ",
+          "prediction": "MRSUALITY ್ರ್ಿ ನೆ ಿ",
+          "cer": 0.8621,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_07.png",
+          "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ತಂದೆ ಲಿಂಗಯ್ಯ 1 ನೇ ಹೆಂಡತಿ ಲಿಂಗಮ್ಮ ಇವರ ಮಕ್ಕಳು",
+          "prediction": "3Player performs ಗ್ರ ್ೆ ರ್ಿ ೆ, ಗಿ್",
+          "cer": 0.8358,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_08.png",
+          "gt": "148 0-15 ಇವರ ಹೆಸರಿಗೆ ರಾಜೀನಾಮೆ ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ವತಿಯಿಂದ ಬಂದಂತೆ",
+          "prediction": "334Review scores ಗ್ರ್ ೆ ್ು ಿೆ, ಗೆ",
+          "cer": 0.8305,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_09.png",
+          "gt": "ದಿನಾಂಕ 20/09/2005 ರ ಪ್ರಕಾರ ಪಹಣಿ ಮತ್ತು ಹಕ್ಕು ದಾಖಲೆ ನಮೂದಿಸಲಾಗಿದೆ",
+          "prediction": "SHAREMENTMENT REPORTORSHIP ್ಿ ರ್ ೆ: ಗ್ೆ",
+          "cer": 0.8548,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        },
+        {
+          "image": "line_10.png",
+          "gt": "ಖಾತೆ ಬದಲಾವಣೆ ಮಂಜೂರಾಗಿದೆ ತಹಶೀಲ್ದಾರ್ ಆದೇಶ ಸಂಖ್ಯೆ",
+          "prediction": "SpaceX ್ಿ ೆ ರ್",
+          "cer": 0.8696,
+          "wer": 1.0,
+          "exact_match": false,
+          "has_repetition_loop": false
+        }
+      ]
+    }
+  }
+}

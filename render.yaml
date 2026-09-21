@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: bhoomi-backend
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: ENABLE_SERVER_TROCR_DOWNLOAD
+        value: "false"
+      - key: ALLOW_LOCALHOST_CORS
+        value: "false"
+      - key: FRONTEND_ORIGIN
+        sync: false # Set to your actual Vercel domain, e.g. https://bhoomi-karnataka.vercel.app
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: "sqlite:///./doc_platform.db"
+      - key: MINIO_ENDPOINT
+        value: "localhost:9000"

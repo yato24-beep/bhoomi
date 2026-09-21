@@ -1,0 +1,143 @@
+{
+  "total_samples": 13,
+  "identical_count": 7,
+  "identical_pct": 53.85,
+  "pytorch_cer": 314.94,
+  "onnx_fp32_cer": 337.9,
+  "pytorch_wer": 84.62,
+  "onnx_fp32_wer": 84.62,
+  "pytorch_exact_match": 15.38,
+  "onnx_fp32_exact_match": 15.38,
+  "per_sample": [
+    {
+      "sample": 1,
+      "filename": "crop_a_mara.png",
+      "gt": "ಮರ",
+      "pytorch": "ಮರ",
+      "onnx_fp32": "ಮರ",
+      "identical": true,
+      "cer_pt": 0.0,
+      "cer_onnx": 0.0
+    },
+    {
+      "sample": 2,
+      "filename": "crop_o_kothi.png",
+      "gt": "ಕೋತಿ",
+      "pytorch": "ಕೋತಿ",
+      "onnx_fp32": "ಕೋತಿ",
+      "identical": true,
+      "cer_pt": 0.0,
+      "cer_onnx": 0.0
+    },
+    {
+      "sample": 3,
+      "filename": "crop_p_hannu.png",
+      "gt": "ಹಣ್ಣು",
+      "pytorch": "ಹುಟು",
+      "onnx_fp32": "ಹುಟು",
+      "identical": true,
+      "cer_pt": 0.6,
+      "cer_onnx": 0.6
+    },
+    {
+      "sample": 4,
+      "filename": "a_full_line.png",
+      "gt": "ಆ",
+      "pytorch": "ಮರ-ಶಾಲಿಟ",
+      "onnx_fp32": "ಮರ-ಶಾಲಿಟಾ",
+      "identical": false,
+      "cer_pt": 8.0,
+      "cer_onnx": 9.0
+    },
+    {
+      "sample": 5,
+      "filename": "o_full_line.png",
+      "gt": "ಓ",
+      "pytorch": "ಕೋತಿ-ಲೋಟಾಟ",
+      "onnx_fp32": "ಕೋತಿ-ಲೋಟಾಟ",
+      "identical": true,
+      "cer_pt": 10.0,
+      "cer_onnx": 10.0
+    },
+    {
+      "sample": 6,
+      "filename": "p_full_line.png",
+      "gt": "ಪ",
+      "pytorch": "ಹಬ್ಬ-ಗೊಳಗಿತ್ತು",
+      "onnx_fp32": "ಹಬ್ಬ-ಆಗಿಯಾಗಿತ್ತು",
+      "identical": false,
+      "cer_pt": 14.0,
+      "cer_onnx": 16.0
+    },
+    {
+      "sample": 7,
+      "filename": "line_04.png",
+      "gt": "125",
+      "pytorch": "೪೯೪೯",
+      "onnx_fp32": "೪೯೪೯",
+      "identical": true,
+      "cer_pt": 1.3333,
+      "cer_onnx": 1.3333
+    },
+    {
+      "sample": 8,
+      "filename": "line_05.png",
+      "gt": "125 1 ರ",
+      "pytorch": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+      "onnx_fp32": "ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು",
+      "identical": true,
+      "cer_pt": 2.5714,
+      "cer_onnx": 2.5714
+    },
+    {
+      "sample": 9,
+      "filename": "line_06.png",
+      "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ಕಂದಾಯ",
+      "pytorch": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ತು",
+      "onnx_fp32": "ವ್ಯಕ್ತಪಡಿಸುವುದಿಲ್ಲಇನ್ನೆರಡೇ",
+      "identical": false,
+      "cer_pt": 0.8966,
+      "cer_onnx": 0.8966
+    },
+    {
+      "sample": 10,
+      "filename": "line_07.png",
+      "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ತಂದೆ ಲಿಂಗಯ್ಯ 1 ನೇ ಹೆಂಡತಿ ಲಿಂಗಮ್ಮ ಇವರ ಮಕ್ಕಳು",
+      "pytorch": "ಪರ್ಣುಸ್ಥಿತುಕೊಂಡಿದ್ದು",
+      "onnx_fp32": "ಪರ್ಣುಕಾರ್ಥಿಸುವುದಕ್ಕೂ",
+      "identical": false,
+      "cer_pt": 0.8806,
+      "cer_onnx": 0.8657
+    },
+    {
+      "sample": 11,
+      "filename": "line_08.png",
+      "gt": "148 0-15 ಇವರ ಹೆಸರಿಗೆ ರಾಜೀನಾಮೆ ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ವತಿಯಿಂದ ಬಂದಂತೆ",
+      "pytorch": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವುದಿತ್ತು",
+      "onnx_fp32": "ಸ್ಪರ್ಧಿಸಿಕೊಳ್ಳುವಂತೂ",
+      "identical": false,
+      "cer_pt": 0.8814,
+      "cer_onnx": 0.8814
+    },
+    {
+      "sample": 12,
+      "filename": "line_09.png",
+      "gt": "ದಿನಾಂಕ 20/09/2005 ರ ಪ್ರಕಾರ ಪಹಣಿ ಮತ್ತು ಹಕ್ಕು ದಾಖಲೆ ನಮೂದಿಸಲಾಗಿದೆ",
+      "pytorch": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+      "onnx_fp32": "ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಿಲ್ಲಇನ್ನೆರಡು",
+      "identical": false,
+      "cer_pt": 0.8871,
+      "cer_onnx": 0.8871
+    },
+    {
+      "sample": 13,
+      "filename": "line_10.png",
+      "gt": "ಖಾತೆ ಬದಲಾವಣೆ ಮಂಜೂರಾಗಿದೆ ತಹಶೀಲ್ದಾರ್ ಆದೇಶ ಸಂಖ್ಯೆ",
+      "pytorch": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+      "onnx_fp32": "ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ",
+      "identical": true,
+      "cer_pt": 0.8913,
+      "cer_onnx": 0.8913
+    }
+  ]
+}

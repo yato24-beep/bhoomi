@@ -35,6 +35,47 @@ export interface BrowserOCRResult {
   latencyMs: number;
 }
 
+export interface TokenCandidate {
+  tokenId: number;
+  rawToken: string;
+  logit: number;
+}
+
+export interface TokenStepDetail {
+  step: number;
+  selectedTokenId: number;
+  selectedRawToken: string;
+  isSpecial: boolean;
+  maxLogit: number;
+  topCandidates: TokenCandidate[];
+}
+
+export interface OCRDiagnosticReport {
+  originalDimensions: { width: number; height: number };
+  preprocessedDimensions: { width: number; height: number; channels: number };
+  tensorStats: { min: number; max: number; mean: number };
+  encoderInputNames: string[];
+  encoderInputShapes: string[];
+  encoderOutputNames: string[];
+  encoderOutputShapes: string[];
+  decoderInputNames: string[];
+  decoderInputShapes: string[];
+  decoderOutputNames: string[];
+  decoderOutputShapes: string[];
+  first30TokenIds: number[];
+  numGeneratedTokens: number;
+  decodedTextBeforeSpecialTokens: string;
+  decodedTextAfterSpecialTokens: string;
+  isOnlySpecialTokens: boolean;
+  executionProvider: string;
+  steps: TokenStepDetail[];
+  timings: {
+    encoderMs: number;
+    decoderMs: number;
+    totalMs: number;
+  };
+}
+
 export class BrowserTrOCR {
   private encoderSession: OrtTypes.InferenceSession;
   private decoderSession: OrtTypes.InferenceSession;
@@ -272,6 +313,174 @@ export class BrowserTrOCR {
       latencyMs,
     };
   }
+
+  public getExecutionProvider(): string {
+    return this.executionProvider;
+  }
+
+  /**
+   * Diagnostic execution mode: runs inference without modifying backend state,
+   * returning exact tensor shapes, first 30 token IDs, decoded texts, and token traces.
+   */
+  public async diagnose(
+    source: HTMLCanvasElement | HTMLImageElement | Blob | File | ImageData,
+    maxLength = 32
+  ): Promise<OCRDiagnosticReport> {
+    const totalStart = performance.now();
+
+    // 1. Measure original dimensions if accessible
+    let origWidth = 224;
+    let origHeight = 224;
+    if (typeof window !== "undefined") {
+      if (source instanceof Blob || source instanceof File) {
+        if (typeof createImageBitmap !== "undefined") {
+          try {
+            const bmp = await createImageBitmap(source);
+            origWidth = bmp.width;
+            origHeight = bmp.height;
+            bmp.close();
+          } catch {}
+        }
+      } else if (source instanceof HTMLImageElement || source instanceof HTMLCanvasElement) {
+        origWidth = source.width;
+        origHeight = source.height;
+      }
+    }
+
+    // 2. Preprocess image
+    const pixelValues = await BrowserTrOCR.preprocessImage(source);
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    let sumVal = 0;
+    for (let i = 0; i < pixelValues.length; i++) {
+      if (pixelValues[i] < minVal) minVal = pixelValues[i];
+      if (pixelValues[i] > maxVal) maxVal = pixelValues[i];
+      sumVal += pixelValues[i];
+    }
+    const tensorStats = {
+      min: parseFloat(minVal.toFixed(4)),
+      max: parseFloat(maxVal.toFixed(4)),
+      mean: parseFloat((sumVal / pixelValues.length).toFixed(4)),
+    };
+
+    const pixelTensor = new this.ort.Tensor("float32", pixelValues, [1, 3, 224, 224]);
+
+    // 3. Vision Encoder
+    const encStart = performance.now();
+    const encoderResults = await this.encoderSession.run({
+      pixel_values: pixelTensor,
+    });
+    const encoderHiddenStates = encoderResults.last_hidden_state;
+    const encoderMs = Math.round(performance.now() - encStart);
+
+    // 4. Autoregressive Decoder with detailed per-step candidate trace
+    const decStart = performance.now();
+    const tokens: bigint[] = [BigInt(0)]; // decoder_start_token_id = 0 (<s>)
+    const eosTokenId = BigInt(2);
+    const vocabSize = 100000;
+    const stepsTrace: TokenStepDetail[] = [];
+
+    while (tokens.length < maxLength) {
+      const stepIdx = tokens.length - 1;
+      const inputIdsTensor = new this.ort.Tensor(
+        "int64",
+        new BigInt64Array(tokens),
+        [1, tokens.length]
+      );
+
+      const decoderResults = await this.decoderSession.run({
+        input_ids: inputIdsTensor,
+        encoder_hidden_states: encoderHiddenStates,
+      });
+
+      const logits = decoderResults.logits.data as Float32Array;
+      const lastTokenStart = (tokens.length - 1) * vocabSize;
+
+      let maxLogit = -Infinity;
+      let bestId = 0;
+
+      for (let v = 0; v < vocabSize; v++) {
+        const val = logits[lastTokenStart + v];
+        if (val > maxLogit) {
+          maxLogit = val;
+          bestId = v;
+        }
+      }
+
+      // Collect top candidates for inspection
+      const topCandidates: TokenCandidate[] = [
+        {
+          tokenId: bestId,
+          rawToken: this.idToToken[bestId] || "",
+          logit: parseFloat(maxLogit.toFixed(4)),
+        },
+      ];
+
+      // Also record standard special token logits for transparency
+      for (const spId of [0, 1, 2, 3, 4]) {
+        if (spId !== bestId) {
+          topCandidates.push({
+            tokenId: spId,
+            rawToken: this.idToToken[spId] || "",
+            logit: parseFloat((logits[lastTokenStart + spId] || 0).toFixed(4)),
+          });
+        }
+      }
+
+      stepsTrace.push({
+        step: stepIdx,
+        selectedTokenId: bestId,
+        selectedRawToken: this.idToToken[bestId] || "",
+        isSpecial: bestId <= 4,
+        maxLogit: parseFloat(maxLogit.toFixed(4)),
+        topCandidates: topCandidates.slice(0, 5),
+      });
+
+      if (BigInt(bestId) === eosTokenId) {
+        break;
+      }
+
+      tokens.push(BigInt(bestId));
+    }
+    const decoderMs = Math.round(performance.now() - decStart);
+    const totalMs = Math.round(performance.now() - totalStart);
+
+    // 5. Decode text before and after special token stripping
+    const rawTokens = tokens.map(Number);
+    const rawTokenStrings = rawTokens.map((id) => this.idToToken[id] || `[id:${id}]`);
+    const decodedTextBeforeSpecialTokens = rawTokenStrings.join(" ");
+    const decodedTextAfterSpecialTokens = decodeByteLevelTokens(rawTokenStrings).trim();
+    const isOnlySpecialTokens = rawTokens.every((id) => id <= 4);
+
+    return {
+      originalDimensions: { width: origWidth, height: origHeight },
+      preprocessedDimensions: { width: 224, height: 224, channels: 3 },
+      tensorStats,
+      encoderInputNames: [...this.encoderSession.inputNames],
+      encoderInputShapes: ["pixel_values: [1, 3, 224, 224] (float32)"],
+      encoderOutputNames: [...this.encoderSession.outputNames],
+      encoderOutputShapes: [`last_hidden_state: [${encoderHiddenStates.dims.join(", ")}] (float32)`],
+      decoderInputNames: [...this.decoderSession.inputNames],
+      decoderInputShapes: [
+        "input_ids: [1, seq_len] (int64)",
+        "encoder_hidden_states: [1, 197, 768] (float32)",
+      ],
+      decoderOutputNames: [...this.decoderSession.outputNames],
+      decoderOutputShapes: ["logits: [1, seq_len, 100000] (float32)"],
+      first30TokenIds: rawTokens.slice(0, 30),
+      numGeneratedTokens: rawTokens.length,
+      decodedTextBeforeSpecialTokens,
+      decodedTextAfterSpecialTokens,
+      isOnlySpecialTokens,
+      executionProvider: this.executionProvider,
+      steps: stepsTrace,
+      timings: {
+        encoderMs,
+        decoderMs,
+        totalMs,
+      },
+    };
+  }
 }
 
 // Cached singleton instance
@@ -305,18 +514,31 @@ async function resolveWasmPath(): Promise<string> {
 }
 
 /**
+ * Clears the cached BrowserTrOCR engine instance so a new session with different parameters can be instantiated.
+ */
+export function clearTrOCRCache(): void {
+  cachedTrOCREngine = null;
+}
+
+/**
  * Initializes and returns the Browser TrOCR engine singleton.
+ * @param onProgress Callback for download and initialization progress
+ * @param forceProvider Optional execution provider override ("webgpu" or "wasm")
  */
 export async function getBrowserTrOCR(
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  forceProvider?: "webgpu" | "wasm"
 ): Promise<BrowserTrOCR> {
-  if (cachedTrOCREngine) {
+  if (
+    cachedTrOCREngine &&
+    (!forceProvider || cachedTrOCREngine.getExecutionProvider() === forceProvider)
+  ) {
     onProgress?.({
       stage: "ready",
       loadedBytes: 0,
       totalBytes: 0,
       percentage: 100,
-      message: "Browser TrOCR engine already initialized.",
+      message: `Browser TrOCR engine already initialized (${cachedTrOCREngine.getExecutionProvider().toUpperCase()}).`,
     });
     return cachedTrOCREngine;
   }
@@ -353,7 +575,7 @@ export async function getBrowserTrOCR(
 
   // 3. Genuine WebGPU capability check
   let canUseWebGPU = false;
-  if (typeof navigator !== "undefined" && "gpu" in navigator) {
+  if (forceProvider !== "wasm" && typeof navigator !== "undefined" && "gpu" in navigator) {
     try {
       const adapter = await (navigator as any).gpu?.requestAdapter();
       if (adapter) {
@@ -368,7 +590,7 @@ export async function getBrowserTrOCR(
       canUseWebGPU = false;
     }
   }
-  console.log(`[BrowserTrOCR] Genuine WebGPU support: ${canUseWebGPU}`);
+  console.log(`[BrowserTrOCR] Genuine WebGPU support: ${canUseWebGPU} (forceProvider: ${forceProvider || "auto"})`);
 
   // 4. Retrieve model buffers
   const encoderBuf = buffers.get("encoder.onnx");
@@ -431,10 +653,16 @@ export async function getBrowserTrOCR(
       console.warn("[BrowserTrOCR] WebGPU session creation failed; cleanly falling back to WASM/CPU:", gpuErr);
       encoderSession = null;
       decoderSession = null;
+      if (forceProvider === "webgpu") {
+        throw new Error(`Forced WebGPU provider failed: ${gpuErr instanceof Error ? gpuErr.message : String(gpuErr)}`);
+      }
     }
   }
 
   if (!encoderSession || !decoderSession) {
+    if (forceProvider === "webgpu") {
+      throw new Error("WebGPU is not available or failed to initialize on this device.");
+    }
     console.log(`[BrowserTrOCR] Initializing WASM/CPU fallback provider (wasmPaths: ${wasmBaseUrl})...`);
     try {
       const sessions = await createSessionsWithEP(["wasm"]);

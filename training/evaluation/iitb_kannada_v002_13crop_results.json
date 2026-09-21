@@ -1,0 +1,159 @@
+{
+  "model_name": "IIT Bombay Indic-TrOCR v0.0.2 (Handwritten Kannada)",
+  "model_path": "models\\trocr\\experimental\\iitb_kannada_v002",
+  "device": "cuda",
+  "metrics": {
+    "cer": 0.9652,
+    "wer": 0.9608,
+    "exact_match_rate": 0.1538,
+    "exact_match_count": 2,
+    "latin_hallucinations": 0,
+    "empty_predictions": 0,
+    "total_samples": 13
+  },
+  "samples": [
+    {
+      "index": 1,
+      "image": "crop_a_mara.png",
+      "gt": "ಮರ",
+      "pred": "ಮರ",
+      "cer": 0.0,
+      "wer": 0.0,
+      "exact_match": true,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 2,
+      "image": "crop_o_kothi.png",
+      "gt": "ಕೋತಿ",
+      "pred": "ಕೋತಿ",
+      "cer": 0.0,
+      "wer": 0.0,
+      "exact_match": true,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 3,
+      "image": "crop_p_hannu.png",
+      "gt": "ಹಣ್ಣು",
+      "pred": "ಯಶಸ್ವಿ",
+      "cer": 1.0,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 4,
+      "image": "a_kannada_raw.png",
+      "gt": "ಅ",
+      "pred": "ಮರ",
+      "cer": 2.0,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 5,
+      "image": "o_kannada_raw.png",
+      "gt": "ಒ",
+      "pred": "ಹೋತಿ",
+      "cer": 4.0,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 6,
+      "image": "p_kannada_raw.png",
+      "gt": "ಪ",
+      "pred": "ಹಣ್ಣನ",
+      "cer": 5.0,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 7,
+      "image": "line_04.png",
+      "gt": "125",
+      "pred": "೪೯೩",
+      "cer": 1.0,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 8,
+      "image": "line_05.png",
+      "gt": "125 1 ರ",
+      "pred": "ವಿದ್ಯಾರ್ಥಿಸುವುದಿಲ್ಲಇನ್ನೆ",
+      "cer": 3.2857,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 9,
+      "image": "line_06.png",
+      "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ಕಂದಾಯ",
+      "pred": "ವಿವೃದ್ಧಿಪಡಿಸುವಂತೆ",
+      "cer": 0.8966,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 10,
+      "image": "line_07.png",
+      "gt": "ಶ್ರೀ ಕರಿದಿರ್ N. ಮದನಗೌಡರ ತಂದೆ ಲಿಂಗಯ್ಯ 1 ನೇ ಹೆಂಡತಿ ಲಿಂಗಮ್ಮ ಇವರ ಮಕ್ಕಳು",
+      "pred": "ಘಟ್ನುಕೃತ್ತಿರುವ",
+      "cer": 0.8955,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 11,
+      "image": "line_08.png",
+      "gt": "148 0-15 ಇವರ ಹೆಸರಿಗೆ ರಾಜೀನಾಮೆ ಗ್ರಾಮ ಪಂಚಾಯಿತಿ ವತಿಯಿಂದ ಬಂದಂತೆ",
+      "pred": "ಏರ್ಪಡಿಸಿಕೊಳ್ಳುವಂತೆ",
+      "cer": 0.8644,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 12,
+      "image": "line_09.png",
+      "gt": "ದಿನಾಂಕ 20/09/2005 ರ ಪ್ರಕಾರ ಪಹಣಿ ಮತ್ತು ಹಕ್ಕು ದಾಖಲೆ ನಮೂದಿಸಲಾಗಿದೆ",
+      "pred": "ಪರಿಣ್ಘಿಸಿಕೊಳ್ಳುವಂತೆರಡ್ಲಿ",
+      "cer": 0.871,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    },
+    {
+      "index": 13,
+      "image": "line_10.png",
+      "gt": "ಖಾತೆ ಬದಲಾವಣೆ ಮಂಜೂರಾಗಿದೆ ತಹಶೀಲ್ದಾರ್ ಆದೇಶ ಸಂಖ್ಯೆ",
+      "pred": "ಅಪ್ಪಿಷ್ಠಿಸಿಕೊಳ್ಳುವಂತೆರಡಿ",
+      "cer": 0.9565,
+      "wer": 1.0,
+      "exact_match": false,
+      "is_empty": false,
+      "has_latin": false
+    }
+  ]
+}

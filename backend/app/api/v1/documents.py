@@ -1,6 +1,9 @@
 import io
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, Form, HTTPException, status, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -426,10 +429,16 @@ def get_document_results(
                 status_code=status.HTTP_202_ACCEPTED,
                 detail=f"Document is currently '{document.status}'. Results are not ready yet.",
             )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No extraction results found for document ID {document_id} (Status: {document.status})",
-        )
+    ed = result.extracted_data or {}
+    logger.info(
+        f"[Audit:Stage6-ResultAPI] Serving results for doc_id={document_id} | "
+        f"fields_returned={list(ed.keys())} | "
+        f"has_original_ocr={bool(ed.get('original_ocr'))} | "
+        f"original_ocr_len={len(ed.get('original_ocr', ''))} | "
+        f"has_clean_kannada={bool(ed.get('clean_kannada_text'))} | "
+        f"has_english={bool(ed.get('english_translation'))} | "
+        f"confidence_score={result.confidence_score}"
+    )
 
     return result
 
@@ -557,6 +566,17 @@ def save_browser_result(
 
     storage_path = payload.storage_path or f"browser-ocr/{h}_{payload.filename}"
 
+    has_text = bool(payload.text and payload.text.strip())
+    text_len = len(payload.text) if payload.text else 0
+    logger.info(
+        f"[Audit:Stage5-BackendSave] Received browser result for '{payload.filename}' | "
+        f"payload_fields={list(payload.model_dump().keys())} | "
+        f"has_text={has_text} | "
+        f"text_length={text_len} | "
+        f"confidence={payload.confidence} | "
+        f"provider={payload.execution_provider}"
+    )
+
     # Check for existing document by hash
     stmt = select(Document).where(Document.file_hash == h)
     target_doc = db.execute(stmt).scalar_one_or_none()
@@ -650,6 +670,14 @@ def save_browser_result(
 
     db.commit()
     db.refresh(target_doc)
+
+    logger.info(
+        f"[Audit:Stage5-BackendSave] Persisted ExtractionResult and ExtractedField for doc_id={target_doc.id} | "
+        f"fields_saved={list(extracted_data.keys())} | "
+        f"canonical_ocr_len={len(extracted_data.get('original_ocr', ''))} | "
+        f"status={target_doc.status} | "
+        f"is_duplicate={is_duplicate}"
+    )
 
     return DocumentUploadResponse(
         message="Browser OCR result saved successfully.",

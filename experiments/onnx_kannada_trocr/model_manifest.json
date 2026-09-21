@@ -1,0 +1,149 @@
+{
+  "manifest_version": "1.0.0",
+  "model_name": "IIT Bombay Indic-TrOCR Kannada (Checkpoint-12000)",
+  "model_version": "1.0.0",
+  "format": "ONNX-FP32",
+  "huggingface_repo": "bhoomi-karnataka/iitb-indic-trocr-kannada-onnx",
+  "total_size_bytes": 892463596,
+  "total_size_mb": 851.12,
+  "signatures": {
+    "encoder": {
+      "inputs": [
+        {
+          "name": "pixel_values",
+          "shape": [
+            1,
+            3,
+            224,
+            224
+          ],
+          "type": "float32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "last_hidden_state",
+          "shape": [
+            1,
+            197,
+            768
+          ],
+          "type": "float32"
+        }
+      ]
+    },
+    "decoder": {
+      "inputs": [
+        {
+          "name": "input_ids",
+          "shape": [
+            1,
+            "seq_len"
+          ],
+          "type": "int64"
+        },
+        {
+          "name": "encoder_hidden_states",
+          "shape": [
+            1,
+            197,
+            768
+          ],
+          "type": "float32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "logits",
+          "shape": [
+            1,
+            "seq_len",
+            100000
+          ],
+          "type": "float32"
+        }
+      ]
+    }
+  },
+  "generation": {
+    "bos_token_id": 0,
+    "decoder_start_token_id": 0,
+    "eos_token_id": 2,
+    "pad_token_id": 1,
+    "max_length": 64
+  },
+  "files": {
+    "encoder.onnx": {
+      "filename": "encoder.onnx",
+      "size": 1149853,
+      "sha256": "362592a14442d3b4c143c880896b2348dfd1c1264a2e09e47c1e520eb1b88182",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/encoder.onnx",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/encoder.onnx",
+      "required": true
+    },
+    "encoder.onnx.data": {
+      "filename": "encoder.onnx.data",
+      "size": 343212032,
+      "sha256": "057af4d6543156a2ec2b2723a1772242931702000ff2245aa67b3bd1b09feab9",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/encoder.onnx.data",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/encoder.onnx.data",
+      "required": true
+    },
+    "decoder.onnx": {
+      "filename": "decoder.onnx",
+      "size": 1640185,
+      "sha256": "4e0bd2580bc14111345d0042c290d73363e6e7d0a02cc89ccb13575896ff9dfd",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/decoder.onnx",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/decoder.onnx",
+      "required": true
+    },
+    "decoder.onnx.data": {
+      "filename": "decoder.onnx.data",
+      "size": 538476544,
+      "sha256": "26f00953a571f1c680c2c8fbf2b76146e6e17f654d92297f8859a43ca421e8a4",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/decoder.onnx.data",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/decoder.onnx.data",
+      "required": true
+    },
+    "tokenizer.json": {
+      "filename": "tokenizer.json",
+      "size": 7978797,
+      "sha256": "060544232c6b28ddc28a3f0e0917e6f8292234cc5b6a09100187475a4fd72fd5",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/tokenizer.json",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/tokenizer.json",
+      "required": true
+    },
+    "tokenizer_config.json": {
+      "filename": "tokenizer_config.json",
+      "size": 622,
+      "sha256": "ceebbbbce4b69934b1c2cb213111ab8395dbb2260204d1049f28b242b07fec83",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/tokenizer_config.json",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/tokenizer_config.json",
+      "required": true
+    },
+    "preprocessor_config.json": {
+      "filename": "preprocessor_config.json",
+      "size": 325,
+      "sha256": "a34861a24e781942424ad790b82bc99348404a2e64ea882de88c40905851698d",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/preprocessor_config.json",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/preprocessor_config.json",
+      "required": true
+    },
+    "config.json": {
+      "filename": "config.json",
+      "size": 4987,
+      "sha256": "c4f4217f316b189b5fb1abc76120b24b01fb12806d2666820d7d7827a23d5942",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/config.json",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/config.json",
+      "required": true
+    },
+    "generation_config.json": {
+      "filename": "generation_config.json",
+      "size": 251,
+      "sha256": "b8be400f8675e1c7e40e71ed054ecfbe58aa3d50f108b3b9eacfc1b6cdc2ded4",
+      "url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/resolve/main/generation_config.json",
+      "fallback_url": "https://huggingface.co/bhoomi-karnataka/iitb-indic-trocr-kannada-onnx/raw/main/generation_config.json",
+      "required": true
+    }
+  }
+}

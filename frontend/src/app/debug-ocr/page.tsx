@@ -382,22 +382,35 @@ export default function OCRDiagnosticPage() {
           <div className="space-y-6">
             {/* Top Stat Summary Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {/* Selected Provider */}
+              {/* Selected Providers (Hybrid Details) */}
               <div className="p-4 bg-slate-800/80 border border-slate-700 rounded-xl">
                 <span className="text-[11px] text-slate-400 uppercase font-mono tracking-wider">
-                  Execution Provider
+                  Model Providers (Hybrid)
                 </span>
-                <div className="mt-1 flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-mono font-bold uppercase tracking-wider ${
-                      report.executionProvider === "webgpu"
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                        : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                    }`}
-                  >
-                    <Zap className="w-3 h-3 mr-1" />
-                    {report.executionProvider}
-                  </span>
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-mono">
+                    <span className="text-slate-400">Enc:</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded font-bold uppercase ${
+                        report.encoderProvider === "webgpu"
+                          ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                          : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                      }`}
+                    >
+                      {report.encoderProvider}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-mono">
+                    <span className="text-slate-400">Dec:</span>
+                    <span className="px-1.5 py-0.5 rounded font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                      {report.decoderProvider}
+                    </span>
+                  </div>
+                  {report.fallbackReason && (
+                    <p className="text-[10px] text-amber-400 font-mono italic">
+                      {report.fallbackReason}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -411,6 +424,18 @@ export default function OCRDiagnosticPage() {
                     {report.numGeneratedTokens}
                   </span>
                   <span className="text-xs text-slate-400">tokens</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-400 mt-1">
+                  Sequence Changed:{" "}
+                  <span
+                    className={
+                      report.tokenSequenceChanged
+                        ? "text-emerald-400 font-bold"
+                        : "text-rose-400 font-bold"
+                    }
+                  >
+                    {report.tokenSequenceChanged ? "YES" : "NO"}
+                  </span>
                 </div>
               </div>
 
@@ -432,6 +457,9 @@ export default function OCRDiagnosticPage() {
                     </span>
                   )}
                 </div>
+                <div className="text-[10px] font-mono text-slate-400 mt-1">
+                  Start: {report.decoderStartTokenId} &bull; EOS: {report.eosTokenId}
+                </div>
               </div>
 
               {/* Total Latency */}
@@ -443,7 +471,10 @@ export default function OCRDiagnosticPage() {
                   <span className="text-2xl font-bold font-mono text-amber-300">
                     {report.timings.totalMs}
                   </span>
-                  <span className="text-xs text-slate-400">ms (Enc: {report.timings.encoderMs}ms, Dec: {report.timings.decoderMs}ms)</span>
+                  <span className="text-xs text-slate-400">ms</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-400 mt-1">
+                  Enc: {report.timings.encoderMs}ms &bull; Dec: {report.timings.decoderMs}ms
                 </div>
               </div>
             </div>
@@ -538,7 +569,7 @@ export default function OCRDiagnosticPage() {
                 {/* Vision Encoder Specs */}
                 <div className="p-4 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
                   <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
-                    Vision Encoder (TrOCR ViT)
+                    Vision Encoder ({report.encoderProvider.toUpperCase()})
                   </span>
                   <div className="space-y-1 text-xs font-mono">
                     <div className="text-slate-400">
@@ -569,7 +600,7 @@ export default function OCRDiagnosticPage() {
                 {/* Autoregressive Decoder Specs */}
                 <div className="p-4 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
                   <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
-                    Autoregressive Decoder (RoBERTa LM Head)
+                    Autoregressive Decoder ({report.decoderProvider.toUpperCase()})
                   </span>
                   <div className="space-y-1 text-xs font-mono">
                     <div className="text-slate-400">
@@ -603,10 +634,10 @@ export default function OCRDiagnosticPage() {
             <div className="p-5 bg-slate-800/80 border border-slate-700 rounded-xl space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Step-by-Step Logit Trace
+                  Step-by-Step Logit Trace (Input IDs &rarr; Output Dims &rarr; Predicted Token)
                 </h3>
                 <span className="text-[11px] font-mono text-slate-400">
-                  Shows why the model picked each token ID
+                  Shows the exact int64 input sequence fed into the decoder at each step
                 </span>
               </div>
 
@@ -615,17 +646,25 @@ export default function OCRDiagnosticPage() {
                   <thead>
                     <tr className="border-b border-slate-700 text-slate-400">
                       <th className="py-2 px-3">Step</th>
-                      <th className="py-2 px-3">Chosen Token ID</th>
+                      <th className="py-2 px-3">Decoder Input IDs</th>
+                      <th className="py-2 px-3">Output Dims</th>
+                      <th className="py-2 px-3">Chosen ID</th>
                       <th className="py-2 px-3">Raw BPE Token</th>
                       <th className="py-2 px-3">Max Logit</th>
                       <th className="py-2 px-3">Special?</th>
-                      <th className="py-2 px-3">Top Candidates / Special Logits</th>
+                      <th className="py-2 px-3">Top Candidates / Logits</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {report.steps.map((step) => (
                       <tr key={step.step} className="hover:bg-slate-700/30">
                         <td className="py-2 px-3 text-slate-400">#{step.step}</td>
+                        <td className="py-2 px-3 text-slate-300 max-w-[200px] truncate" title={`[${step.inputIds.join(", ")}]`}>
+                          [{step.inputIds.join(", ")}]
+                        </td>
+                        <td className="py-2 px-3 text-cyan-400">
+                          [{step.outputDims.join(", ")}]
+                        </td>
                         <td className="py-2 px-3 font-bold text-amber-300">
                           {step.selectedTokenId}
                         </td>
@@ -645,7 +684,7 @@ export default function OCRDiagnosticPage() {
                           )}
                         </td>
                         <td className="py-2 px-3">
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 max-w-[450px]">
                             {step.topCandidates.map((cand, ci) => (
                               <span
                                 key={ci}
@@ -655,7 +694,7 @@ export default function OCRDiagnosticPage() {
                                     : "bg-slate-900 text-slate-400 border-slate-800"
                                 }`}
                               >
-                                id:{cand.tokenId} ({cand.rawToken || "sp"}) = {cand.logit}
+                                {cand.tokenId} ({cand.rawToken || "sp"}): {cand.logit}
                               </span>
                             ))}
                           </div>

@@ -32,6 +32,8 @@ export interface BrowserOCRResult {
   confidence: number;
   tokens: number[];
   executionProvider: string;
+  encoderProvider: string;
+  decoderProvider: string;
   latencyMs: number;
 }
 
@@ -43,6 +45,8 @@ export interface TokenCandidate {
 
 export interface TokenStepDetail {
   step: number;
+  inputIds: number[];
+  outputDims: number[];
   selectedTokenId: number;
   selectedRawToken: string;
   isSpecial: boolean;
@@ -54,6 +58,13 @@ export interface OCRDiagnosticReport {
   originalDimensions: { width: number; height: number };
   preprocessedDimensions: { width: number; height: number; channels: number };
   tensorStats: { min: number; max: number; mean: number };
+  encoderProvider: string;
+  decoderProvider: string;
+  fallbackReason?: string;
+  decoderStartTokenId: number;
+  bosTokenId: number;
+  eosTokenId: number;
+  padTokenId: number;
   encoderInputNames: string[];
   encoderInputShapes: string[];
   encoderOutputNames: string[];
@@ -67,6 +78,7 @@ export interface OCRDiagnosticReport {
   decodedTextBeforeSpecialTokens: string;
   decodedTextAfterSpecialTokens: string;
   isOnlySpecialTokens: boolean;
+  tokenSequenceChanged: boolean;
   executionProvider: string;
   steps: TokenStepDetail[];
   timings: {
@@ -80,21 +92,27 @@ export class BrowserTrOCR {
   private encoderSession: OrtTypes.InferenceSession;
   private decoderSession: OrtTypes.InferenceSession;
   private idToToken: string[];
-  private executionProvider: string;
+  private encoderProvider: string;
+  private decoderProvider: string;
+  private fallbackReason?: string;
   private ort: typeof import("onnxruntime-web");
 
   constructor(
     encoderSession: OrtTypes.InferenceSession,
     decoderSession: OrtTypes.InferenceSession,
     idToToken: string[],
-    executionProvider: string,
-    ort: typeof import("onnxruntime-web")
+    encoderProvider: string,
+    decoderProvider: string,
+    ort: typeof import("onnxruntime-web"),
+    fallbackReason?: string
   ) {
     this.encoderSession = encoderSession;
     this.decoderSession = decoderSession;
     this.idToToken = idToToken;
-    this.executionProvider = executionProvider;
+    this.encoderProvider = encoderProvider;
+    this.decoderProvider = decoderProvider;
     this.ort = ort;
+    this.fallbackReason = fallbackReason;
   }
 
   /**
@@ -226,21 +244,31 @@ export class BrowserTrOCR {
     const pixelValues = await BrowserTrOCR.preprocessImage(source);
     const pixelTensor = new this.ort.Tensor("float32", pixelValues, [1, 3, 224, 224]);
 
-    // Step 2: Run vision encoder
-    console.log(`[Audit:Stage2-Inference] Running vision encoder (${this.executionProvider})...`);
+    // Step 2: Run vision encoder (WebGPU or WASM)
+    console.log(`[Audit:Stage2-Inference] Running vision encoder (${this.encoderProvider})...`);
     const encoderResults = await this.encoderSession.run({
       pixel_values: pixelTensor,
     });
     const encoderHiddenStates = encoderResults.last_hidden_state;
     console.log(`[Audit:Stage2-Inference] Encoder completed. last_hidden_state shape: [${encoderHiddenStates.dims.join(", ")}]`);
 
-    // Step 3: Autoregressive decoding (greedy search)
+    // Ensure encoder hidden states are a clean CPU float32 tensor for the WASM decoder
+    const encData = encoderHiddenStates.data instanceof Float32Array
+      ? encoderHiddenStates.data
+      : new Float32Array(encoderHiddenStates.data as any);
+    const encTensorForDecoder = new this.ort.Tensor(
+      "float32",
+      encData,
+      encoderHiddenStates.dims
+    );
+
+    // Step 3: Autoregressive decoding (greedy search on WASM)
     const tokens: bigint[] = [BigInt(0)]; // decoder_start_token_id = 0 (<s>)
     const textConfidences: number[] = [];
     const eosTokenId = BigInt(2);
     const vocabSize = 100000;
 
-    console.log(`[Audit:Stage2-Inference] Starting autoregressive decoding (max_length=${maxLength})...`);
+    console.log(`[Audit:Stage2-Inference] Starting autoregressive decoding on ${this.decoderProvider} (max_length=${maxLength})...`);
 
     while (tokens.length < maxLength) {
       const inputIdsTensor = new this.ort.Tensor(
@@ -251,7 +279,7 @@ export class BrowserTrOCR {
 
       const decoderResults = await this.decoderSession.run({
         input_ids: inputIdsTensor,
-        encoder_hidden_states: encoderHiddenStates,
+        encoder_hidden_states: encTensorForDecoder,
       });
 
       const logits = decoderResults.logits.data as Float32Array;
@@ -297,7 +325,7 @@ export class BrowserTrOCR {
       avg_confidence: parseFloat(avgConfidence.toFixed(4)),
       token_count: tokens.length,
       raw_tokens_sample: tokens.slice(0, 10).map(Number),
-      provider: this.executionProvider,
+      provider: this.getExecutionProvider(),
       latency_ms: latencyMs,
     });
 
@@ -309,13 +337,29 @@ export class BrowserTrOCR {
       text: decodedText,
       confidence: parseFloat(avgConfidence.toFixed(4)),
       tokens: tokens.map(Number),
-      executionProvider: this.executionProvider,
+      executionProvider: this.getExecutionProvider(),
+      encoderProvider: this.encoderProvider,
+      decoderProvider: this.decoderProvider,
       latencyMs,
     };
   }
 
   public getExecutionProvider(): string {
-    return this.executionProvider;
+    return this.encoderProvider === this.decoderProvider
+      ? this.encoderProvider
+      : `hybrid (${this.encoderProvider}/${this.decoderProvider})`;
+  }
+
+  public getEncoderProvider(): string {
+    return this.encoderProvider;
+  }
+
+  public getDecoderProvider(): string {
+    return this.decoderProvider;
+  }
+
+  public getFallbackReason(): string | undefined {
+    return this.fallbackReason;
   }
 
   /**
@@ -373,15 +417,27 @@ export class BrowserTrOCR {
     const encoderHiddenStates = encoderResults.last_hidden_state;
     const encoderMs = Math.round(performance.now() - encStart);
 
+    // Prepare CPU-safe float32 tensor for decoder
+    const encData = encoderHiddenStates.data instanceof Float32Array
+      ? encoderHiddenStates.data
+      : new Float32Array(encoderHiddenStates.data as any);
+    const encTensorForDecoder = new this.ort.Tensor(
+      "float32",
+      encData,
+      encoderHiddenStates.dims
+    );
+
     // 4. Autoregressive Decoder with detailed per-step candidate trace
     const decStart = performance.now();
     const tokens: bigint[] = [BigInt(0)]; // decoder_start_token_id = 0 (<s>)
     const eosTokenId = BigInt(2);
     const vocabSize = 100000;
     const stepsTrace: TokenStepDetail[] = [];
+    let lastOutputDims: number[] = [1, 1, vocabSize];
 
     while (tokens.length < maxLength) {
       const stepIdx = tokens.length - 1;
+      const currentInputIds = tokens.map(Number);
       const inputIdsTensor = new this.ort.Tensor(
         "int64",
         new BigInt64Array(tokens),
@@ -390,14 +446,18 @@ export class BrowserTrOCR {
 
       const decoderResults = await this.decoderSession.run({
         input_ids: inputIdsTensor,
-        encoder_hidden_states: encoderHiddenStates,
+        encoder_hidden_states: encTensorForDecoder,
       });
 
       const logits = decoderResults.logits.data as Float32Array;
+      lastOutputDims = [...decoderResults.logits.dims];
       const lastTokenStart = (tokens.length - 1) * vocabSize;
 
       let maxLogit = -Infinity;
       let bestId = 0;
+
+      // Single pass to find argmax and collect top 10 candidates
+      const top10: { id: number; logit: number }[] = [];
 
       for (let v = 0; v < vocabSize; v++) {
         const val = logits[lastTokenStart + v];
@@ -405,35 +465,31 @@ export class BrowserTrOCR {
           maxLogit = val;
           bestId = v;
         }
-      }
 
-      // Collect top candidates for inspection
-      const topCandidates: TokenCandidate[] = [
-        {
-          tokenId: bestId,
-          rawToken: this.idToToken[bestId] || "",
-          logit: parseFloat(maxLogit.toFixed(4)),
-        },
-      ];
-
-      // Also record standard special token logits for transparency
-      for (const spId of [0, 1, 2, 3, 4]) {
-        if (spId !== bestId) {
-          topCandidates.push({
-            tokenId: spId,
-            rawToken: this.idToToken[spId] || "",
-            logit: parseFloat((logits[lastTokenStart + spId] || 0).toFixed(4)),
-          });
+        if (top10.length < 10) {
+          top10.push({ id: v, logit: val });
+          if (top10.length === 10) top10.sort((a, b) => b.logit - a.logit);
+        } else if (val > top10[9].logit) {
+          top10[9] = { id: v, logit: val };
+          top10.sort((a, b) => b.logit - a.logit);
         }
       }
 
+      const topCandidates: TokenCandidate[] = top10.map((c) => ({
+        tokenId: c.id,
+        rawToken: this.idToToken[c.id] || "",
+        logit: parseFloat(c.logit.toFixed(4)),
+      }));
+
       stepsTrace.push({
         step: stepIdx,
+        inputIds: currentInputIds,
+        outputDims: lastOutputDims,
         selectedTokenId: bestId,
         selectedRawToken: this.idToToken[bestId] || "",
         isSpecial: bestId <= 4,
         maxLogit: parseFloat(maxLogit.toFixed(4)),
-        topCandidates: topCandidates.slice(0, 5),
+        topCandidates,
       });
 
       if (BigInt(bestId) === eosTokenId) {
@@ -451,11 +507,19 @@ export class BrowserTrOCR {
     const decodedTextBeforeSpecialTokens = rawTokenStrings.join(" ");
     const decodedTextAfterSpecialTokens = decodeByteLevelTokens(rawTokenStrings).trim();
     const isOnlySpecialTokens = rawTokens.every((id) => id <= 4);
+    const tokenSequenceChanged = stepsTrace.length > 1 && stepsTrace.some((s, idx) => idx > 0 && s.selectedTokenId !== stepsTrace[0].selectedTokenId);
 
     return {
       originalDimensions: { width: origWidth, height: origHeight },
       preprocessedDimensions: { width: 224, height: 224, channels: 3 },
       tensorStats,
+      encoderProvider: this.encoderProvider,
+      decoderProvider: this.decoderProvider,
+      fallbackReason: this.fallbackReason,
+      decoderStartTokenId: 0,
+      bosTokenId: 0,
+      eosTokenId: 2,
+      padTokenId: 1,
       encoderInputNames: [...this.encoderSession.inputNames],
       encoderInputShapes: ["pixel_values: [1, 3, 224, 224] (float32)"],
       encoderOutputNames: [...this.encoderSession.outputNames],
@@ -466,13 +530,14 @@ export class BrowserTrOCR {
         "encoder_hidden_states: [1, 197, 768] (float32)",
       ],
       decoderOutputNames: [...this.decoderSession.outputNames],
-      decoderOutputShapes: ["logits: [1, seq_len, 100000] (float32)"],
+      decoderOutputShapes: [`logits: [${lastOutputDims.join(", ")}] (float32)`],
       first30TokenIds: rawTokens.slice(0, 30),
       numGeneratedTokens: rawTokens.length,
       decodedTextBeforeSpecialTokens,
       decodedTextAfterSpecialTokens,
       isOnlySpecialTokens,
-      executionProvider: this.executionProvider,
+      tokenSequenceChanged,
+      executionProvider: this.getExecutionProvider(),
       steps: stepsTrace,
       timings: {
         encoderMs,
@@ -522,6 +587,9 @@ export function clearTrOCRCache(): void {
 
 /**
  * Initializes and returns the Browser TrOCR engine singleton.
+ * Employs Hybrid Execution Architecture:
+ * - Vision Encoder: WebGPU when supported, with clean WASM/CPU fallback.
+ * - Text Decoder: Forced to WASM/CPU to reliably support 307MB lm_head.weight and dynamic sequence length autoregression.
  * @param onProgress Callback for download and initialization progress
  * @param forceProvider Optional execution provider override ("webgpu" or "wasm")
  */
@@ -531,7 +599,7 @@ export async function getBrowserTrOCR(
 ): Promise<BrowserTrOCR> {
   if (
     cachedTrOCREngine &&
-    (!forceProvider || cachedTrOCREngine.getExecutionProvider() === forceProvider)
+    (!forceProvider || cachedTrOCREngine.getExecutionProvider().includes(forceProvider))
   ) {
     onProgress?.({
       stage: "ready",
@@ -561,8 +629,6 @@ export async function getBrowserTrOCR(
   if (typeof window !== "undefined") {
     try {
       ort.env.wasm.wasmPaths = wasmBaseUrl;
-      // In browsers without crossOriginIsolated, SharedArrayBuffer multi-threading fails.
-      // Set to 1 if not crossOriginIsolated to prevent pthread worker crashes.
       const canMultiThread = typeof window !== "undefined" && !!window.crossOriginIsolated;
       ort.env.wasm.numThreads = canMultiThread
         ? Math.min(4, navigator.hardwareConcurrency || 2)
@@ -614,77 +680,110 @@ export async function getBrowserTrOCR(
     }
   }
 
-  // 6 & 7. Create sessions with WebGPU -> WASM fallback
-  const createSessionsWithEP = async (providers: string[]) => {
-    const enc = await ort.InferenceSession.create(encoderBuf, {
-      executionProviders: providers,
-      externalData: [
-        {
-          path: "encoder.onnx.data",
-          data: encoderDataBuf,
-        },
-      ],
-    });
-    const dec = await ort.InferenceSession.create(decoderBuf, {
-      executionProviders: providers,
-      externalData: [
-        {
-          path: "decoder.onnx.data",
-          data: decoderDataBuf,
-        },
-      ],
-    });
-    return { enc, dec };
-  };
-
+  // 6. Create Encoder Session: WebGPU preferred, with automatic WASM fallback
   let encoderSession: OrtTypes.InferenceSession | null = null;
-  let decoderSession: OrtTypes.InferenceSession | null = null;
-  let chosenEP = "wasm";
+  let encoderProvider = "wasm";
+  let fallbackReason: string | undefined = undefined;
 
-  if (canUseWebGPU) {
+  if (canUseWebGPU && forceProvider !== "wasm") {
     try {
-      console.log(`[BrowserTrOCR] Attempting WebGPU session creation...`);
-      const sessions = await createSessionsWithEP(["webgpu"]);
-      encoderSession = sessions.enc;
-      decoderSession = sessions.dec;
-      chosenEP = "webgpu";
-      console.log("[BrowserTrOCR] WebGPU execution provider initialized successfully.");
-    } catch (gpuErr) {
-      console.warn("[BrowserTrOCR] WebGPU session creation failed; cleanly falling back to WASM/CPU:", gpuErr);
+      console.log(`[BrowserTrOCR] Creating Vision Encoder session with WebGPU...`);
+      encoderSession = await ort.InferenceSession.create(encoderBuf, {
+        executionProviders: ["webgpu"],
+        externalData: [
+          {
+            path: "encoder.onnx.data",
+            data: encoderDataBuf,
+          },
+        ],
+      });
+      encoderProvider = "webgpu";
+      console.log("[BrowserTrOCR] Vision Encoder WebGPU session initialized successfully.");
+    } catch (gpuErr: any) {
+      fallbackReason = `Encoder WebGPU failed: ${gpuErr?.message || String(gpuErr)}`;
+      console.warn(`[BrowserTrOCR] ${fallbackReason}. Cleanly falling back to WASM for encoder.`);
       encoderSession = null;
-      decoderSession = null;
-      if (forceProvider === "webgpu") {
-        throw new Error(`Forced WebGPU provider failed: ${gpuErr instanceof Error ? gpuErr.message : String(gpuErr)}`);
-      }
     }
   }
 
-  if (!encoderSession || !decoderSession) {
-    if (forceProvider === "webgpu") {
-      throw new Error("WebGPU is not available or failed to initialize on this device.");
-    }
-    console.log(`[BrowserTrOCR] Initializing WASM/CPU fallback provider (wasmPaths: ${wasmBaseUrl})...`);
+  if (!encoderSession) {
+    console.log(`[BrowserTrOCR] Initializing Vision Encoder with WASM/CPU provider...`);
     try {
-      const sessions = await createSessionsWithEP(["wasm"]);
-      encoderSession = sessions.enc;
-      decoderSession = sessions.dec;
-      chosenEP = "wasm";
-      console.log("[BrowserTrOCR] Fallback to WASM/CPU execution provider succeeded.");
+      encoderSession = await ort.InferenceSession.create(encoderBuf, {
+        executionProviders: ["wasm"],
+        externalData: [
+          {
+            path: "encoder.onnx.data",
+            data: encoderDataBuf,
+          },
+        ],
+      });
+      encoderProvider = "wasm";
+      console.log("[BrowserTrOCR] Vision Encoder WASM session initialized successfully.");
     } catch (wasmErr: any) {
-      throw new Error(`WebGPU and WASM initialization both failed: ${wasmErr?.message || wasmErr}`);
+      throw new Error(`Vision Encoder initialization failed: ${wasmErr?.message || wasmErr}`);
     }
   }
 
-  console.log(`[BrowserTrOCR] Successfully initialized ONNX Runtime sessions with provider: ${chosenEP}`);
+  // 7. Create Text Decoder Session: WASM/CPU to support 307MB lm_head.weight and dynamic sequence length
+  let decoderSession: OrtTypes.InferenceSession | null = null;
+  let decoderProvider = "wasm";
 
-  cachedTrOCREngine = new BrowserTrOCR(encoderSession, decoderSession, idToToken, chosenEP, ort);
+  if (forceProvider === "webgpu") {
+    // Only attempt WebGPU on decoder if explicitly forced in debug mode
+    try {
+      console.log(`[BrowserTrOCR] [DEBUG] Forcing WebGPU on Text Decoder...`);
+      decoderSession = await ort.InferenceSession.create(decoderBuf, {
+        executionProviders: ["webgpu"],
+        externalData: [
+          {
+            path: "decoder.onnx.data",
+            data: decoderDataBuf,
+          },
+        ],
+      });
+      decoderProvider = "webgpu";
+    } catch (gpuErr: any) {
+      throw new Error(`Forced WebGPU decoder session failed: ${gpuErr?.message || gpuErr}`);
+    }
+  } else {
+    console.log(`[BrowserTrOCR] Initializing Autoregressive Text Decoder with WASM/CPU provider (wasmPaths: ${wasmBaseUrl})...`);
+    try {
+      decoderSession = await ort.InferenceSession.create(decoderBuf, {
+        executionProviders: ["wasm"],
+        externalData: [
+          {
+            path: "decoder.onnx.data",
+            data: decoderDataBuf,
+          },
+        ],
+      });
+      decoderProvider = "wasm";
+      console.log("[BrowserTrOCR] Text Decoder WASM/CPU session initialized successfully.");
+    } catch (decErr: any) {
+      throw new Error(`Text Decoder initialization failed: ${decErr?.message || decErr}`);
+    }
+  }
+
+  const overallProvider = encoderProvider === decoderProvider ? encoderProvider : `hybrid (${encoderProvider}/${decoderProvider})`;
+  console.log(`[BrowserTrOCR] Successfully initialized sessions: Encoder=${encoderProvider.toUpperCase()}, Decoder=${decoderProvider.toUpperCase()} (${overallProvider})`);
+
+  cachedTrOCREngine = new BrowserTrOCR(
+    encoderSession,
+    decoderSession,
+    idToToken,
+    encoderProvider,
+    decoderProvider,
+    ort,
+    fallbackReason
+  );
 
   onProgress?.({
     stage: "ready",
     loadedBytes: 0,
     totalBytes: 0,
     percentage: 100,
-    message: `OCR engine ready (${chosenEP.toUpperCase()}).`,
+    message: `OCR engine ready: Encoder (${encoderProvider.toUpperCase()}), Decoder (${decoderProvider.toUpperCase()}).`,
   });
 
   return cachedTrOCREngine;

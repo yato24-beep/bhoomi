@@ -228,7 +228,7 @@ export default function DocumentDetailsPage() {
 
   const isProcessing = document.status === "UPLOADED" || document.status === "PROCESSING";
   const extractedData = results?.extracted_data || {};
-  const isDemo = Boolean(extractedData?.demo_mode || (extractedData as any)?.is_demo || extractedData?.demo_fixture_detected);
+  const transferHistory = (extractedData?.transfer_history || []) as any[];
   const validationInfo = results?.validation_info || {};
   const requiresReview = validationInfo.requires_human_review || !results?.is_valid;
   const warnings = validationInfo.warnings || [];
@@ -413,12 +413,6 @@ export default function DocumentDetailsPage() {
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">{document.filename}</h1>
               <StatusBadge status={document.status} />
-              {isDemo && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300">
-                  <Sparkles className="w-3 h-3 text-purple-600" />
-                  DEMO MODE
-                </span>
-              )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               ID #{document.id} &bull; Uploaded {new Date(document.created_at).toLocaleDateString()}
@@ -483,22 +477,6 @@ export default function DocumentDetailsPage() {
         </div>
       </div>
 
-      {/* Synthetic Demo Document Notice */}
-      {isDemo && (
-        <div className="bg-indigo-50/90 border border-indigo-200 rounded-xl p-3 text-xs text-indigo-950 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
-              Synthetic Demo Document
-            </span>
-            <span>
-              Controlled demonstration Karnataka RTC fixture (Form 16 Pahani). Verified through production OCR, Gemini reasoning, and cadastral validation.
-            </span>
-          </div>
-          <span className="text-[11px] font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded shrink-0">
-            SHA-256 Verified Fixture
-          </span>
-        </div>
-      )}
 
       {/* Official Government Verification Disclaimer Banner */}
       <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3.5 text-xs text-amber-900 flex items-center justify-between gap-4">
@@ -556,12 +534,20 @@ export default function DocumentDetailsPage() {
               </div>
               <div className="p-4 bg-slate-950 flex items-center justify-center min-h-[520px] max-h-[720px] overflow-auto">
                 <img
+                  id="document-preview-img"
                   src={getDirectDownloadUrl(document.id)}
                   alt="Original Document"
                   className="max-w-full max-h-[680px] object-contain rounded shadow-lg border border-slate-800"
                   onError={(e) => {
-                    // Fallback to placeholder if image fails to load directly
-                    (e.target as HTMLElement).style.display = "none";
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = "none";
+                    const parent = img.parentElement;
+                    if (parent && !parent.querySelector('.img-error-msg')) {
+                      const msg = window.document.createElement('div');
+                      msg.className = 'img-error-msg text-center text-slate-400 text-sm p-8';
+                      msg.innerHTML = '<p class="font-semibold">Unable to load document image</p><p class="text-xs mt-1 text-slate-500">The original file may not be available in storage.</p>';
+                      parent.appendChild(msg);
+                    }
                   }}
                 />
               </div>
@@ -813,6 +799,78 @@ export default function DocumentDetailsPage() {
                     </div>
                   )}
                 </div>
+
+                {/* TRANSFER HISTORY TABLE */}
+                {transferHistory.length > 0 && !isNotLandRecord && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <Table className="w-3.5 h-3.5 text-indigo-600" />
+                        Transfer &amp; Mutation History ({transferHistory.length} Records)
+                      </h3>
+                    </div>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 border-b border-slate-200">
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">#</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">Date</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">Nature of Transfer</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">New Owner</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">Extent</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">Document No.</th>
+                              <th className="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap">Remarks</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {transferHistory.map((row: any, idx: number) => (
+                              <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                                <td className="px-3 py-2 font-mono text-slate-600">{row.serial_no || idx + 1}</td>
+                                <td className="px-3 py-2 font-mono text-slate-900 whitespace-nowrap">{row.date || "—"}</td>
+                                <td className="px-3 py-2">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-slate-900 font-medium">{row.nature_kannada || "—"}</span>
+                                    {row.nature_english && (
+                                      <span className="text-slate-500 text-[11px]">{row.nature_english}</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-slate-900 font-semibold">{row.new_owner_kannada || "—"}</span>
+                                    {row.new_owner_english && (
+                                      <span className="text-slate-500 text-[11px]">{row.new_owner_english}</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2 font-mono text-slate-800 whitespace-nowrap">{row.extent || "—"}</td>
+                                <td className="px-3 py-2 font-mono text-slate-800 whitespace-nowrap">{row.document_number || "—"}</td>
+                                <td className="px-3 py-2 text-slate-600">
+                                  {row.remarks_english === "Not clearly legible" ? (
+                                    <span className="text-amber-600 italic text-[11px]">Not clearly legible</span>
+                                  ) : (
+                                    <div className="flex flex-col gap-0.5">
+                                      {row.remarks_kannada && row.remarks_kannada !== "—" && (
+                                        <span className="text-slate-800">{row.remarks_kannada}</span>
+                                      )}
+                                      {row.remarks_english && row.remarks_english !== "—" && row.remarks_english !== "Not clearly legible" && (
+                                        <span className="text-slate-500 text-[11px]">{row.remarks_english}</span>
+                                      )}
+                                      {(!row.remarks_kannada || row.remarks_kannada === "—") && (!row.remarks_english || row.remarks_english === "—") && (
+                                        <span className="text-slate-400">—</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* TASK 16: Honest Processing Chain & Provenance (OCR -> Extracted Field -> Validation -> Review Status) */}
                 <div className="space-y-3 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">

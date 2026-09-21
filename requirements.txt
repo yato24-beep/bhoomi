@@ -1,6 +1,7 @@
 # ================================================================
-# Core Web Framework & API Server
+# Core dependencies
 # ================================================================
+imagehash>=4.3.0
 fastAPI>=0.100.0
 uvicorn[standard]>=0.22.0
 python-multipart>=0.0.6

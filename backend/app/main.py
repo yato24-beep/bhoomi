@@ -149,13 +149,12 @@ async def lifespan(app: FastAPI):
     gemini_engine = os.environ.get("SEMANTIC_ENGINE", getattr(settings, "SEMANTIC_ENGINE", "gemini"))
     gemini_model = os.environ.get("SEMANTIC_MODEL_NAME", getattr(settings, "SEMANTIC_MODEL_NAME", "gemini-3.1-flash-lite"))
     if gemini_key:
-        masked_key = gemini_key[:6] + "..." + gemini_key[-4:] if len(gemini_key) > 10 else "***"
         print(
             f"  [3/4] Gemini Semantic Engine       : CONFIGURED "
-            f"(engine: {gemini_engine}, model: {gemini_model}, key: {masked_key})"
+            f"(engine: {gemini_engine}, model: {gemini_model})"
         )
     else:
-        print("  [3/4] Gemini Semantic Engine       : UNCONFIGURED (GEMINI_API_KEY absent; deterministic fallback active)")
+        print("  [3/4] Gemini Semantic Engine       : UNCONFIGURED (deterministic fallback active)")
 
     # (d) Document Classification Gate
     try:

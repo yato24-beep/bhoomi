@@ -37,7 +37,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Upload Document", href: "/upload", icon: Upload },
-    { name: "OCR Diagnostics", href: "/debug-ocr", icon: Cpu },
+    ...(currentUser?.role === "ADMIN" ? [{ name: "Diagnostics", href: "/debug-ocr", icon: Cpu }] : []),
   ];
 
   if (pathname === "/login") {
@@ -89,7 +89,7 @@ export const Navbar: React.FC = () => {
 
             {/* FastAPI Swagger Docs Link */}
             <a
-              href="http://localhost:8000/docs"
+              href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/docs`}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-emerald-700 hover:bg-slate-50 transition-colors"

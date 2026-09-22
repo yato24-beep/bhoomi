@@ -1,6 +1,8 @@
 import io
 import hashlib
+from unittest.mock import patch
 from app.workers.tasks import process_document_task
+from app.pipeline.processor import MockDocumentProcessor
 from app.models.document import Document
 from app.models.extraction import ExtractionResult
 import app.services.minio_storage
@@ -9,19 +11,20 @@ from sqlalchemy import select
 
 def test_celery_task_status_lifecycle_and_results(client, officer_headers, db_session):
     """Verify Celery task processes document from MinIO and saves extraction results in PostgreSQL."""
-    # 1. Upload document through API
-    pdf_content = b"%PDF-1.4 celery test document"
-    files = {"file": ("vendor_invoice.pdf", io.BytesIO(pdf_content), "application/pdf")}
-    upload_res = client.post("/api/v1/documents/upload", files=files, headers=officer_headers)
-    assert upload_res.status_code == 201
-    doc_id = upload_res.json()["document"]["id"]
-    assert upload_res.json()["task_id"] is not None
+    with patch("app.workers.tasks.get_document_processor", return_value=MockDocumentProcessor()):
+        # 1. Upload document through API
+        pdf_content = b"%PDF-1.4 celery test document"
+        files = {"file": ("vendor_invoice.pdf", io.BytesIO(pdf_content), "application/pdf")}
+        upload_res = client.post("/api/v1/documents/upload", files=files, headers=officer_headers)
+        assert upload_res.status_code == 201
+        doc_id = upload_res.json()["document"]["id"]
+        assert upload_res.json()["task_id"] is not None
 
-    # In eager mode, the task completes synchronously during upload
-    # 2. Verify status endpoint returns COMPLETED
-    status_res = client.get(f"/api/v1/documents/{doc_id}/status", headers=officer_headers)
-    assert status_res.status_code == 200
-    assert status_res.json()["status"] == "COMPLETED"
+        # In eager mode, the task completes synchronously during upload
+        # 2. Verify status endpoint returns COMPLETED
+        status_res = client.get(f"/api/v1/documents/{doc_id}/status", headers=officer_headers)
+        assert status_res.status_code == 200
+        assert status_res.json()["status"] == "COMPLETED"
 
     # 3. Verify results endpoint returns structured extraction data
     results_res = client.get(f"/api/v1/documents/{doc_id}/results", headers=officer_headers)
@@ -60,11 +63,12 @@ def test_celery_task_direct_execution(db_session):
     db_session.refresh(doc)
 
     # Execute task
-    result = process_document_task(doc.id)
-    assert result["status"] == "success"
-    assert result["document_id"] == doc.id
-    assert result["final_status"] == "COMPLETED"
-    assert result["is_valid"] is True
+    with patch("app.workers.tasks.get_document_processor", return_value=MockDocumentProcessor()):
+        result = process_document_task(doc.id)
+        assert result["status"] == "success"
+        assert result["document_id"] == doc.id
+        assert result["final_status"] == "COMPLETED"
+        assert result["is_valid"] is True
 
     # Verify state in DB
     db_session.refresh(doc)

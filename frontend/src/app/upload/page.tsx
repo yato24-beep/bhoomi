@@ -197,12 +197,14 @@ export default function UploadPage() {
           throw new Error(`Saving the local OCR result failed: ${saveErr.message || saveErr}`);
         }
 
-        // 6. Show final result ONLY after save succeeds
+        // 6. Show final result and navigate to document page
         setBrowserOcrResult(localResult);
         setUploadResult(savedResult);
         setIsProcessingLocal(false);
 
-        // Exit immediately - do NOT continue into normal server upload or polling flow
+        if (savedResult?.document?.id) {
+          router.push(`/documents/${savedResult.document.id}`);
+        }
         return;
       }
 

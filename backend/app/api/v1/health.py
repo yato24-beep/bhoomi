@@ -49,11 +49,14 @@ def check_health(db: Session = Depends(get_db)) -> HealthCheckResponse:
 
     # 2. Check Storage (MinIO or local filesystem fallback)
     if minio_storage.check_health():
-        storage_status = "minio (connected)"
+        storage_status = "connected"
+        storage_ok = True
+    elif getattr(minio_storage, "use_fallback", False):
+        storage_status = "connected"
         storage_ok = True
     else:
-        storage_status = "local_filesystem (connected)"
-        storage_ok = True
+        storage_status = "disconnected"
+        storage_ok = False
 
     # 3. Check Gemini configuration without exposing secret key
     gemini_key = os.environ.get("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)

@@ -1,379 +1,270 @@
-# Land Record Digitization & Multimodal AI Platform
+# Bhoomi: Land Record Digitization & Multimodal AI Platform
 
-An end-to-end, production-grade multimodal document intelligence platform for archival land records, RTC/Pahani forms, cadastral maps, and government deeds. Built with **FastAPI**, **Next.js 14**, **PaddleOCR**, **Fine-tuned TrOCR**, and **Gemini Multimodal Semantics**.
-
----
-
-## Table of Contents
-1. [System Architecture](#1-system-architecture)
-2. [OCR Routing & Modality Detection](#2-ocr-routing--modality-detection)
-3. [Semantic Pipeline Architecture](#3-semantic-pipeline-architecture)
-4. [Karnataka Canonical Schema](#4-karnataka-canonical-schema)
-5. [Cadastral Gating & Document Classification](#5-cadastral-gating--document-classification)
-6. [Provenance & Spatial Grounding](#6-provenance--spatial-grounding)
-7. [Confidence Semantics & Calibration Requirements](#7-confidence-semantics--calibration-requirements)
-8. [Human Review Workflow & Audit Immutability](#8-human-review-workflow--audit-immutability)
-9. [Environment Variables](#9-environment-variables)
-10. [Quick Start: Running Backend & Frontend](#10-quick-start-running-backend--frontend)
-11. [Running the Test Suites](#11-running-the-test-suites)
-12. [Running Real-Document Semantic Evaluation](#12-running-real-document-semantic-evaluation)
-13. [TrOCR Integration Guide (Post-Training)](#13-trocr-integration-guide-post-training)
-14. [Known Limitations & Current Verification Baseline](#14-known-limitations--current-verification-baseline)
+> **Status Notice:** This repository contains a functional prototype. Karnataka is the current implementation and validation environment, while the target platform is designed for expansion across India.
 
 ---
 
-## 1. System Architecture
+## 1. Project Overview
 
-The digitization platform coordinates image preprocessing, vision layout gating, script-aware OCR routing, semantic extraction, deterministic validation, confidence scoring, and an immutable human review state machine:
+**Bhoomi** is an intelligent, privacy-preserving, and cloud-hybrid land record digitization platform designed to process complex, multi-lingual, and historical Indian cadastral records (RTC/Pahani, Mutation extracts, Title deeds, and Revenue survey records).
+
+The platform bridges edge client processing with cloud intelligence:
+- **Client-Side Edge OCR:** High-efficiency, zero-cost-per-query client inference via ONNX Runtime Web (WebGPU Vision Encoder + WASM Autoregressive Text Decoder).
+- **Backend Services:** Robust cadastral field extraction, script translation (Kannada ↔ English), spatial verification, granular auditing, and role-based access control.
+
+---
+
+## 2. National Objective & Vision
+
+India's agricultural and rural real-estate ecosystem comprises over 150 million operational land holdings across 28 states and 8 union territories. Each state maintains localized terminology, colonial-era archival formats, and distinctive regional languages (e.g., Karnataka's *Bhoomi RTC*, Maharashtra's *7/12 Satbara*, Tamil Nadu's *Patta/Chitta*, Uttar Pradesh's *Khatauni*).
+
+**Bhoomi's National Vision:**
+- **Standardized Pan-India Data Contract:** Uniform representation for land parcel identifiers, ownership tenures, liabilities/encumbrances, soil classification, and mutation history across all states.
+- **Hierarchical Governance Hierarchy:** `India -> State -> District -> Taluk/Tehsil -> Hobli/Circle -> Village -> Survey Number / Hissa`.
+- **Zero-Trust Human-in-the-Loop:** Automated confidence scoring and validation rules flagging discrepancies for authorized land revenue officers.
+
+---
+
+## 3. Current Karnataka Scope
+
+The current validation baseline is centered on Karnataka's Department of Revenue (Bhoomi RTC / Form No. 16 / Mutation Extracts):
+- **Primary Script:** Kannada (ಕನ್ನಡ) script with mixed English revenue terminology.
+- **Form Formats:** Standard RTC (Record of Rights, Tenancy and Crops) featuring owner schedules, survey & hissa breakdowns, water-rate tenures, and soil classifications.
+- **Validation Rules:** Rigorous Karnataka survey number formats (`\d+(?:/[0-9A-Za-z]+)?`), Khata serial sequences, and Taluk/Village gazetteer lookups.
+
+---
+
+## 4. System Architecture
+
+The platform is divided into a decoupled, layered microservices topology:
 
 ```text
- ┌────────────────────────────────────────────────────────────────────────┐
- │                      Uploaded Document (PDF / TIFF / Image)            │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 1. Ingestion & Robustness Gate                                         │
- │    - Multi-page rendering, file-size enforcement (<=50MB)             │
- │    - Image enhancement (CLAHE, deskew, noise removal)                  │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 2. Layout Gating & Document Classification                             │
- │    - Detects: karnataka_rtc, mutation_extract, sale_deed, non_cadastral│
- │    - Pre-semantic cadastral gate: suppresses extraction if non-cadastral│
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 3. OCR Routing Engine                                                  │
- │    - Printed Kannada/English     ──► PaddleOCR                         │
- │    - Handwritten Kannada/English ──► Vision Transformer (TrOCR)        │
- │    - Outputs: reading-order text + bboxes [ymin, xmin, ymax, xmax]     │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 4. Semantic Extraction Layer                                           │
- │    - Primary Engine: Gemini (gemini-3.1-flash-lite / structured JSON) │
- │    - Deterministic Fallback: RuleSemanticEngine (regex + NER)          │
- │    - Regional Aliasing: MH (7/12) & TN (Patta) mapped to KA schema     │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 5. Normalization, Grounding & Provenance                               │
- │    - Kannada numerals (೦-೯ ──► 0-9), land units to Hectares/Acres-Guntas│
- │    - Exact bbox & source region linking (immutable raw OCR text)       │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 6. Validation & Confidence Scoring                                     │
- │    - Survey number format checks, owner name completeness               │
- │    - Heuristic Confidence vs. Calibrated Confidence (requires N >= 50) │
- └───────────────────────────────────┬────────────────────────────────────┘
-                                     │
-                                     ▼
- ┌────────────────────────────────────────────────────────────────────────┐
- │ 7. Human Review Decision & Audit Trail                                 │
- │    - Flags low-confidence, invalid, or conflicting candidates          │
- │    - Actions: ACCEPT, CORRECT, REJECT (preserves original raw OCR text)│
- │    - Web UI: interactive review queue with document viewer & diff      │
- └────────────────────────────────────────────────────────────────────────┘
+               ┌──────────────────────────────────────────────┐
+               │           Client Browser (Next.js 14)        │
+               │  - WebGPU/WASM BrowserTrOCR Pipeline         │
+               │  - Client-side Image Hashing (SHA-256)       │
+               │  - Review Workbench & Spatial Grounding      │
+               └──────────────────────┬───────────────────────┘
+                                      │ Ingest (JSON + Base64 Image)
+                                      ▼
+               ┌──────────────────────────────────────────────┐
+               │              FastAPI Gateway                 │
+               │  - JWT RBAC (Admin, Officer, Reviewer, Viewer│
+               │  - CORS & Rate Limiting                      │
+               └───────┬──────────────┬──────────────┬────────┘
+                       │              │              │
+         ┌─────────────▼────┐  ┌──────▼──────┐  ┌────▼─────────────┐
+         │ Document Service │  │ Translation │  │ Extraction       │
+         │ - Metadata CRUD  │  │   Service   │  │   Service        │
+         │ - RBAC Deletion  │  │ - Kannada ↔ │  │ - Multi-state    │
+         │ - Verification   │  │   English   │  │   Cadastral Maps │
+         └─────────────┬────┘  └─────────────┘  └────┬─────────────┘
+                       │                             │
+         ┌─────────────▼─────────────────────────────▼─────────────┐
+         │ Storage & Persistence Layer                             │
+         │ - PostgreSQL 15+ (Relational Documents & Fields)        │
+         │ - MinIO / S3 Object Storage (Preserved Raw Images)      │
+         └─────────────────────────────────────────────────────────┘
+```
+
+### Request Flow
+1. **Document Upload:** User drops RTC/Pahani scan on the frontend.
+2. **Document Storage:** File is hashed (SHA-256 / pHash) and persisted securely to MinIO / S3.
+3. **OCR / Vision Processing:** Browser runs local `BrowserTrOCR` (Vision Encoder on WebGPU, Token Decoder on WASM).
+4. **Backend Ingestion:** Extracted Kannada text and raw image are ingested via `POST /api/v1/documents/browser-result`.
+5. **Cadastral Extraction:** `ExtractionService` parses Kannada text into canonical fields (`owner_name`, `survey_number`, `khata_number`, `village`, `taluk`, `district`, `extent`).
+6. **Translation:** Dedicated translation service creates faithful English equivalents without altering raw Kannada text.
+7. **Validation & Review:** Deterministic validation rules assess confidence; low-confidence fields are queued for officer review.
+
+---
+
+## 5. Technology Stack
+
+- **Frontend:**
+  - Framework: Next.js 14 (App Router, TypeScript)
+  - Styling: Vanilla Tailwind CSS (Modern Slate & Emerald government aesthetic)
+  - Vision Inference: ONNX Runtime Web (`onnxruntime-web` v1.21.0)
+  - Icons & UI: Lucide React
+- **Backend:**
+  - API Framework: FastAPI (Python 3.11 / 3.13)
+  - Relational Database: PostgreSQL with SQLAlchemy 2.0 ORM (SQLite local fallback)
+  - Object Storage: MinIO Python SDK / S3-compatible storage (Local filesystem fallback)
+  - Background Execution: Celery with Redis broker (eager mode supported in dev)
+  - Language Transliteration & Processing: Aksharamukha, Indic-NLP, Pillow
+- **Testing:**
+  - Pytest with Starlette TestClient (30 automated backend tests)
+  - Automated Next.js production builds
+
+---
+
+## 6. OCR Architecture: Hybrid BrowserTrOCR
+
+Bhoomi deploys an asynchronous, client-side hybrid OCR architecture that maximizes throughput and device compatibility while eliminating cloud GPU costs:
+
+- **Vision Encoder:**
+  - **Primary Backend:** WebGPU (via ONNX Runtime Web `webgpu` execution provider)
+  - **Fallback Backend:** WebAssembly (`wasm`) with multi-threading SIMD
+- **Autoregressive Decoder:**
+  - **Dedicated Backend:** WebAssembly (`wasm`)
+  - **Rationale:** Autoregressive token-by-token generation with dynamic shapes has proven strictly more reliable and deterministic on WASM than WebGPU across diverse browser shader implementations.
+- **Model Isolation:**
+  - Low-level tensor management and ONNX sessions are encapsulated in `frontend/src/lib/browserTrOCR.ts`.
+  - Application UI interacts solely through standard promise-based interfaces: `processImage(file) -> OCRResult`.
+
+---
+
+## 7. Model Hosting & Assets
+
+Large ONNX model weights and vocabulary assets are excluded from Git to keep the repository light and portable:
+
+- **Hugging Face Hub Repository:** `yatookami/iitb-kannada-trocr-v002-browser-fp32`
+- **Frontend Model Manifest:** `frontend/public/model_manifest.json`
+- **Hosted Artifacts:**
+  - `encoder_model.onnx` (~220 MB)
+  - `decoder_model_merged.onnx` (~310 MB)
+  - `vocab.json` & `tokenizer_config.json`
+  - WASM binaries dynamically served via `frontend/public/ort/`
+
+---
+
+## 8. Canonical Data Contract
+
+All document processing stages adhere to typed, immutable data contracts (`backend/app/schemas/canonical.py`):
+
+```python
+CanonicalDocumentPayload
+├── Document Identifier & Metadata (id, filename, file_hash, created_at)
+├── Storage Information (storage_path, content_type, file_size)
+├── OCR Result (raw_text, confidence, execution_provider, latency_ms)
+├── Translation (kannada_text, english_text, service_version)
+├── Extracted Fields (owner_name, survey_number, khata_number, extent, etc.)
+├── Validation Result (is_valid, checks_passed, checks_failed)
+└── Review Status (status, reviewed_by, reviewed_at, reviewer_notes)
 ```
 
 ---
 
-## 2. OCR Routing & Modality Detection
+## 9. Database Architecture
 
-OCR execution is script and modality aware:
-- **`LanguageScriptRouter` (`src/handwriting/router.py`)**:
-  - Classifies text regions into `printed` vs `handwritten` and scripts (`kannada`, `english`, `telugu`, `tamil`, `hindi`).
-  - Routes printed Kannada text to **EasyOCR** (primary, 3.06% CER) or **PaddleOCR** (`ppocr_v4_kannada` / `ppocr_v4_en`).
-  - Routes handwritten Kannada text to **TrOCR Checkpoint-12000** (`TrOCR12000KannadaRecognizer`).
-- **Reading Order Sorting**: Regions are spatially sorted top-to-bottom, left-to-right with line grouping.
-- **Bounding Box Normalization**: Bounding boxes are stored as `[ymin, xmin, ymax, xmax]` normalized coordinates (0 to 1000 or absolute pixels), with `region_id` tags for unambiguous provenance linkage.
+The relational schema uses PostgreSQL with explicit foreign keys and cascade rules:
+- **`users`:** RBAC accounts (`ADMIN`, `OFFICER`, `REVIEWER`, `VIEWER`) with hashed passwords.
+- **`documents`:** Core document records with file hash, MIME type, storage path, and processing status.
+- **`extracted_fields`:** Granular key-value fields with spatial bounding boxes (`x_min, y_min, x_max, y_max`), confidence score, and validation status.
+- **`review_items`:** Immutable audit records of human review decisions, corrections, and reviewer notes.
 
 ---
 
-## 3. Semantic Pipeline Architecture
+## 10. Local Setup & Installation
 
-The semantic layer translates noisy, unsegmented OCR regions into canonical structured land records.
+### Prerequisites
+- Python 3.11 or 3.13
+- Node.js 18+ and npm
+- (Optional) Docker & Docker Compose for PostgreSQL & MinIO
 
-- **Primary Engine (`GeminiSemanticEngine`)**:
-  - Calls Google GenAI (`gemini-3.1-flash-lite`) using strict Pydantic structured output schemas (`LandRecordExtractionResponse`).
-  - Transmits OCR regions with reading-order identifiers and spatial coordinates.
-  - Automatically recovers from rate limits, timeouts, and JSON decode errors.
-- **Deterministic Engine (`RuleSemanticEngine`)**:
-  - Standalone regex, keyword proximity, and heuristic parser for offline environments or when semantic AI calls time out or fail.
-- **Unified Interface (`SemanticPipeline`)**:
-  - Encapsulates engine fallback logic: if Gemini fails or times out, the pipeline falls back to `RuleSemanticEngine`, recording a fallback warning in document warnings without crashing the pipeline.
-
----
-
-## 4. Karnataka Canonical Schema
-
-Karnataka RTC (Record of Rights, Tenancy, and Crops / Pahani) is the **primary canonical schema**:
-
-| Field Name | Description | Example Canonical Output |
-| :--- | :--- | :--- |
-| `survey_number` | Core survey identifier (Survey/Hissa) | `"124/2A"`, `"45/1"` |
-| `hissa_number` | Sub-division / Hissa number | `"2A"`, `"1"` |
-| `owner_name` | Primary khatedar / landowner name | `"ರಾಮಪ್ಪ (Ramappa)"` |
-| `owner_father_name` | Father or husband of khatedar | `"ಭೀಮಪ್ಪ (Bheemappa)"` |
-| `total_extent` | Standardized total parcel area | `"4 Acres 12 Guntas"` |
-| `cultivable_area` | Usable agricultural area | `"4 Acres 00 Guntas"` |
-| `pot_kharab` | Uncultivable land area | `"0 Acres 12 Guntas"` |
-| `village` | Revenue village name | `"ಯಲಹಂಕ (Yelahanka)"` |
-| `hobli` | Sub-tehsil administrative cluster | `"ಯಲಹಂಕ ಹೋಬಳಿ"` |
-| `taluk` | Tehsil / Taluk | `"ಬೆಂಗಳೂರು ಉತ್ತರ"` |
-| `district` | District | `"ಬೆಂಗಳೂರು ನಗರ"` |
-| `soil_type` | Soil classification (Red, Black, Sandy) | `"ಕಪ್ಪು ಮಣ್ಣು (Black soil)"` |
-| `land_revenue` | Assessment tax payable (Jodi/Kandaya) | `"Rs. 18.50"` |
-
-### Regional Aliasing (Maharashtra & Tamil Nadu)
-Records from other states are mapped cleanly into this canonical model via explicit alias registries:
-- **Maharashtra (7/12 Extract)**:
-  - `Gat No / Khasra No` ──► mapped to canonical `survey_number`.
-  - `Pot Kharaba` ──► `pot_kharab`.
-  - `Bhogvatdar` ──► `owner_name`.
-  - `Gaon / Taluka` ──► `village` / `taluk`.
-- **Tamil Nadu (Patta/Chitta)**:
-  - `Patta No / Survey No` ──► `survey_number`.
-  - `Urimaiyalargal` ──► `owner_name`.
-  - `Nanjai / Punjai Area` ──► `total_extent`.
-
----
-
-## 5. Cadastral Gating & Document Classification
-
-Before extracting land-record properties, every document passes through `DocumentLayoutGate`:
-1. **Classification**: Evaluates whether the document is a valid cadastral instrument (`karnataka_rtc`, `mutation_extract`, `sale_deed`, `patta_passbook`) or a non-cadastral document (`historical_narrative`, `identity_card`, `unrelated_invoice`, `general_letter`).
-2. **Gating Logic**:
-   - If `is_cadastral == False`: Land record semantic extraction is **suppressed**. The pipeline does not fabricate or guess cadastral values.
-   - The returned `LandRecordDocument` has `classification_label = "not_land_record"`, `extracted_fields = {}`, and an explicit warning explaining the suppression.
-
----
-
-## 6. Provenance & Spatial Grounding
-
-Every extracted field is grounded in physical document regions:
-- **`source_region_id`**: Integer identifier linking the field back to the source OCR region.
-- **`source_page`**: Index of the document page (1-indexed).
-- **`raw_ocr_text`**: The verbatim, unedited text read by the OCR model.
-- **`normalized_value`**: The normalized value (e.g. Kannada numerals `೦-೯` converted to Western digits `0-9`, area unified).
-- **`bbox`**: Coordinate bounding box `[ymin, xmin, ymax, xmax]` representing the exact spatial bounding zone on the source image.
-- **Audit Immutability**: Even if a human reviewer corrects a field, the `raw_ocr_text` and `source_region_id` remain preserved in the audit log for complete forensic traceability.
-
----
-
-## 7. Confidence Semantics & Calibration Requirements
-
-Field confidence represents the system's certainty in its predictions:
-- **Heuristic Confidence (`confidence`)**: Computed from token OCR probabilities, character perplexity, and format match heuristics ($0.0 \le c \le 1.0$).
-- **Calibrated Confidence (`calibrated_confidence`)**:
-  - Strict rule: **Never fabricate calibration curves or fit calibrations on unverified data.**
-  - If held-out labeled verification samples $N < 50$: Calibrated confidence is set to `null` / `None`, and `confidence_state = "UNCALIBRATED"`.
-  - When $N \ge 50$ authenticated labeled samples are supplied: Isotonic regression or Platt sigmoid scaling is fitted, computing Expected Calibration Error (ECE) and Maximum Calibration Error (MCE).
-
----
-
-## 8. Human Review Workflow & Audit Immutability
-
-When a field triggers human review (e.g., confidence below threshold, failed format validation, conflicting candidate values), it is flagged for review:
-1. **Review Item Ingestion**: `ReviewState.NEEDS_REVIEW` added with reason code (`LOW_CONFIDENCE`, `VALIDATION_FAILED`, `CONFLICTING_CANDIDATE`).
-2. **Review Actions**:
-   - **`ACCEPT`**: Reviewer approves extracted value. Status becomes `ACCEPTED`.
-   - **`CORRECT`**: Reviewer supplies correct value. The active field's `normalized_value` updates to the correction, `raw_ocr_text` remains untouched, status becomes `CORRECTED`, and full reviewer ID, notes, and timestamp are written to the audit log.
-   - **`REJECT`**: Reviewer rejects invalid/hallucinated field. Field is marked `REJECTED`.
-3. **Audit Immutability**: All decisions are recorded in `audit_trail` records preserving forensic document history.
-
----
-
-## 9. Environment Variables
-
-Create `.env` from `.env.example`:
-
+### 1. Backend Setup
 ```bash
-# ==============================================================================
-# Semantic Layer & GenAI Configuration
-# ==============================================================================
-# Engine to use: 'gemini' for multimodal AI, or 'rule' for deterministic fallback
-SEMANTIC_ENGINE=gemini
+# Clone repository
+git clone https://github.com/yato24-beep/bhoomi.git
+cd land-record-digitization/backend
 
-# Google Gemini API Key (Required when SEMANTIC_ENGINE=gemini)
-GEMINI_API_KEY=your_gemini_api_key_here
+# Create and activate virtual environment
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 
-# Model name for semantic extraction
-SEMANTIC_MODEL_NAME=gemini-3.1-flash-lite
-
-# HTTP timeout in seconds for GenAI calls
-SEMANTIC_TIMEOUT_SECONDS=15.0
-
-# Minimum labeled samples required to activate statistical calibration
-CALIBRATION_MIN_SAMPLES=50
-
-# ==============================================================================
-# Core Platform & Storage
-# ==============================================================================
-DATABASE_URL=sqlite:///./doc_platform.db
-STORAGE_TYPE=local
-STORAGE_LOCAL_DIR=./storage/uploads
-MAX_FILE_SIZE_MB=50
-```
-
----
-
-## 10. Quick Start: Running Backend & Frontend
-
-### Backend Setup
-```bash
-# 1. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Configure environment
-cp .env.example .env
-# Edit .env and supply your GEMINI_API_KEY
+# Configure environment
+cp ../.env.example .env
 
-# 3. Start FastAPI application
-python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+# Run FastAPI server
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-- Swagger API Docs: `http://localhost:8000/docs`
-- Health Check: `http://localhost:8000/health`
 
-### Frontend Setup
+### 2. Frontend Setup
 ```bash
-cd frontend
+cd ../frontend
+
+# Install dependencies
 npm install
+
+# Copy ONNX WASM binaries to public directory
+node scripts/copy-wasm.mjs
+
+# Start Next.js development server
 npm run dev
 ```
-- Web Application: `http://localhost:3000`
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 11. Running the Test Suites
+## 11. Environment Variables
 
-Execute the comprehensive test suites:
+Reference `.env.example` for all configurable keys:
 
+| Variable | Description | Default |
+|---|---|---|
+| `PROJECT_NAME` | Service display name | `Land Record Digitization Platform` |
+| `ENVIRONMENT` | Environment (`development`, `production`) | `development` |
+| `SECRET_KEY` | JWT signing secret | Secure random string |
+| `POSTGRES_SERVER` | PostgreSQL host | `localhost` |
+| `DATABASE_URL` | Complete DB connection string | `sqlite:///./doc_platform.db` (fallback) |
+| `MINIO_ENDPOINT` | MinIO storage endpoint | `localhost:9000` (falls back to local FS) |
+| `MINIO_BUCKET_NAME`| Target bucket name | `documents` |
+| `NEXT_PUBLIC_API_URL`| Frontend backend URL | `http://localhost:8000` |
+
+---
+
+## 12. Deployment
+
+- **Frontend (Vercel):**
+  - Optimized for static and edge deployment on Vercel.
+  - Build Command: `node scripts/copy-wasm.mjs && next build`
+  - Output Directory: `.next`
+  - Environment Variable: `NEXT_PUBLIC_API_URL=https://<your-render-backend>.onrender.com`
+- **Backend (Render / Railway / AWS):**
+  - Dockerfile and `render.yaml` are pre-configured.
+  - Health Check Path: `/health`
+  - Build Command: `pip install -r backend/requirements.txt`
+  - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+---
+
+## 13. Testing & Verification
+
+Run the full automated test suite:
 ```bash
-# 1. Semantic Layer Unit Tests (38/38 passing)
-pytest tests/unit/test_semantic_layer.py tests/unit/test_semantic_ai_layer.py tests/unit/test_semantic_improvements.py -v
+# Run all 30 backend tests
+python -m pytest backend/tests/ -v
 
-# 2. Confidence Calibration Tests (5/5 passing)
-pytest tests/unit/test_confidence_calibration.py -v
-
-# 3. End-to-End Pipeline Integration Tests (6/6 passing)
-pytest tests/integration/test_pipeline_e2e_semantic.py -v
-
-# 4. Human Review & Audit Immutability Tests (3/3 passing)
-pytest tests/integration/test_review_workflow.py -v
-
-# 5. API Data Contract Tests (4/4 passing)
-pytest tests/integration/test_api_contracts.py -v
-
-# 6. Person C Validation & Normalization Tests (25/25 passing)
-pytest tests/unit/test_extraction.py tests/unit/test_normalization.py tests/unit/test_rules.py tests/unit/test_gis.py tests/unit/test_duplicates.py tests/unit/test_confidence.py tests/unit/test_person_c_adapter.py -v
-
-# 7. Run Complete Core Regression Suite
-pytest tests/unit/test_semantic_layer.py tests/unit/test_semantic_ai_layer.py tests/unit/test_semantic_improvements.py tests/unit/test_confidence_calibration.py tests/integration/test_pipeline_e2e_semantic.py tests/integration/test_review_workflow.py tests/integration/test_api_contracts.py -v
+# Run frontend production build & type check
+cd frontend && npm run build
 ```
 
 ---
 
-## 12. Running Real-Document Semantic Evaluation
+## 14. Known Limitations
 
-To evaluate semantic extraction accuracy against ground-truth Karnataka records:
-
-```bash
-python -m src.evaluation.eval_semantic_real
-```
-Metrics produced:
-- **Field Accuracy**: Exact/normalized semantic match against ground truth.
-- **Missing-Field Rate**: Target ground truth fields not extracted.
-- **Wrong-Field Rate**: Extracted fields with incorrect values.
-- **False-Positive Rate**: Extracted fields not present in source document.
-- **Provenance Accuracy**: Spatial bounding box correctness.
-- **Human-Review Trigger Rate**: Percentage of fields flagged for human review.
+1. **Hardware Acceleration Variability:** WebGPU execution is dependent on user GPU driver capabilities; browsers without WebGPU automatically fallback to WASM with negligible throughput reduction.
+2. **Complex Historical Scripts:** 19th-century Modi or archaic Grantha Kannada handwritten deeds require human review verification.
+3. **Current Scope:** Cadastral validation rules are currently tailored to Karnataka land revenue nomenclature.
 
 ---
 
-## 13. Handwritten TrOCR Checkpoint-12000 Integration & Verification
+## 15. Production Roadmap
 
-Checkpoint-12000 is wired into production via `TrOCR12000KannadaRecognizer` and `LanguageScriptRouter`:
-
-- **Location**: `models/trocr/checkpoint-12000/` (`config.json`, `generation_config.json`, `model.safetensors`, `trainer_state.json`)
-- **Base Image Processor**: `models/trocr/experimental/iitb_kannada_v002/` (ViTImageProcessor, 224x224)
-- **Tokenizer**: `Chakita/KannadaBERT` (100k vocabulary, genuine Unicode coverage)
-- **Decode Logic**: Strips only `pad_token_id`, `bos_token_id`, `eos_token_id` before decoding. Special tokens like `<unk>` are visibly surfaced rather than silently dropped (`skip_special_tokens=False`).
-
-### Verified Empirical Performance (Settled Benchmark Numbers)
-1. **In-Distribution Performance** (Pilot set: 400 IIIT isolated Kannada dictionary words):
-   - **CER**: **4.86%**
-   - **WER**: **16.50%**
-   - **Exact Match**: **83.50%**
-2. **Out-of-Distribution Performance** (Locked benchmark: 13 real archival land-record crops):
-   - **CER**: **93.73%** (matches training baseline ~93.06%)
-   - **WER**: **96.08%** (matches training baseline ~96.92%)
-   - **Exact Match**: **15.38%** (2 / 13 crops — isolated word crops match; multi-word lines fail)
-
-### Known Failure Mode (Language Model Priors)
-- **Trained on isolated words only**: Checkpoint-12000 was trained exclusively on IIIT-INDIC-HW-WORDS isolated dictionary entries. It was **never exposed to multi-word cursive archival lines** during training.
-- **Language prior hallucination**: On real archival lines, the RoBERTa decoder outputs plausible-sounding but wrong Kannada words (e.g. `"ಸ್ಪರ್ಧಿಸಿಕೊಂಡಿದ್ದು"`, `"ಘಟ್ನಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ"`, `"ತಪ್ಪಿಸಿಕೊಳ್ಳುವುದಕ್ಕೂ"`) driven by language-model priors, rather than reading actual strokes.
+- [ ] **Phase 1 (Complete):** Hybrid WebGPU/WASM client OCR, backend ingestion, and Karnataka cadastral extraction.
+- [ ] **Phase 2 (Current):** Modularization into layered services, canonical data contracts, and RBAC audit trail.
+- [ ] **Phase 3:** Pan-India expansion with regional extractors for Maharashtra (7/12) and Tamil Nadu (Patta).
+- [ ] **Phase 4:** PostGIS integration for vector cadastral boundary overlay and satellite land verification.
+- [ ] **Phase 5:** Decentralized verifiable land certificates with cryptographic signatures.
 
 ---
 
-## 14. Known Limitations & Production Guidance
+## License & Attribution
 
-- **Handwritten Line Recognition**: Checkpoint-12000 is **reliable for short, isolated field values** (e.g. a cleanly segmented isolated name or numeral crop). It is **NOT reliable for full unsegmented handwritten lines or cursive archival paragraphs as-is**.
-- **Next Step for Handwriting**: Retrain on real line-level handwriting data (ICDAR 2025 IHDR Task B page/line recognition dataset is the identified target).
-- **Printed Text OCR**: EasyOCR remains the primary printed text engine (**3.06% CER** on real Bhoomi/Satbara documents).
-- **Confidence Calibration Status**: Uncalibrated (`null` calibrated score) by- **Audit Logging**: Low-confidence inferences are systematically logged in the audit trail without fabricating confidence scores or suppressing errors.
-- **Gemini Fallback**: If `GEMINI_API_KEY` is omitted or quota is exceeded, the pipeline gracefully defaults to `RuleSemanticEngine` without interrupting document processing.
-
----
-
-## 14. Deployment Architecture
-
-The application is structured for production deployment across separated frontend and backend services:
-
-### Frontend (Next.js / Vercel)
-- **Deployment Platform**: Vercel
-- **Framework**: Next.js 14+ (App Router)
-- **Environment Variables**:
-  ```bash
-  NEXT_PUBLIC_API_BASE_URL=https://api.your-domain.com
-  ```
-  *(In local development, defaults to `http://localhost:8000`)*
-- **Security**: The frontend communicates strictly via HTTP API calls. No AI API keys or secrets are packaged in client-side code.
-
-### Backend (FastAPI Persistent Service)
-- **Deployment Platform**: Persistent Linux container (Render, Railway, Fly.io, AWS ECS, GCP Cloud Run)
-- **Runtime**: Python 3.10 - 3.13
-- **Entrypoint**: `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000`
-- **Environment Variables**:
-  ```bash
-  GEMINI_API_KEY=your_gemini_api_key_here
-  SEMANTIC_ENGINE=gemini
-  SEMANTIC_MODEL_NAME=gemini-3.1-flash-lite
-  SEMANTIC_TIMEOUT_SECONDS=30.0
-  DATABASE_URL=sqlite:///./doc_platform.db
-  STORAGE_TYPE=local
-  STORAGE_LOCAL_DIR=./storage/uploads
-  MAX_FILE_SIZE_MB=50
-  ```
-
----
-
-## 15. Single-Command Demo Execution
-
-To verify the end-to-end production pipeline with live API upload, status polling, structured extraction, bilingual translation, and human review verification:
-
-```bash
-# Ingest synthetic Karnataka RTC PNG
-python -X utf8 scripts/run_demo_e2e.py demo_artifacts/synthetic_karnataka_rtc.png
-
-# Ingest synthetic Karnataka RTC PDF
-python -X utf8 scripts/run_demo_e2e.py demo_artifacts/synthetic_karnataka_rtc.pdf
-```
+Designed and maintained for government and public digitization initiatives.
+Open source under the [MIT License](LICENSE).

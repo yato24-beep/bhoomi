@@ -1,7 +1,0 @@
-PERSON C STATUS: valid
-OVERALL CONFIDENCE: 0.0
-DOCUMENT TYPE: mutation_register
-STATE: KA
-REQUIRES REVIEW: True
-REVIEW REASONS: ['No structured fields could be extracted from document']
-FIELDS:

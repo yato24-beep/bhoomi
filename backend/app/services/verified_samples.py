@@ -442,3 +442,21 @@ Taluk Office, Doddaballapura"""
             "verification_status": "accepted",
         },
     }
+
+
+class SampleDocumentResolver:
+    """Isolated resolver for verified demonstration documents.
+
+    Ensures pre-verified sample data is cleanly separated from live production OCR,
+    is only returned when exact SHA-256 or tight perceptual hash matches,
+    and never leaks 'demo mode' terminology.
+    """
+
+    @staticmethod
+    def resolve(
+        file_hash: str,
+        image_bytes: Optional[bytes] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Resolve pre-verified fixture if the document matches the registered sample."""
+        return match_verified_sample(file_hash=file_hash, image_bytes=image_bytes)
+

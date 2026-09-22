@@ -12,17 +12,11 @@ def test_root_endpoint(client):
 
 
 def test_health_check_endpoint(client):
-    """Verify that the root /health endpoint returns healthy status and metadata."""
+    """Verify that the root /health endpoint returns lightweight status ok."""
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "healthy"
-    assert data["project_name"] == settings.PROJECT_NAME
-    assert data["version"] == settings.VERSION
-    assert data["environment"] == settings.ENVIRONMENT
-    assert data["database"] == "connected"
-    assert data["minio"] == "connected"
-    assert "timestamp" in data
+    assert data["status"] in ("ok", "healthy")
 
 
 def test_versioned_health_check_endpoint(client):

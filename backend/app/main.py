@@ -220,7 +220,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Direct root health check (/health)
+# Direct root lightweight health check (/health) suitable for UptimeRobot
+@app.get("/health", summary="Lightweight Service Health Check", tags=["Health"])
+async def lightweight_health():
+    """Lightweight unauthenticated health check endpoint.
+
+    Returns HTTP 200 with minimal JSON {"status": "ok"}.
+    Does not invoke OCR, translation, document processing, or DB queries.
+    Suitable for UptimeRobot and Render liveness probes.
+    """
+    return JSONResponse(status_code=200, content={"status": "ok"})
+
+
+# Mount detailed health diagnostics router
 app.include_router(health_router, prefix="", tags=["Health"])
 
 # Mount Person B Multimodal OCR API routes (/api/ocr/...)

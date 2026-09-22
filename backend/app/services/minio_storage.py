@@ -65,6 +65,7 @@ class MinIOStorageService:
         self.secure = secure if secure is not None else settings.MINIO_SECURE
         self._client: Optional[Any] = None
         self._is_available: Optional[bool] = None
+        self.use_fallback: bool = True
 
     @property
     def client(self) -> Optional[Any]:
@@ -187,7 +188,8 @@ class MinIOStorageService:
                 )
             except Exception:
                 pass
-        return f"http://localhost:8000/api/v1/documents/download_fallback/{object_name}"
+        api_str = getattr(settings, "API_V1_STR", "/api/v1")
+        return f"{api_str}/documents/download_fallback/{object_name}"
 
     def delete_file(self, object_name: str) -> None:
         """Delete an object from MinIO or local fallback."""

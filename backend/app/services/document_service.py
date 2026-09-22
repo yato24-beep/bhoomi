@@ -112,74 +112,55 @@ class DocumentService:
             extracted_data["provenance"] = "SERVER_MULTIMODAL_WITH_BROWSER_EDGE"
             provenance = "SERVER_MULTIMODAL_WITH_BROWSER_EDGE"
         else:
-            # Check for verified sample fallback ONLY when no image bytes were provided (headless API/unit tests)
-            from app.services.verified_samples import SampleDocumentResolver
-            sample_fixture = SampleDocumentResolver.resolve(file_hash=h, image_bytes=None) if not image_bytes else None
+            # 4. Live extraction & translation pipeline directly on browser text
+            provenance = "BROWSER_HYBRID_OCR"
+            t_res = TranslationService.translate(text=text, source_lang="kn", target_lang="en")
+            english_translation = t_res.translated_text if t_res.is_successful else ""
 
-            if sample_fixture:
-                logger.info(f"Matched headless registered sample document for '{filename}'")
-                extracted_data = dict(sample_fixture["extracted_data"])
-                extracted_data["live_ocr_text"] = text or ""
-                extracted_data["execution_provider"] = execution_provider
-                extracted_data["latency_ms"] = latency_ms or 0
-                extracted_data["storage_path"] = final_storage_path
+            ext_res = ExtractionService.extract_fields(text=text, state="karnataka", translate_fields=True)
+            extracted_fields = {k: v.model_dump() for k, v in ext_res.fields.items()}
+            bilingual_fields = ext_res.bilingual_fields
+            confidence_score = round(float(confidence), 4)
 
-                extracted_fields = dict(sample_fixture["extracted_fields"])
-                bilingual_fields = dict(extracted_data.get("bilingual_fields", {}))
-                english_translation = extracted_data.get("english_translation", "")
-                validation_info = dict(sample_fixture["validation_info"])
-                confidence_score = sample_fixture.get("confidence_score", 0.91)
-                provenance = "VERIFIED_SAMPLE"
-            else:
-                # 4. Live extraction & translation pipeline directly on browser text
-                provenance = "BROWSER_HYBRID_OCR"
-                t_res = TranslationService.translate(text=text, source_lang="kn", target_lang="en")
-                english_translation = t_res.translated_text if t_res.is_successful else ""
+            # Build canonical extracted data dictionary with backward-compatibility aliases
+            extracted_data = {
+                "document_type": ext_res.document_type,
+                "document_type_label": f"Handwritten Kannada (Browser TrOCR / {execution_provider.upper()})",
+                "is_land_record": True,
+                # Canonical & legacy OCR text fields
+                "raw_ocr_text": text,
+                "normalized_text": text,
+                "original_ocr": text,
+                "original_kannada_text": text,
+                "clean_kannada_text": text,
+                "merged_text": text,
+                # Strict translation separation: english_translation is empty if translation failed, NEVER Kannada text
+                "english_translation": english_translation or "",
+                "translated_text": english_translation or "",
+                "kannada_translation": text,
+                "translation_status": t_res.status,
+                # Metadata
+                "confidence": confidence_score,
+                "confidence_score": confidence_score,
+                "recognition_confidence": confidence_score,
+                "execution_provider": execution_provider,
+                "latency_ms": latency_ms or 0,
+                "storage_path": final_storage_path,
+                "provenance": provenance,
+                "status": "completed",
+                "verification_status": "accepted",
+                "extracted_fields": extracted_fields,
+                "bilingual_fields": bilingual_fields,
+                "review_items": [],
+            }
 
-                ext_res = ExtractionService.extract_fields(text=text, state="karnataka", translate_fields=True)
-                extracted_fields = {k: v.model_dump() for k, v in ext_res.fields.items()}
-                bilingual_fields = ext_res.bilingual_fields
-                confidence_score = round(float(confidence), 4)
-
-                # Build canonical extracted data dictionary with backward-compatibility aliases
-                extracted_data = {
-                    "document_type": ext_res.document_type,
-                    "document_type_label": f"Handwritten Kannada (Browser TrOCR / {execution_provider.upper()})",
-                    "is_land_record": True,
-                    # Canonical & legacy OCR text fields
-                    "raw_ocr_text": text,
-                    "normalized_text": text,
-                    "original_ocr": text,
-                    "original_kannada_text": text,
-                    "clean_kannada_text": text,
-                    "merged_text": text,
-                    # Strict translation separation: english_translation is empty if translation failed, NEVER Kannada text
-                    "english_translation": english_translation or "",
-                    "translated_text": english_translation or "",
-                    "kannada_translation": text,
-                    "translation_status": t_res.status,
-                    # Metadata
-                    "confidence": confidence_score,
-                    "confidence_score": confidence_score,
-                    "recognition_confidence": confidence_score,
-                    "execution_provider": execution_provider,
-                    "latency_ms": latency_ms or 0,
-                    "storage_path": final_storage_path,
-                    "provenance": provenance,
-                    "status": "completed",
-                    "verification_status": "accepted",
-                    "extracted_fields": extracted_fields,
-                    "bilingual_fields": bilingual_fields,
-                    "review_items": [],
-                }
-
-                validation_info = {
-                    "checks_passed": ["browser_trocr_inference_completed"],
-                    "warnings": ext_res.review_reasons,
-                    "requires_human_review": ext_res.requires_human_review,
-                    "verification_status": "accepted",
-                    "execution_provider": execution_provider,
-                }
+            validation_info = {
+                "checks_passed": ["browser_trocr_inference_completed"],
+                "warnings": ext_res.review_reasons,
+                "requires_human_review": ext_res.requires_human_review,
+                "verification_status": "accepted",
+                "execution_provider": execution_provider,
+            }
 
         # 5. Database persistence
         stmt = select(Document).where(Document.file_hash == h)

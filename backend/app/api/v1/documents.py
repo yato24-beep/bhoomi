@@ -20,7 +20,6 @@ from app.api.deps import (
 from app.config import settings
 from app.core.hashing import calculate_stream_sha256
 from app.services.minio_storage import minio_storage
-from app.services.demo_mode import is_demo_mode, apply_demo_results
 from app.services.document_service import DocumentService
 from app.services.translation_service import TranslationService
 from app.workers.tasks import process_document_task
@@ -105,55 +104,29 @@ async def upload_document(
 
     file_hash, file_size = calculate_stream_sha256(file.file)
 
-    # DEMO_MODE instant bypass: store normally, skip OCR/Celery/Gemini/translation, complete immediately
-    if is_demo_mode():
-        content_type = file.content_type or "application/octet-stream"
-        try:
-            storage_path = minio_storage.upload_file(
-                file_stream=file.file,
-                filename=filename,
-                file_hash=file_hash,
-                file_size=file_size,
-                content_type=content_type,
-            )
-        except Exception:
-            storage_path = f"uploads/{file_hash}_{filename}"
-
-        stmt = select(Document).where(Document.file_hash == file_hash)
-        existing_document = db.execute(stmt).scalar_one_or_none()
-
-        if existing_document:
-            existing_document.storage_path = storage_path
-            target_doc = existing_document
-        else:
-            target_doc = Document(
-                filename=filename,
-                file_hash=file_hash,
-                status="COMPLETED",
-                storage_path=storage_path,
-            )
-            db.add(target_doc)
-            db.commit()
-            db.refresh(target_doc)
-
-        apply_demo_results(db, target_doc)
-
-        return DocumentUploadResponse(
-            message="Document uploaded and processed immediately (DEMO MODE).",
-            is_duplicate=False,
-            document=target_doc,
-            task_id="demo-mode-immediate",
-        )
 
     stmt = select(Document).where(Document.file_hash == file_hash)
     existing_document = db.execute(stmt).scalar_one_or_none()
 
     if existing_document:
+        if existing_document.status not in ("COMPLETED", "PROCESSING"):
+            existing_document.status = "UPLOADED"
+            db.commit()
+            db.refresh(existing_document)
+            import threading
+            thread = threading.Thread(
+                target=process_document_task,
+                args=(existing_document.id,),
+                kwargs={"is_handwritten": is_handwritten},
+                daemon=True,
+                name=f"local-task-{existing_document.id}",
+            )
+            thread.start()
         return DocumentUploadResponse(
             message="Document already exists (duplicate detected via SHA-256 hash).",
             is_duplicate=True,
             document=existing_document,
-            task_id=None,
+            task_id="re-queued" if existing_document.status == "UPLOADED" else None,
         )
 
     content_type = file.content_type or "application/octet-stream"

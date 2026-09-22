@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FileText, Upload, LayoutDashboard, ExternalLink, ShieldCheck, LogOut, User as UserIcon, Cpu } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -89,7 +90,7 @@ export const Navbar: React.FC = () => {
 
             {/* FastAPI Swagger Docs Link */}
             <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/docs`}
+              href={`${API_BASE_URL}/docs`}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-emerald-700 hover:bg-slate-50 transition-colors"

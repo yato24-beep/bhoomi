@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # CORS (Cross-Origin Resource Sharing)
     FRONTEND_ORIGIN: Optional[str] = None
     BACKEND_CORS_ORIGINS: Union[List[str], str] = [
+        "https://bhoomi-karnataka.vercel.app",
+        "https://bhoomi.vercel.app",
+        "https://bhoomi-seven.vercel.app",
+        "https://bhoomi-yato24-beeps-projects.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",

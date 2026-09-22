@@ -36,6 +36,7 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isHandwritten, setIsHandwritten] = useState(true);
+  const [useEdgeCropOcr, setUseEdgeCropOcr] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingLocal, setIsProcessingLocal] = useState(false);
@@ -93,8 +94,8 @@ export default function UploadPage() {
     try {
       const isImage = /\.(png|jpe?g|webp|tiff|bmp)$/i.test(selectedFile.name);
 
-      // If Handwritten Kannada is selected and the file is an image, run browser TrOCR locally
-      if (isHandwritten && isImage) {
+      // If Edge Single-Line Crop mode is explicitly enabled, run browser TrOCR locally on the crop
+      if (useEdgeCropOcr && isImage) {
         setIsProcessingLocal(true);
         setModelProgress({
           stage: "checking",
@@ -381,7 +382,7 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Handwritten Kannada In-Browser OCR Controls */}
+        {/* Document Modality & Recognition Routing */}
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -389,17 +390,11 @@ export default function UploadPage() {
                 id="handwritten-toggle"
                 type="checkbox"
                 checked={isHandwritten}
-                onChange={(e) => {
-                  setIsHandwritten(e.target.checked);
-                  if (!e.target.checked) {
-                    setBrowserOcrResult(null);
-                    setModelProgress(null);
-                  }
-                }}
+                onChange={(e) => setIsHandwritten(e.target.checked)}
                 className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
               />
               <label htmlFor="handwritten-toggle" className="text-sm font-semibold text-slate-800 cursor-pointer">
-                Handwritten Kannada Document (In-Browser TrOCR)
+                Handwritten Kannada Document (TrOCR Recognition Routing)
               </label>
             </div>
             <span
@@ -409,15 +404,40 @@ export default function UploadPage() {
                   : "bg-slate-100 text-slate-600 border-slate-200"
               }`}
             >
-              {isHandwritten ? "Client Execution" : "Server Routing"}
+              {isHandwritten ? "Handwriting Enabled" : "Printed Only"}
             </span>
           </div>
           <p className="text-xs text-slate-500">
-            When enabled, the IIT Bombay Indic-TrOCR model automatically runs locally in your browser using WebGPU/WASM without consuming server memory.
+            When checked, the full-page layout analyzer routes detected handwriting crops to the fine-tuned TrOCR model.
           </p>
 
+          {/* Optional Edge Browser TrOCR for Line Crops */}
+          <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <input
+                id="edge-crop-toggle"
+                type="checkbox"
+                checked={useEdgeCropOcr}
+                onChange={(e) => {
+                  setUseEdgeCropOcr(e.target.checked);
+                  if (!e.target.checked) {
+                    setBrowserOcrResult(null);
+                    setModelProgress(null);
+                  }
+                }}
+                className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+              />
+              <label htmlFor="edge-crop-toggle" className="text-xs font-medium text-slate-700 cursor-pointer">
+                Edge Browser Line OCR (Client WebGPU/WASM for single line crop)
+              </label>
+            </div>
+            <span className="text-[11px] font-mono text-slate-500">
+              {useEdgeCropOcr ? "Edge Active" : "Full Document Pipeline"}
+            </span>
+          </div>
+
           {/* Model Download & Verification Progress Bar */}
-          {modelProgress && (isProcessingLocal || modelProgress.stage !== "ready") && (
+          {useEdgeCropOcr && modelProgress && (isProcessingLocal || modelProgress.stage !== "ready") && (
             <div className="pt-2 space-y-1.5 border-t border-slate-200">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium text-slate-700">{modelProgress.message}</span>
